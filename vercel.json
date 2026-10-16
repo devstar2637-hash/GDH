@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/web/client",
+  "regions": ["icn1"],
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "{dist/**,shared/**,engine/*.ts,data/seoul/manifest.json,data/seoul/2026/*.csv}",
+      "excludeFiles": "{web/client/**/*.ts,**/*.test.*,**/*.d.ts}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/run", "destination": "/api" },
+    { "source": "/runs/:path*", "destination": "/api" },
+    { "source": "/patches", "destination": "/api" },
+    { "source": "/rehearsal/:path*", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    }
+  ]
+}

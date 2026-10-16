@@ -51,6 +51,12 @@ export interface ApiRunEnvelope {
   peakQueueSim: PeakQueueSimSummary;
 }
 
+export interface AppServerOptions {
+  persistToDisk?: boolean;
+  compactResponses?: boolean;
+  engineSha?: string;
+}
+
 const runStore = new Map<string, ApiRunEnvelope>();
 let cachedDefaultEnvelope: ApiRunEnvelope | null = null;
 
@@ -92,7 +98,8 @@ async function buildRunEnvelope(
     referenceOffsetPp?: number;
     replay?: boolean;
     decisionChoice?: "proceed" | "hold" | "measure";
-  } = {}
+  } = {},
+  options: AppServerOptions = {}
 ): Promise<ApiRunEnvelope> {
   const seoul = loadSeoulMarketData();
   const isReplay = rawOnsite.replay ?? false;
@@ -101,10 +108,11 @@ async function buildRunEnvelope(
     onsite: rawOnsite,
     referenceOffsetPp: rawOnsite.referenceOffsetPp ?? 0,
     offline: true,
-    persistToDisk: true,
+    persistToDisk: options.persistToDisk ?? true,
   });
 
   run.status.replay = isReplay;
+  if (options.engineSha) run.status.engineSha = options.engineSha;
   if (rawOnsite.decisionChoice) {
     run.decision = {
       choice: rawOnsite.decisionChoice,
@@ -141,6 +149,7 @@ async function buildRunEnvelope(
   };
 
   runStore.set(run.runId, envelope);
+  if (options.compactResponses && runStore.size > 8) runStore.delete(runStore.keys().next().value!);
   return envelope;
 }
 
@@ -270,9 +279,11 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
 
 function compactEnvelope(envelope: ApiRunEnvelope) {
   return {
+    responseShape: "summary",
     run: {
       runId: envelope.run.runId,
       mode: envelope.run.mode,
+      modeLabel: envelope.run.modeLabel,
       status: envelope.run.status,
       results: envelope.run.results.map(({ constraintsOk, deathMonth, survivedMonths }) =>
         ({ constraintsOk, deathMonth, survivedMonths })),
@@ -292,8 +303,8 @@ function resolveClientAsset(fileName: "index.html" | "app.js" | "styles.css" | "
   return `/* Missing asset ${fileName} */`;
 }
 
-export function createAppServer(): Server {
-  return createServer(async (req, res) => {
+export function createAppHandler(options: AppServerOptions = {}) {
+  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
       const url = new URL(req.url ?? "/", "http://localhost:8080");
       const path = url.pathname;
@@ -330,13 +341,16 @@ export function createAppServer(): Server {
       }
 
       if (method === "GET" && path === "/api/health") {
+        const version = existsSync(resolve(process.cwd(), "dist/web/client/version.json"))
+          ? JSON.parse(resolveClientAsset("version.json")) : {};
         sendJson(res, 200, {
           status: "ok",
           defaultMode: 10000,
           modeLabel: "500 AI design families x 20 variations",
-          uiBuild: existsSync(resolve(process.cwd(), "dist/web/client/version.json"))
-            ? JSON.parse(resolveClientAsset("version.json")).uiBuild : "unbuilt",
-          revision: process.env.K_REVISION ?? "local",
+          uiBuild: version.uiBuild ?? "unbuilt",
+          uiSource: version.uiSource ?? null,
+          revision: process.env.K_REVISION ?? process.env.VERCEL_GIT_COMMIT_SHA ?? version.repositorySha ?? "local",
+          runtime: options.compactResponses ? "serverless" : "node-server",
         });
         return;
       }
@@ -355,9 +369,10 @@ export function createAppServer(): Server {
           cachedDefaultEnvelope = await buildRunEnvelope({
             mode: 10000,
             replay: true,
-          });
+          }, options);
         }
-        sendJson(res, 200, path === "/api/summary" ? compactEnvelope(cachedDefaultEnvelope) : cachedDefaultEnvelope);
+        sendJson(res, 200, path === "/api/summary" || options.compactResponses
+          ? compactEnvelope(cachedDefaultEnvelope) : cachedDefaultEnvelope);
         return;
       }
 
@@ -389,8 +404,9 @@ export function createAppServer(): Server {
           replay: Boolean(body.replay ?? false),
           decisionChoice:
             (body.decisionChoice as "proceed" | "hold" | "measure") ?? "hold",
-        });
-        sendJson(res, 200, url.searchParams.get("summary") === "1" ? compactEnvelope(envelope) : envelope);
+        }, options);
+        sendJson(res, 200, url.searchParams.get("summary") === "1" || options.compactResponses
+          ? compactEnvelope(envelope) : envelope);
         return;
       }
 
@@ -400,7 +416,7 @@ export function createAppServer(): Server {
       ) {
         const parts = path.split("/").filter(Boolean);
         const runId = parts[parts.length - 1] ?? "";
-        const stored = runStore.get(runId) ?? cachedDefaultEnvelope;
+        const stored = runId === "default" ? cachedDefaultEnvelope : runStore.get(runId);
         if (!stored) {
           sendJson(res, 404, { error: "RUN_NOT_FOUND", runId });
           return;
@@ -415,7 +431,7 @@ export function createAppServer(): Server {
             },
           },
         };
-        sendJson(res, 200, replayed);
+        sendJson(res, 200, options.compactResponses ? compactEnvelope(replayed) : replayed);
         return;
       }
 
@@ -448,9 +464,13 @@ export function createAppServer(): Server {
           cachedDefaultEnvelope = await buildRunEnvelope({
             mode: 10000,
             replay: true,
-          });
+          }, options);
         }
-        const target = runStore.get(runId) ?? cachedDefaultEnvelope;
+        const target = runId === "default" ? cachedDefaultEnvelope : runStore.get(runId);
+        if (!target) {
+          sendJson(res, 404, { error: "RUN_NOT_FOUND", runId });
+          return;
+        }
 
         if (format === "csv") {
           const csv = buildCsvExport(target, decision);
@@ -478,7 +498,11 @@ export function createAppServer(): Server {
       const msg = err instanceof Error ? err.message : String(err);
       sendJson(res, 500, { error: "INTERNAL_ERROR", message: msg });
     }
-  });
+  };
+}
+
+export function createAppServer(options: AppServerOptions = {}): Server {
+  return createServer(createAppHandler(options));
 }
 
 // Start server when run directly via `tsx web/server.ts` or `node dist/web/server.js`

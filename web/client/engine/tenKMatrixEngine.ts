@@ -7,6 +7,7 @@ export type ScenarioId =
   | "stroller";
 
 export type WaferViewMode = "proposed" | "baseline" | "delta" | "families";
+export type WaferFilterMode = "all" | "rescued" | "failed" | "top100";
 
 export interface StoreRunCell {
   runIndex: number; // 1..10000
@@ -27,7 +28,10 @@ export interface StoreRunCell {
   rescuedByDesign: boolean;
   marginalRisk: boolean;
   monthlyNetKrwM: number; // in KRW millions (or USD eq)
-  breakEvenMonth: number;
+  breakEvenMonth: number | null;
+  month36BaselineUsdK: number;
+  month36ProposedUsdK: number;
+  month36DeltaUsdK: number;
   failureReason: string;
 }
 
@@ -66,9 +70,23 @@ export interface TenKMatrixController {
   updateConfig: (cfg: TenKMatrixConfig, triggerSweep?: boolean) => void;
   setSimTime: (sec: number) => void;
   setViewMode: (mode: WaferViewMode) => void;
+  setFilterMode: (filter: WaferFilterMode) => void;
+  selectBenchmark: (kind: "optimal" | "rescued" | "worst") => StoreRunCell | null;
+  selectRunByIndex: (runIndex: number) => StoreRunCell | null;
   triggerSweep: () => void;
   getCells: () => StoreRunCell[];
   dispose: () => void;
+}
+
+export interface Cell36MonthTrajectory {
+  months: number;
+  initialCapexUsdK: number;
+  baselineCumUsdK: number[];
+  proposedCumUsdK: number[];
+  breakEvenMonth: number | null;
+  month36BaselineUsdK: number;
+  month36ProposedUsdK: number;
+  month36DeltaUsdK: number;
 }
 
 function hashFloat(seed: number): number {
@@ -170,9 +188,12 @@ export function buildTenKCells(cfg: TenKMatrixConfig): {
       ? +(4.2 + (1 - score) * 9.6 + r3 * 2.1).toFixed(1)
       : +(-6.8 + (1 - score) * 5.2).toFixed(1);
 
-    const breakEvenMonth = proposedSurvived
-      ? Math.max(5, Math.min(28, Math.round(8 + score * 14)))
-      : 36;
+    const cashflow = computeCell36MonthTrajectory({
+      monthlyNetKrwM,
+      baselineSurvived,
+      baselineWaitSec,
+      proposedWaitSec,
+    });
 
     let failureReason = "Optimal Flow · Zero Bottleneck";
     if (!proposedSurvived) {
@@ -217,7 +238,10 @@ export function buildTenKCells(cfg: TenKMatrixConfig): {
       rescuedByDesign,
       marginalRisk,
       monthlyNetKrwM,
-      breakEvenMonth,
+      breakEvenMonth: cashflow.breakEvenMonth,
+      month36BaselineUsdK: cashflow.month36BaselineUsdK,
+      month36ProposedUsdK: cashflow.month36ProposedUsdK,
+      month36DeltaUsdK: cashflow.month36DeltaUsdK,
       failureReason,
     };
   }
@@ -236,6 +260,298 @@ export function buildTenKCells(cfg: TenKMatrixConfig): {
   };
 }
 
+function optimalStoreScore(cell: StoreRunCell): number {
+  return cell.monthlyNetKrwM * 3 - cell.proposedWaitSec * 0.8 + cell.aisleClearanceM * 15;
+}
+
+export function findTop100StoreCells(cells: readonly StoreRunCell[]): StoreRunCell[] {
+  // Rank every run so the 10K matrix always has exactly 100 top-percentile cells.
+  return [...cells].sort((a, b) =>
+    Number(b.proposedSurvived) - Number(a.proposedSurvived) ||
+    Number(a.marginalRisk) - Number(b.marginalRisk) ||
+    optimalStoreScore(b) - optimalStoreScore(a) ||
+    a.runIndex - b.runIndex
+  ).slice(0, 100);
+}
+
+export function findBenchmarkStoreCells(cells: StoreRunCell[]): {
+  optimal: StoreRunCell;
+  rescued: StoreRunCell;
+  worst: StoreRunCell;
+} {
+  let optimal = cells[0];
+  let bestOptScore = -Infinity;
+
+  let rescued = cells[0];
+  let bestRescuedDelta = -Infinity;
+
+  let worst = cells[0];
+  let worstScore = -Infinity;
+
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    if (!c) continue;
+
+    if (c.proposedSurvived && !c.marginalRisk) {
+      const optScore = optimalStoreScore(c);
+      if (optScore > bestOptScore) {
+        bestOptScore = optScore;
+        optimal = c;
+      }
+    }
+
+    if (c.rescuedByDesign) {
+      const deltaScore =
+        (c.baselineWaitSec - c.proposedWaitSec) * 1.5 + c.monthlyNetKrwM * 2;
+      if (deltaScore > bestRescuedDelta) {
+        bestRescuedDelta = deltaScore;
+        rescued = c;
+      }
+    }
+
+    if (!c.proposedSurvived) {
+      const failSeverity = c.proposedWaitSec - c.aisleClearanceM * 25;
+      if (failSeverity > worstScore) {
+        worstScore = failSeverity;
+        worst = c;
+      }
+    }
+  }
+
+  return { optimal, rescued, worst };
+}
+
+export function computeCell36MonthTrajectory(
+  cell: Pick<StoreRunCell,
+    "monthlyNetKrwM" | "baselineSurvived" | "baselineWaitSec" | "proposedWaitSec"
+  >
+): Cell36MonthTrajectory {
+  const months = 36;
+  const initialCapexUsdK = 66; // Deposit + Fit-out baseline in $k
+  const propMonthlyNetUsdK = Number((cell.monthlyNetKrwM * 0.75).toFixed(2));
+  const waitPenaltyUsdK = Math.max(
+    1.8,
+    Number(((cell.baselineWaitSec - cell.proposedWaitSec) * 0.11).toFixed(2))
+  );
+  const baseMonthlyNetUsdK = cell.baselineSurvived
+    ? Number((propMonthlyNetUsdK - waitPenaltyUsdK * 0.55).toFixed(2))
+    : Number(Math.min(-1.4, propMonthlyNetUsdK - waitPenaltyUsdK).toFixed(2));
+
+  const baselineCumUsdK: number[] = [];
+  const proposedCumUsdK: number[] = [];
+  let bCum = -initialCapexUsdK;
+  let pCum = -initialCapexUsdK;
+  let breakEvenMonth: number | null = null;
+
+  for (let m = 1; m <= months; m++) {
+    const ramp = m === 1 ? 0.65 : m === 2 ? 0.85 : 1.0;
+    const seasonal = 1 + Math.sin((m / 12) * Math.PI * 2) * 0.08;
+    bCum = Number((bCum + baseMonthlyNetUsdK * ramp * seasonal).toFixed(1));
+    pCum = Number((pCum + propMonthlyNetUsdK * ramp * seasonal).toFixed(1));
+    baselineCumUsdK.push(bCum);
+    proposedCumUsdK.push(pCum);
+    if (breakEvenMonth === null && pCum >= 0) {
+      breakEvenMonth = m;
+    }
+  }
+
+  const month36BaselineUsdK = baselineCumUsdK[months - 1] ?? 0;
+  const month36ProposedUsdK = proposedCumUsdK[months - 1] ?? 0;
+
+  return {
+    months,
+    initialCapexUsdK,
+    baselineCumUsdK,
+    proposedCumUsdK,
+    breakEvenMonth,
+    month36BaselineUsdK,
+    month36ProposedUsdK,
+    month36DeltaUsdK: Number(
+      (month36ProposedUsdK - month36BaselineUsdK).toFixed(1)
+    ),
+  };
+}
+
+export function exportTenKCellsCsv(cells: StoreRunCell[]): string {
+  const header = [
+    "run_index",
+    "ai_family_id",
+    "variant_id",
+    "wafer_row",
+    "wafer_col",
+    "regime_code",
+    "regime_label",
+    "arrival_pax_per_min",
+    "service_cap_per_min",
+    "aisle_clearance_m",
+    "baseline_wait_sec",
+    "proposed_wait_sec",
+    "wait_delta_sec",
+    "baseline_survived",
+    "proposed_survived",
+    "rescued_by_design",
+    "monthly_net_usd_k",
+    "break_even_month",
+    "diagnosis",
+    "month36_baseline_usd_k",
+    "month36_proposed_usd_k",
+    "month36_delta_usd_k",
+    "source_tag",
+  ].join(",");
+
+  const rows: string[] = [header];
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    if (!c) continue;
+    const cashflow = computeCell36MonthTrajectory(c);
+    const usdNet = (c.monthlyNetKrwM * 0.75).toFixed(2);
+    const waitDelta = c.proposedWaitSec - c.baselineWaitSec;
+    rows.push(
+      [
+        c.runIndex,
+        c.familyId,
+        c.variantId,
+        c.row + 1,
+        c.col + 1,
+        c.regimeCode,
+        `"${c.regimeLabel.replace(/"/g, '""')}"`,
+        c.arrivalRatePerMin,
+        c.serviceCapacityPerMin,
+        c.aisleClearanceM,
+        c.baselineWaitSec,
+        c.proposedWaitSec,
+        waitDelta,
+        c.baselineSurvived ? 1 : 0,
+        c.proposedSurvived ? 1 : 0,
+        c.rescuedByDesign ? 1 : 0,
+        usdNet,
+        cashflow.breakEvenMonth,
+        `"${c.failureReason.replace(/"/g, '""')}"`,
+        cashflow.month36BaselineUsdK,
+        cashflow.month36ProposedUsdK,
+        cashflow.month36DeltaUsdK,
+        "assumed",
+      ].join(",")
+    );
+  }
+  return rows.join("\n");
+}
+
+export function renderCellCashflowSparkline(
+  canvas: HTMLCanvasElement | null,
+  cell: StoreRunCell
+): Cell36MonthTrajectory {
+  const traj = computeCell36MonthTrajectory(cell);
+  if (!canvas) return traj;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return traj;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(220, Math.round(rect.width || 260));
+  const h = Math.max(64, Math.round(rect.height || 72));
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = "#121316";
+  ctx.fillRect(0, 0, w, h);
+
+  const padL = 8;
+  const padR = 8;
+  const padT = 16;
+  const padB = 14;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const allVals = [
+    -traj.initialCapexUsdK,
+    0,
+    ...traj.baselineCumUsdK,
+    ...traj.proposedCumUsdK,
+  ];
+  const minVal = Math.min(...allVals, -70);
+  const maxVal = Math.max(...allVals, 40);
+  const span = Math.max(1, maxVal - minVal);
+
+  const toX = (mIdx: number) => padL + (mIdx / (traj.months - 1)) * plotW;
+  const toY = (v: number) => padT + (1 - (v - minVal) / span) * plotH;
+
+  // Zero break-even horizontal dashed line
+  const zeroY = toY(0);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(padL, zeroY);
+  ctx.lineTo(w - padR, zeroY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Baseline 36-month curve (muted slate/red)
+  ctx.strokeStyle = "#71717a";
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  for (let i = 0; i < traj.baselineCumUsdK.length; i++) {
+    const x = toX(i);
+    const y = toY(traj.baselineCumUsdK[i]);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Proposed 36-month curve (Signal Orange)
+  ctx.strokeStyle = cell.proposedSurvived ? "#ea580c" : "#ef4444";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < traj.proposedCumUsdK.length; i++) {
+    const x = toX(i);
+    const y = toY(traj.proposedCumUsdK[i]);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Break-even dot marker
+  if (traj.breakEvenMonth !== null && traj.breakEvenMonth >= 1 && traj.breakEvenMonth <= 36) {
+    const bx = toX(traj.breakEvenMonth - 1);
+    const by = toY(traj.proposedCumUsdK[traj.breakEvenMonth - 1]);
+    ctx.fillStyle = "#fb923c";
+    ctx.beginPath();
+    ctx.arc(bx, by, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Header & Footer labels inside sparkline
+  ctx.font = '700 9px "JetBrains Mono", monospace';
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#a1a1aa";
+  ctx.fillText("36M CUMULATIVE ROI", padL, 11);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = cell.proposedSurvived ? "#fb923c" : "#fca5a5";
+  const m36Sign = traj.month36ProposedUsdK >= 0 ? "+" : "";
+  ctx.fillText(
+    traj.breakEvenMonth
+      ? `BEP Mo ${traj.breakEvenMonth} · 36M ${m36Sign}$${Math.round(traj.month36ProposedUsdK)}k`
+      : `UNRECOVERED · 36M ${m36Sign}$${Math.round(traj.month36ProposedUsdK)}k`,
+    w - padR,
+    11
+  );
+
+  ctx.fillStyle = "#71717a";
+  ctx.textAlign = "left";
+  ctx.fillText("M01 (-$66k)", padL, h - 3);
+  ctx.textAlign = "right";
+  ctx.fillText("M36", w - padR, h - 3);
+
+  ctx.restore();
+  return traj;
+}
+
 export function createTenKMatrixEngine(
   canvas: HTMLCanvasElement,
   callbacks: {
@@ -245,7 +561,9 @@ export function createTenKMatrixEngine(
 ): TenKMatrixController {
   const ctx = canvas.getContext("2d")!;
   let cells: StoreRunCell[] = new Array(10000);
+  let top100RunIndices = new Set<number>();
   let viewMode: WaferViewMode = "proposed";
+  let filterMode: WaferFilterMode = "all";
   let simTimeSec = 0;
   let sweepProgress = 0; // 0..1 (1 = all 10,000 cells swept)
   let sweepStartTime = performance.now();
@@ -273,9 +591,24 @@ export function createTenKMatrixEngine(
     const built = buildTenKCells(cfg);
     cells = built.cells;
     totalStats = built.stats;
+    top100RunIndices = new Set(findTop100StoreCells(cells).map((cell) => cell.runIndex));
+  }
+
+  function matchesFilter(cell: StoreRunCell): boolean {
+    if (filterMode === "all") return true;
+    if (filterMode === "rescued") return cell.rescuedByDesign;
+    if (filterMode === "failed") return !cell.proposedSurvived;
+    if (filterMode === "top100") {
+      return top100RunIndices.has(cell.runIndex);
+    }
+    return true;
   }
 
   function getCellColor(cell: StoreRunCell, idx: number, nowMs: number): string {
+    if (!matchesFilter(cell)) {
+      return "#1e1e23";
+    }
+
     const cellNorm = idx / 10000;
     if (sweepProgress < 1 && Math.abs(cellNorm - sweepProgress) < 0.04) {
       return "#ffffff"; // Crisp white-hot leading wavefront across the 10,000 cells
@@ -286,6 +619,10 @@ export function createTenKMatrixEngine(
 
     // Time-based dynamic pulse synced with simulation clock
     const timeWave = Math.sin(simTimeSec * 0.09 + cell.row * 0.14 + cell.col * 0.09);
+
+    if (filterMode === "top100") {
+      return timeWave > 0.2 ? "#fbbf24" : "#f97316";
+    }
 
     if (viewMode === "baseline") {
       if (cell.baselineSurvived) {
@@ -367,17 +704,24 @@ export function createTenKMatrixEngine(
     const cellH = gridH / 100;
 
     // Top axis header labels (Variants 01..100)
+    const isNarrow = cssW < 520;
     ctx.fillStyle = "#a1a1aa";
     ctx.font = '600 9.5px "JetBrains Mono", monospace';
     ctx.textAlign = "left";
-    ctx.fillText("100×100 WAFER MATRIX · 1 CELL = 1 STORE", padLeft, 16);
+    ctx.fillText(
+      isNarrow ? "100×100 WAFER" : "100×100 WAFER MATRIX · 1 CELL = 1 STORE",
+      padLeft,
+      16
+    );
 
     ctx.textAlign = "right";
     ctx.fillStyle = sweepProgress < 1 ? "#fb923c" : "#f97316";
     ctx.fillText(
       sweepProgress < 1
-        ? `SWEEPING: ${totalStats.executedCount.toLocaleString("en-US")} / 10,000 (${Math.round(sweepProgress * 100)}%)`
-        : `LIVE SYNC @ t=${Math.round(simTimeSec)}s · 10,000 ACTIVE`,
+        ? `SWEEP ${Math.round(sweepProgress * 100)}%`
+        : isNarrow
+          ? `t=${Math.round(simTimeSec)}s · 10K ACTIVE`
+          : `LIVE SYNC @ t=${Math.round(simTimeSec)}s · 10,000 ACTIVE`,
       cssW - padRight,
       16
     );
@@ -495,25 +839,35 @@ export function createTenKMatrixEngine(
     ctx.fillStyle = "#ea580c";
     ctx.fillRect(padLeft, legY - 7, 8, 8);
     ctx.fillStyle = "#d4d4d8";
-    ctx.fillText(`SURVIVED (${totalStats.propSurvived.toLocaleString("en-US")})`, padLeft + 12, legY);
+    ctx.fillText(
+      isNarrow
+        ? `OK ${totalStats.propSurvived.toLocaleString("en-US")}`
+        : `SURVIVED (${totalStats.propSurvived.toLocaleString("en-US")})`,
+      padLeft + 12,
+      legY
+    );
 
-    ctx.fillStyle = "#f59e0b";
-    ctx.fillRect(padLeft + 118, legY - 7, 8, 8);
-    ctx.fillStyle = "#d4d4d8";
-    ctx.fillText(`MARGINAL (${totalStats.marginalCount.toLocaleString("en-US")})`, padLeft + 130, legY);
+    if (!isNarrow) {
+      ctx.fillStyle = "#f59e0b";
+      ctx.fillRect(padLeft + 118, legY - 7, 8, 8);
+      ctx.fillStyle = "#d4d4d8";
+      ctx.fillText(`MARGINAL (${totalStats.marginalCount.toLocaleString("en-US")})`, padLeft + 130, legY);
 
-    ctx.fillStyle = "#27272a";
-    ctx.fillRect(padLeft + 232, legY - 7, 8, 8);
-    ctx.strokeStyle = "#71717a";
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(padLeft + 232, legY - 7, 8, 8);
-    ctx.fillStyle = "#d4d4d8";
-    ctx.fillText(`COLLAPSED (${totalStats.failedCount.toLocaleString("en-US")})`, padLeft + 244, legY);
+      ctx.fillStyle = "#27272a";
+      ctx.fillRect(padLeft + 232, legY - 7, 8, 8);
+      ctx.strokeStyle = "#71717a";
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(padLeft + 232, legY - 7, 8, 8);
+      ctx.fillStyle = "#d4d4d8";
+      ctx.fillText(`COLLAPSED (${totalStats.failedCount.toLocaleString("en-US")})`, padLeft + 244, legY);
+    }
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#fb923c";
     ctx.fillText(
-      `RESCUED BY LAYOUT: +${totalStats.rescuedCount.toLocaleString("en-US")} STORES`,
+      isNarrow
+        ? `RESCUED +${totalStats.rescuedCount.toLocaleString("en-US")}`
+        : `RESCUED BY LAYOUT: +${totalStats.rescuedCount.toLocaleString("en-US")} STORES`,
       cssW - padRight,
       legY
     );
@@ -597,6 +951,35 @@ export function createTenKMatrixEngine(
       viewMode = mode;
       sweepProgress = 0;
       sweepStartTime = performance.now();
+    },
+    setFilterMode(filter: WaferFilterMode) {
+      filterMode = filter;
+    },
+    selectBenchmark(kind: "optimal" | "rescued" | "worst") {
+      if (!cells.length || !cells[0]) return null;
+      const benches = findBenchmarkStoreCells(cells);
+      const target = benches[kind];
+      if (!target) return null;
+      selectedIndex = target.runIndex - 1;
+      hoveredIndex = selectedIndex;
+      callbacks.onHoverCell(target, totalStats);
+      if (callbacks.onSelectCell) {
+        callbacks.onSelectCell(target);
+      }
+      return target;
+    },
+    selectRunByIndex(runIndex: number) {
+      if (!cells.length) return null;
+      const clamped = Math.max(1, Math.min(10000, Math.round(runIndex)));
+      const target = cells[clamped - 1];
+      if (!target) return null;
+      selectedIndex = clamped - 1;
+      hoveredIndex = selectedIndex;
+      callbacks.onHoverCell(target, totalStats);
+      if (callbacks.onSelectCell) {
+        callbacks.onSelectCell(target);
+      }
+      return target;
     },
     triggerSweep() {
       sweepProgress = 0;

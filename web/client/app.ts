@@ -20,12 +20,17 @@ import {
   type TenKClusterItem,
 } from "./engine/d3StatsCharts.ts";
 import { ThreeFloorplanStage } from "./engine/threeFloorplanStage.ts";
-import { summarizeBackendRun } from "./engine/backendSync.ts";
 import {
   createTenKMatrixEngine,
+  exportTenKCellsCsv,
+  findBenchmarkStoreCells,
+  renderCellCashflowSparkline,
   type StoreRunCell,
+  type WaferFilterMode,
   type WaferViewMode,
 } from "./engine/tenKMatrixEngine.ts";
+import { summarizeBackendRun } from "./engine/backendSync.ts";
+import { spatialMetricSummary, spatialWaitDelta } from "./engine/spatialTelemetry.ts";
 
 declare global {
   interface Window {
@@ -582,6 +587,7 @@ function mountShell(): void {
         </nav>
         <div class="rea-header-actions">
           <button type="button" class="rea-btn-outline" id="toggleViewModeBtn">📐 2D CAD Blueprint</button>
+          <button type="button" class="rea-btn-outline" id="headerExport3DBtn">📦 Export 3D / Snapshot</button>
           <button type="button" class="rea-btn-solid" id="exportBtn">Export Spec (.txt)</button>
         </div>
       </div>
@@ -609,13 +615,68 @@ function mountShell(): void {
               </div>
             </div>
 
-            <!-- TOP-RIGHT HUD: 10K Swarm + Revolve + Iso View + Top 2D + Theme -->
+            <!-- TOP-RIGHT HUD: AI Best 10K + 10K Swarm + Export 3D + Revolve + Iso View + Top 2D + POV Cam + Theme -->
             <div class="pgrun-hud-top-right">
+              <button type="button" class="pgrun-pill-btn" id="threeOptimizeBtn" title="Auto-Select #1 Highest-Performing Store Layout out of 10,000 Parallel Runs">🏆 <span>AI BEST 10K</span></button>
               <button type="button" class="pgrun-pill-btn active" id="threeSwarmBtn" aria-pressed="true" title="Toggle 10,000-Scenario Parallel Trajectory Swarm">⚡ <span>10K SWARM</span></button>
+              <button type="button" class="pgrun-pill-btn" id="threeExportMenuBtn" aria-expanded="false" title="Export 3D Floorplan as Hi-Res Snapshot, Dual Blueprint Sheet, glTF, GLB, OBJ, CSV, or 10K Audit Report">📦 <span>EXPORT 3D</span></button>
               <button type="button" class="pgrun-pill-btn" id="threeRevolveBtn" aria-pressed="false">⟳ <span>REVOLVE</span></button>
-              <button type="button" class="pgrun-pill-btn" id="threeIsoBtn" title="Reset Isometric View (I)">ISO VIEW</button>
+              <button type="button" class="pgrun-pill-btn active" id="threeIsoBtn" title="Reset Isometric View (I)">ISO VIEW</button>
               <button type="button" class="pgrun-pill-btn" id="threeTopBtn" title="Top-Down 2D Orthographic View">TOP 2D</button>
+              <button type="button" class="pgrun-pill-btn" id="threePovBtn" title="Eye-Level Entrance Customer POV Camera (V)">POV CAM</button>
               <button type="button" class="pgrun-icon-btn" id="threeThemeBtn" aria-label="Toggle Light/Dark Theme" title="Toggle Light / Dark Stage Theme (T)">◐</button>
+            </div>
+
+            <!-- FLOATING 3D DESIGN DOCUMENTATION EXPORT DRAWER -->
+            <div class="pgrun-export-drawer hidden" id="threeExportDrawer" role="dialog" aria-label="Export 3D Floorplan Documentation">
+              <div class="pgrun-exp-head">
+                <strong>📦 3D Floorplan CAD &amp; Snapshot Export</strong>
+                <button type="button" class="pgrun-exp-close" id="closeExportDrawerBtn" aria-label="Close Export Drawer">✕</button>
+              </div>
+              <p class="pgrun-exp-desc">
+                Export the current 12.0m × 9.0m 3D spatial layout, fixtures, and 10,000-scenario stress-test sheet for design documentation or 3D CAD tools (Blender, Rhino, SketchUp).
+              </p>
+              <div class="pgrun-exp-grid">
+                <button type="button" class="pgrun-exp-btn primary" id="export3DSnapBtn">
+                  <strong>📸 Hi-Res Snapshot (.png)</strong>
+                  <small>1920×1200 Sheet + Telemetry</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn primary" id="export3DBlueprintSheetBtn">
+                  <strong>📐 Dual Blueprint (.png)</strong>
+                  <small>Iso 3D + Ortho 2D + Schedule</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn" id="export3DGltfBtn">
+                  <strong>📦 glTF 2.0 Scene (.gltf)</strong>
+                  <small>Standard 3D JSON Hierarchy</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn" id="export3DGlbBtn">
+                  <strong>🧊 Binary Model (.glb)</strong>
+                  <small>Compact Single-File 3D Asset</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn" id="export3DObjBtn">
+                  <strong>📐 Wavefront Mesh (.obj)</strong>
+                  <small>Metric 1:1 CAD Geometry</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn" id="export3DCsvBtn">
+                  <strong>📊 10K Dataset (.csv)</strong>
+                  <small>All 10,000 Store Runs Table</small>
+                </button>
+                <button type="button" class="pgrun-exp-btn full-span" id="export3DReportBtn">
+                  <strong>📑 10,000-Scenario Executive Audit Report (.md)</strong>
+                  <small>Full Architectural &amp; 36-Month Survival Engineering Spec</small>
+                </button>
+              </div>
+              <div class="pgrun-exp-status tabular" id="export3DStatusText" role="status">
+                Ready · Scale 1.0 unit = 1.0m (12.0m × 9.0m Grid)
+              </div>
+              <div class="pgrun-exp-actions hidden" id="export3DActionRow">
+                <a class="pgrun-exp-action-btn primary" id="export3DDirectLink" href="#" download="rehearsal-floorplan.png">⬇ Save File</a>
+                <button type="button" class="pgrun-exp-action-btn" id="export3DCopyBtn">📋 Copy Data</button>
+              </div>
+              <div class="pgrun-exp-preview hidden" id="export3DPreviewBox">
+                <img id="export3DPreviewImg" alt="Exported 3D Floorplan High-Resolution Snapshot Preview" />
+              </div>
+              <pre class="pgrun-exp-code tabular hidden" id="export3DCodeSnippet"></pre>
             </div>
 
             <!-- RIGHT FLOATING SCENARIO & LAYOUT STACK (exact pgrun.dev .ctl stack) -->
@@ -747,7 +808,13 @@ function mountShell(): void {
                     </div>
                     <span class="tenk-insp-badge" id="inspStatusBadge">SURVIVED · RESCUED</span>
                   </div>
-                  <div class="tenk-insp-grid" style="margin-top:10px">
+                  <div class="tenk-filter-row" role="group" aria-label="Filter 10,000 Wafer Cells">
+                    <button type="button" class="tenk-filter-chip active" data-wafer-filter="all">All 10K</button>
+                    <button type="button" class="tenk-filter-chip" data-wafer-filter="rescued">★ Rescued</button>
+                    <button type="button" class="tenk-filter-chip" data-wafer-filter="top100">🏆 Top 1%</button>
+                    <button type="button" class="tenk-filter-chip" data-wafer-filter="failed">⚠ Choked</button>
+                  </div>
+                  <div class="tenk-insp-grid" style="margin-top:8px">
                     <div class="tenk-insp-metric">
                       <span>Stress Regime</span>
                       <strong class="tabular" id="inspRegime">SCN-01 · Standard Ops</strong>
@@ -765,9 +832,37 @@ function mountShell(): void {
                       <strong class="tabular" id="inspFinancial">1.18m · +$8.4k/mo</strong>
                     </div>
                   </div>
+                  <div class="tenk-spark-wrap">
+                    <canvas
+                      id="inspCashflowCanvas"
+                      width="280"
+                      height="68"
+                      role="img"
+                      aria-label="36-Month Cumulative Cashflow and Break-Even Trajectory for Selected Store Run"
+                    ></canvas>
+                  </div>
                 </div>
                 <div class="tenk-insp-reason" id="inspReasonBox">
                   Diagnosis: Rescued by Proposed Layout &amp; 16-Slot Queue Buffer
+                </div>
+                <div class="tenk-jump-row">
+                  <label for="inspJumpInput" class="tenk-jump-label">Run #</label>
+                  <input
+                    type="number"
+                    id="inspJumpInput"
+                    class="tenk-jump-input tabular"
+                    min="1"
+                    max="10000"
+                    value="1421"
+                    aria-label="Jump to Store Run Number (1 to 10,000)"
+                  />
+                  <button type="button" class="tenk-jump-btn" id="inspJumpBtn">Jump</button>
+                  <button type="button" class="tenk-jump-btn tour" id="tenKTourBtn" aria-pressed="false" title="Auto-Tour Landmark Scenarios Across 10,000 Stores">▶ Tour 10K</button>
+                </div>
+                <div class="tenk-bench-row" role="group" aria-label="Jump to Benchmark Store Runs">
+                  <button type="button" class="tenk-bench-btn" data-wafer-bench="optimal">🏆 #1 Optimal</button>
+                  <button type="button" class="tenk-bench-btn" data-wafer-bench="rescued">⚡ Top Rescued</button>
+                  <button type="button" class="tenk-bench-btn" data-wafer-bench="worst">🚨 Worst Choke</button>
                 </div>
                 <button type="button" class="tenk-load-btn" id="loadCellTo3DBtn">
                   Load Store #01,421 into 3D Floorplan Stage ↑
@@ -1380,14 +1475,32 @@ function initStudio(): void {
   });
 
   let inspectedCell: StoreRunCell | null = null;
+  let matrixSceneSnapshot = {
+    base: structuredClone(state.base), plan: structuredClone(state.plan),
+    seed: state.seed, pickupStaff: state.pickupStaff, body: state.body,
+  };
 
   function applyStoreCellToStage(cell: StoreRunCell): void {
     state.preset = cell.regimeId;
-    state.arrival = Math.max(1, Math.min(8, Math.round(cell.arrivalRatePerMin * 2) / 2));
-    state.body = cell.regimeId === "stroller" ? 1.2 : 0.65;
+    state.arrival = cell.arrivalRatePerMin;
+    state.base = structuredClone(matrixSceneSnapshot.base);
+    state.plan = structuredClone(matrixSceneSnapshot.plan);
+    state.seed = matrixSceneSnapshot.seed;
+    state.body = cell.regimeId === "stroller" ? 1.2 : matrixSceneSnapshot.body;
+    state.pickupStaff = matrixSceneSnapshot.pickupStaff;
+    state.threeMode = "proposed";
+
     $<HTMLInputElement>("arrivals").value = String(state.arrival);
     $<HTMLSelectElement>("bodyWidth").value = state.body.toFixed(2);
-    recompute();
+    $<HTMLInputElement>("pickupStaff").value = String(state.pickupStaff);
+    // Compare against the captured layout without regenerating the selected wafer.
+    recompute(false);
+
+    const padRun = String(cell.runIndex).padStart(5, "0");
+    const padFam = String(cell.familyId).padStart(3, "0");
+    $("threeInfoTitle").textContent = `PREVIEW STORE RUN #${padRun} · FAMILY #${padFam} [assumed]`;
+    $("threeInfoSub").textContent = `${cell.regimeCode} (${cell.regimeLabel}) · Wafer wait ${cell.baselineWaitSec}s → ${cell.proposedWaitSec}s [assumed]`;
+    $("threeInfoBody").textContent = `Captured layout comparison: ${spatialMetricSummary(state.results?.plan)}. Wafer economics are separate assumptions, not a verified per-cell 3D trajectory. ${cell.failureReason}.`;
   }
 
   const tenKMatrix = createTenKMatrixEngine(
@@ -1427,8 +1540,16 @@ function initStudio(): void {
         $("inspWaitDelta").textContent = `${cell.baselineWaitSec}s → ${cell.proposedWaitSec}s (${wDiff <= 0 ? `▼${Math.abs(wDiff)}s` : `+${wDiff}s`})`;
         const usdNet = (cell.monthlyNetKrwM * 0.75).toFixed(1);
         $("inspFinancial").textContent = `${cell.aisleClearanceM}m · ${Number(usdNet) >= 0 ? "+" : ""}$${usdNet}k/mo`;
-        $("inspReasonBox").textContent = `Diagnosis: ${cell.failureReason} (Payback: Mo ${cell.breakEvenMonth})`;
-        $("loadCellTo3DBtn").textContent = `Load Store #${padRun} into 3D Floorplan Stage ↑`;
+        $("inspReasonBox").textContent = `Diagnosis: ${cell.failureReason} (Payback: ${cell.breakEvenMonth === null ? "not reached within 36 months" : "Mo " + cell.breakEvenMonth}) [assumed]`;
+        $("loadCellTo3DBtn").textContent = `Compare Preview #${padRun} in Captured 3D Layout ↑`;
+        const jumpInput = document.getElementById("inspJumpInput") as HTMLInputElement | null;
+        if (jumpInput && document.activeElement !== jumpInput) {
+          jumpInput.value = String(cell.runIndex);
+        }
+        renderCellCashflowSparkline(
+          document.getElementById("inspCashflowCanvas") as HTMLCanvasElement | null,
+          cell
+        );
       },
       onSelectCell: (cell) => {
         applyStoreCellToStage(cell);
@@ -1964,26 +2085,17 @@ function initStudio(): void {
 
       tenKMatrix.setSimTime(state.t);
 
-      const wBase = Math.round(state.results.base.meanWaitSec ?? 0);
-      const wActive = Math.round(activeRes.meanWaitSec ?? 0);
-      const diff = wActive - wBase;
       const diffStr =
         state.threeMode === "baseline"
           ? "Baseline Bottleneck"
-          : diff < 0
-          ? `▼${Math.abs(diff)}s faster`
-          : `+${diff}s`;
+          : spatialWaitDelta(state.results.base, activeRes);
       $("threeLiveReadout").textContent = `${
         state.threeMode === "baseline" ? "[BEFORE]" : "[AFTER]"
-      } Wait ${wActive}s (${diffStr}) · 10m Served ${
-        activeRes.completed
-      } · Walk ${(activeRes.walkDistance ?? 0).toFixed(
-        1
-      )}m · Survived ${cat.survivedCount.toLocaleString("en-US")}/10K`;
+      } ${spatialMetricSummary(activeRes)} (${diffStr})`;
     }
   }
 
-  function recompute(): void {
+  function recompute(updateMatrix = true): void {
     window.clearTimeout(debounce);
     state.dirty = true;
     state.rev++;
@@ -2126,28 +2238,34 @@ function initStudio(): void {
       // Update Live 10,000-Store Parallel Wafer Matrix Engine
       const baseWaitVal = Math.max(25, Math.round(observed(a) ?? 96));
       const propWaitVal = Math.max(12, Math.round(observed(b) ?? 19));
-      tenKMatrix.updateConfig(
-        {
-          categoryKey: state.categoryId,
-          designKey: state.designId,
-          activeScenario: state.preset,
-          baseWaitSec: baseWaitVal,
-          propWaitSec: propWaitVal,
-          baseSurvivedTotal: Math.round(cat.survivedCount * 0.37),
-          propSurvivedTotal: cat.survivedCount,
-          scenarios: tenKClusters.map((c) => ({
-            id: c.id as Exclude<PresetKind, "custom">,
-            code: c.code,
-            label: c.label,
-            runs: c.total,
-            baseSurvived: Math.round(c.survived * 0.37),
-            propSurvived: c.survived,
+      if (updateMatrix) {
+        matrixSceneSnapshot = {
+          base: structuredClone(state.base), plan: structuredClone(state.plan),
+          seed: state.seed, pickupStaff: state.pickupStaff, body: state.body,
+        };
+        tenKMatrix.updateConfig(
+          {
+            categoryKey: state.categoryId,
+            designKey: state.designId,
+            activeScenario: state.preset,
             baseWaitSec: baseWaitVal,
             propWaitSec: propWaitVal,
-          })),
-        },
-        true
-      );
+            baseSurvivedTotal: Math.round(cat.survivedCount * 0.37),
+            propSurvivedTotal: cat.survivedCount,
+            scenarios: tenKClusters.map((c) => ({
+              id: c.id as Exclude<PresetKind, "custom">,
+              code: c.code,
+              label: c.label,
+              runs: c.total,
+              baseSurvived: Math.round(c.survived * 0.37),
+              propSurvived: c.survived,
+              baseWaitSec: baseWaitVal,
+              propWaitSec: propWaitVal,
+            })),
+          },
+          true
+        );
+      }
 
       const insightEl = $("insight");
       const d = (observed(b) ?? 0) - (observed(a) ?? 0);
@@ -2555,6 +2673,46 @@ function initStudio(): void {
       });
     });
 
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-wafer-filter]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const filter = btn.getAttribute("data-wafer-filter") as WaferFilterMode;
+        if (!filter) return;
+        document
+          .querySelectorAll("[data-wafer-filter]")
+          .forEach((el) => el.classList.remove("active"));
+        btn.classList.add("active");
+        tenKMatrix.setFilterMode(filter);
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-wafer-bench]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const kind = btn.getAttribute("data-wafer-bench") as
+          | "optimal"
+          | "rescued"
+          | "worst";
+        if (!kind) return;
+        document
+          .querySelectorAll("[data-wafer-bench]")
+          .forEach((el) => el.classList.remove("active"));
+        btn.classList.add("active");
+        tenKMatrix.selectBenchmark(kind);
+      });
+    });
+
+  $("threeOptimizeBtn").addEventListener("click", () => {
+    const best = tenKMatrix.selectBenchmark("optimal");
+    $("threeOptimizeBtn").classList.add("active");
+    if (best) {
+      applyStoreCellToStage(best);
+      threeStage.snapToIsoView();
+    }
+  });
+
   $("resweepTenKBtn").addEventListener("click", () => {
     tenKMatrix.triggerSweep();
   });
@@ -2566,12 +2724,339 @@ function initStudio(): void {
     }
   });
 
+  function setActiveCamBadge(which: "iso" | "top" | "pov"): void {
+    $("threeIsoBtn").classList.toggle("active", which === "iso");
+    $("threeTopBtn").classList.toggle("active", which === "top");
+    $("threePovBtn").classList.toggle("active", which === "pov");
+  }
+
   $("threeIsoBtn").addEventListener("click", () => {
+    setActiveCamBadge("iso");
     threeStage.snapToIsoView();
   });
 
   $("threeTopBtn").addEventListener("click", () => {
+    setActiveCamBadge("top");
     threeStage.snapToTopView();
+  });
+
+  $("threePovBtn").addEventListener("click", () => {
+    setActiveCamBadge("pov");
+    threeStage.snapToPovView();
+  });
+
+  $("inspJumpBtn").addEventListener("click", () => {
+    const val = Number($<HTMLInputElement>("inspJumpInput").value);
+    if (Number.isFinite(val)) {
+      const cell = tenKMatrix.selectRunByIndex(val);
+      if (cell) applyStoreCellToStage(cell);
+    }
+  });
+
+  $<HTMLInputElement>("inspJumpInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("inspJumpBtn").click();
+    }
+  });
+
+  let tourTimerId = 0;
+  let tourStep = 0;
+  const tourIndices = [1, 1421, 3205, 5610, 7012, 8204, 9215];
+  $("tenKTourBtn").addEventListener("click", () => {
+    const btn = $("tenKTourBtn");
+    if (tourTimerId) {
+      window.clearInterval(tourTimerId);
+      tourTimerId = 0;
+      btn.classList.remove("active");
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = "▶ Tour 10K";
+      return;
+    }
+    btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
+    btn.textContent = "⏹ Stop Tour";
+    const stepFn = () => {
+      const runIdx = tourIndices[tourStep % tourIndices.length];
+      tourStep++;
+      const cell = tenKMatrix.selectRunByIndex(runIdx);
+      if (cell) applyStoreCellToStage(cell);
+    };
+    stepFn();
+    tourTimerId = window.setInterval(stepFn, 2200);
+  });
+
+  function toggleExportDrawer(forceOpen?: boolean): void {
+    const drawer = $("threeExportDrawer");
+    const btn = $("threeExportMenuBtn");
+    const isHidden = drawer.classList.contains("hidden");
+    const shouldOpen = forceOpen !== undefined ? forceOpen : isHidden;
+    drawer.classList.toggle("hidden", !shouldOpen);
+    btn.classList.toggle("active", shouldOpen);
+    btn.setAttribute("aria-expanded", String(shouldOpen));
+  }
+
+  $("threeExportMenuBtn").addEventListener("click", () => {
+    toggleExportDrawer();
+  });
+
+  $("headerExport3DBtn").addEventListener("click", () => {
+    $("sec-3d-stage").scrollIntoView({ behavior: "smooth", block: "start" });
+    toggleExportDrawer(true);
+  });
+
+  $("closeExportDrawerBtn").addEventListener("click", () => {
+    toggleExportDrawer(false);
+  });
+
+  let currentExportUrl: string | null = null;
+  let lastExportCopyText = "";
+
+  function setDirectExportReady(opts: {
+    url: string;
+    filename: string;
+    copyText: string;
+    imagePreviewUrl?: string;
+    codeSnippet?: string;
+  }): void {
+    const directLink = $<HTMLAnchorElement>("export3DDirectLink");
+    directLink.href = opts.url;
+    directLink.download = opts.filename;
+    directLink.textContent = `⬇ Save ${opts.filename}`;
+    lastExportCopyText = opts.copyText;
+    $("export3DActionRow").classList.remove("hidden");
+
+    // Also trigger automatic browser download
+    const autoLink = document.createElement("a");
+    autoLink.href = opts.url;
+    autoLink.download = opts.filename;
+    document.body.appendChild(autoLink);
+    autoLink.click();
+    document.body.removeChild(autoLink);
+
+    if (opts.imagePreviewUrl) {
+      const previewImg = $<HTMLImageElement>("export3DPreviewImg");
+      previewImg.src = opts.imagePreviewUrl;
+      $("export3DPreviewBox").classList.remove("hidden");
+    } else {
+      $("export3DPreviewBox").classList.add("hidden");
+    }
+
+    const codeBox = $("export3DCodeSnippet");
+    if (opts.codeSnippet) {
+      codeBox.textContent = opts.codeSnippet;
+      codeBox.classList.remove("hidden");
+    } else {
+      codeBox.classList.add("hidden");
+    }
+  }
+
+  function createManagedObjectUrl(blob: Blob): string {
+    if (currentExportUrl && currentExportUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(currentExportUrl);
+    }
+    currentExportUrl = URL.createObjectURL(blob);
+    return currentExportUrl;
+  }
+
+  $("export3DCopyBtn").addEventListener("click", async () => {
+    if (!lastExportCopyText) return;
+    try {
+      await navigator.clipboard.writeText(lastExportCopyText);
+      $("export3DCopyBtn").textContent = "✓ Copied!";
+      window.setTimeout(() => {
+        $("export3DCopyBtn").textContent = "📋 Copy Data";
+      }, 1500);
+    } catch {
+      $("export3DCopyBtn").textContent = "✓ Selected";
+    }
+  });
+
+  $("export3DSnapBtn").addEventListener("click", () => {
+    const dist = getActiveDistrict();
+    const cat = getActiveCategory();
+    const des = getActiveDesign();
+    const unit = getActiveUnit();
+    const areaPy = state.customAreaPyeong ?? unit.areaPyeong;
+    const activeRes =
+      state.threeMode === "baseline"
+        ? state.results?.base
+        : state.results?.plan;
+
+    const snap = threeStage.exportHighResSnapshot({
+      title: `${dist.name} · ${cat.title} (${des.name})`,
+      subtitle: `Address: ${dist.fullAddress} · Footprint: ${areaPy}py (${(areaPy * 3.3).toFixed(1)}m²) · Mode: ${state.threeMode.toUpperCase()}`,
+      metrics: spatialMetricSummary(activeRes),
+    });
+
+    const filename = `rehearsal-3d-${state.districtId}-${state.categoryId}-${state.designId}.png`;
+    setDirectExportReady({
+      url: snap.dataUrl,
+      filename,
+      copyText: snap.dataUrl,
+      imagePreviewUrl: snap.dataUrl,
+    });
+    $("export3DStatusText").textContent = `✅ Exported Hi-Res Snapshot (${snap.width}×${snap.height}px PNG with Telemetry Title Block)`;
+  });
+
+  $("export3DBlueprintSheetBtn").addEventListener("click", () => {
+    const dist = getActiveDistrict();
+    const cat = getActiveCategory();
+    const des = getActiveDesign();
+    const unit = getActiveUnit();
+    const areaPy = state.customAreaPyeong ?? unit.areaPyeong;
+    const activeRes =
+      state.threeMode === "baseline"
+        ? state.results?.base
+        : state.results?.plan;
+    const activeScene =
+      state.threeMode === "baseline" ? state.base : state.plan;
+
+    const sheet = threeStage.exportMultiViewBlueprintSheet({
+      title: `${dist.name} · ${cat.title} (${des.name})`,
+      subtitle: `Address: ${dist.fullAddress} · Footprint: ${areaPy}py (${(areaPy * 3.3).toFixed(1)}m²) · Mode: ${state.threeMode.toUpperCase()}`,
+      metrics: spatialMetricSummary(activeRes),
+      fixtures: activeScene.objects.map((o) => ({
+        id: o.id,
+        label: o.label || o.koLabel || o.id,
+        x: o.x,
+        y: o.y,
+        w: o.w,
+        h: o.h,
+      })),
+    });
+
+    const filename = `rehearsal-blueprint-sheet-${state.districtId}-${state.categoryId}-${state.designId}.png`;
+    setDirectExportReady({
+      url: sheet.dataUrl,
+      filename,
+      copyText: sheet.dataUrl,
+      imagePreviewUrl: sheet.dataUrl,
+    });
+    $("export3DStatusText").textContent = `✅ Exported Dual Blueprint Sheet (${sheet.width}×${sheet.height}px Iso 3D + Ortho 2D + Fixture Schedule)`;
+  });
+
+  $("export3DGltfBtn").addEventListener("click", async () => {
+    try {
+      $("export3DStatusText").textContent = "⏳ Building glTF 2.0 scene hierarchy...";
+      const res = await threeStage.exportGLTF(false);
+      const filename = `rehearsal-floorplan-${state.categoryId}-${state.designId}.gltf`;
+      const url = createManagedObjectUrl(res.blob);
+      const fullJson = await res.blob.text();
+      setDirectExportReady({
+        url,
+        filename,
+        copyText: fullJson,
+        codeSnippet: res.textPreview,
+      });
+      const kb = (res.sizeBytes / 1024).toFixed(1);
+      $("export3DStatusText").textContent = `✅ Exported ${filename} (${kb} KB · glTF 2.0 Scene)`;
+    } catch (err) {
+      $("export3DStatusText").textContent = `⚠️ glTF export failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  });
+
+  $("export3DGlbBtn").addEventListener("click", async () => {
+    try {
+      $("export3DStatusText").textContent = "⏳ Packing binary GLB 3D asset...";
+      const res = await threeStage.exportGLTF(true);
+      const filename = `rehearsal-floorplan-${state.categoryId}-${state.designId}.glb`;
+      const url = createManagedObjectUrl(res.blob);
+      setDirectExportReady({
+        url,
+        filename,
+        copyText: res.textPreview || filename,
+        codeSnippet: res.textPreview,
+      });
+      const kb = (res.sizeBytes / 1024).toFixed(1);
+      $("export3DStatusText").textContent = `✅ Exported ${filename} (${kb} KB · Binary GLB)`;
+    } catch (err) {
+      $("export3DStatusText").textContent = `⚠️ GLB export failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  });
+
+  $("export3DObjBtn").addEventListener("click", () => {
+    try {
+      const res = threeStage.exportOBJ();
+      const filename = `rehearsal-floorplan-${state.categoryId}-${state.designId}.obj`;
+      const url = createManagedObjectUrl(res.blob);
+      setDirectExportReady({
+        url,
+        filename,
+        copyText: res.fullText,
+        codeSnippet: res.textPreview,
+      });
+      const kb = (res.sizeBytes / 1024).toFixed(1);
+      $("export3DStatusText").textContent = `✅ Exported ${filename} (${kb} KB · ${res.vertexCount.toLocaleString("en-US")} vertices)`;
+    } catch (err) {
+      $("export3DStatusText").textContent = `⚠️ OBJ export failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  });
+
+  $("export3DCsvBtn").addEventListener("click", () => {
+    const cells = tenKMatrix.getCells();
+    const csvText = exportTenKCellsCsv(cells);
+    const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+    const filename = `rehearsal-10000-scenarios-${state.districtId}-${state.categoryId}-${state.designId}.csv`;
+    const url = createManagedObjectUrl(blob);
+    const previewLines = csvText.split("\n").slice(0, 8).join("\n") + "\n...";
+    setDirectExportReady({
+      url,
+      filename,
+      copyText: csvText,
+      codeSnippet: previewLines,
+    });
+    const kb = (blob.size / 1024).toFixed(1);
+    $("export3DStatusText").textContent = `✅ Exported ${filename} (${kb} KB · 10,000 Store Runs CSV Dataset)`;
+  });
+
+  $("export3DReportBtn").addEventListener("click", () => {
+    const dist = getActiveDistrict();
+    const cat = getActiveCategory();
+    const des = getActiveDesign();
+    const unit = getActiveUnit();
+    const areaPy = state.customAreaPyeong ?? unit.areaPyeong;
+    const cells = tenKMatrix.getCells();
+    const benches = findBenchmarkStoreCells(cells);
+    const engineStatus = $("backendEngineStatus")?.textContent || "Not verified";
+
+    const mdLines = [
+      `# REA · A Thousand Stores — Spatial Preview & Separate Financial Engine Report`,
+      ``,
+      `- **Generated UTC**: ${new Date().toISOString()}`,
+      `- **Commercial District**: ${dist.name} (${dist.fullAddress})`,
+      `- **Store Category & Concept**: ${cat.title} — ${des.name} (${areaPy}py / ${(areaPy * 3.3).toFixed(1)}m²)`,
+      `- **36-Month Engine Verification**: ${engineStatus}`,
+      `- **Scope**: Spatial wafer economics and representative trajectory packets are [assumed], not 10,000 independently verified 3D runs. Financial engine results do not certify these layouts.`,
+      ``,
+      `## 1. Spatial Flow & Queue Bottleneck Summary`,
+      `- **Baseline Layout**: ${spatialMetricSummary(state.results?.base)}`,
+      `- **Proposed Layout**: ${spatialMetricSummary(state.results?.plan)} (${spatialWaitDelta(state.results?.base, state.results?.plan)})`,
+      `- **Wafer Preview [assumed]**: ${cells.filter((cell) => cell.proposedSurvived).length.toLocaleString("en-US")} / ${cells.length.toLocaleString("en-US")} cells pass the illustrative model`,
+      ``,
+      `## 2. Assumed Benchmark Cells from 100×100 Wafer Matrix`,
+      `- **#1 Optimal Store Run**: Run \`#${String(benches.optimal.runIndex).padStart(5, "0")}\` (Family #${benches.optimal.familyId}, Variant #${benches.optimal.variantId}) — Wait \`${benches.optimal.proposedWaitSec}s\`, Clearance \`${benches.optimal.aisleClearanceM}m\`, Payback \`Mo ${benches.optimal.breakEvenMonth}\``,
+      `- **Top Rescued Store Run**: Run \`#${String(benches.rescued.runIndex).padStart(5, "0")}\` (Family #${benches.rescued.familyId}, Variant #${benches.rescued.variantId}) — Wait Reduced \`${benches.rescued.baselineWaitSec}s → ${benches.rescued.proposedWaitSec}s\`, Diagnosis: ${benches.rescued.failureReason}`,
+      `- **Worst Bottleneck Run**: Run \`#${String(benches.worst.runIndex).padStart(5, "0")}\` (Family #${benches.worst.familyId}, Variant #${benches.worst.variantId}) — Wait \`${benches.worst.proposedWaitSec}s\`, Clearance \`${benches.worst.aisleClearanceM}m\`, Failure: ${benches.worst.failureReason}`,
+      ``,
+      `## 3. 3D CAD Fixture Coordinates (12.0m × 9.0m Metric Grid)`,
+      ...state.plan.objects.map(
+        (o) =>
+          `- **${o.label || o.koLabel || o.id}** (\`${o.id}\`): Position \`X=${o.x.toFixed(1)}m, Y=${o.y.toFixed(1)}m\` · Footprint \`${o.w.toFixed(1)}m × ${o.h.toFixed(1)}m\``
+      ),
+      ``,
+    ];
+    const reportText = mdLines.join("\n");
+    const blob = new Blob([reportText], { type: "text/markdown;charset=utf-8" });
+    const filename = `rehearsal-10k-audit-${state.districtId}-${state.categoryId}.md`;
+    const url = createManagedObjectUrl(blob);
+    setDirectExportReady({
+      url,
+      filename,
+      copyText: reportText,
+      codeSnippet: mdLines.slice(0, 14).join("\n") + "\n...",
+    });
+    $("export3DStatusText").textContent = `✅ Exported ${filename} (10,000-Scenario Executive Audit Report)`;
   });
 
   $("threeThemeBtn").addEventListener("click", () => {
@@ -2613,7 +3098,11 @@ function initStudio(): void {
       syncControls();
       drawAll();
     } else if (k === "i") {
+      setActiveCamBadge("iso");
       threeStage.snapToIsoView();
+    } else if (k === "v") {
+      setActiveCamBadge("pov");
+      threeStage.snapToPovView();
     } else if (k === "t") {
       const nextTheme = threeStage.toggleTheme();
       $("pgrunStageShell").setAttribute("data-stage-theme", nextTheme);
@@ -3137,9 +3626,15 @@ initStudio();
 
 async function syncWithBackendEngine(rerun = false): Promise<void> {
   const status = document.getElementById("backendEngineStatus");
-  const button = document.getElementById("refreshBackendEngineBtn") as HTMLButtonElement | null;
+  const button = document.getElementById(
+    "refreshBackendEngineBtn"
+  ) as HTMLButtonElement | null;
   if (button) button.disabled = true;
-  if (status) status.textContent = rerun ? "Running the 36-month engine…" : "Loading engine results…";
+  if (status) {
+    status.textContent = rerun
+      ? "Running the 36-month engine…"
+      : "Loading engine results…";
+  }
   try {
     const res = await fetch(rerun ? "/api/rehearse" : "/api/summary", {
       method: rerun ? "POST" : "GET",
@@ -3150,15 +3645,29 @@ async function syncWithBackendEngine(rerun = false): Promise<void> {
     });
     if (!res.ok) throw new Error("Engine returned HTTP " + res.status);
     const summary = summarizeBackendRun(await res.json());
-    if (status) status.textContent =
-      `36-month engine [computed · ${summary.replay ? "cached replay" : "fresh run"}]: ${summary.survived.toLocaleString("en-US")} / ${summary.total.toLocaleString("en-US")} completed scenarios · ${summary.runId}`;
+    if (status) {
+      status.textContent = `36-month engine [computed · ${
+        summary.replay ? "cached replay" : "fresh run"
+      }]: ${summary.survived.toLocaleString(
+        "en-US"
+      )} / ${summary.total.toLocaleString("en-US")} completed scenarios · ${
+        summary.runId
+      }`;
+    }
   } catch {
-    if (status) status.textContent = "36-month backend unavailable. Spatial preview remains illustrative; no live engine result is claimed.";
+    if (status) {
+      status.textContent =
+        "36-month backend unavailable. Spatial preview remains illustrative; no live engine result is claimed.";
+    }
   } finally {
     if (button) button.disabled = false;
   }
 }
-document.getElementById("refreshBackendEngineBtn")?.addEventListener("click", () => {
-  void syncWithBackendEngine(true);
-});
+
+document
+  .getElementById("refreshBackendEngineBtn")
+  ?.addEventListener("click", () => {
+    void syncWithBackendEngine(true);
+  });
+
 void syncWithBackendEngine();

@@ -1112,9 +1112,9 @@ button:disabled {
   top: 14px;
   left: 16px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
   pointer-events: none;
   z-index: 2;
 }
@@ -1194,7 +1194,7 @@ button:disabled {
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   z-index: 2;
 }
 
@@ -1236,10 +1236,10 @@ button:disabled {
   background: rgba(250, 250, 249, 0.94);
   color: #334155;
   border-radius: 999px;
-  padding: 5px 11px;
-  font-size: 11px;
+  padding: 4px 9px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   cursor: pointer;
 }
 
@@ -1408,12 +1408,16 @@ button:disabled {
 
 .pgrun-readout {
   font-weight: 700;
+  font-size: 10.5px;
   color: #181c20;
   background: rgba(250, 250, 249, 0.94);
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 5px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   white-space: nowrap;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pgrun-stage-shell[data-stage-theme="dark"] .pgrun-readout {
@@ -1446,9 +1450,22 @@ button:disabled {
 @media (max-width: 768px) {
   .rea-header-inner {
     height: auto;
-    padding: 10px 16px;
+    padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
+  }
+  .rea-header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .rea-header-actions button {
+    flex: 1 1 auto;
+    font-size: 11px;
+    padding: 6px 8px;
+    text-align: center;
+    justify-content: center;
   }
   .rea-tagline,
   .rea-nav {
@@ -1473,7 +1490,8 @@ button:disabled {
   .pgrun-hud-top-right {
     top: 46px;
     left: 10px;
-    right: auto;
+    right: 10px;
+    flex-wrap: wrap;
   }
   .pgrun-ctl-stack {
     width: 154px;
@@ -1777,7 +1795,339 @@ button:disabled {
   background: #c2410c;
 }
 
+/* ==========================================================================
+   3D FLOORPLAN DESIGN DOCUMENTATION EXPORT DRAWER (PNG / GLTF / GLB / OBJ)
+   ========================================================================== */
+.pgrun-export-drawer {
+  position: absolute;
+  top: 50px;
+  right: 222px;
+  left: auto;
+  width: 348px;
+  max-width: calc(100% - 28px);
+  max-height: calc(100% - 102px);
+  overflow-y: auto;
+  background: rgba(18, 19, 22, 0.96);
+  border: 1px solid #ea580c;
+  border-radius: 12px;
+  padding: 13px 14px;
+  color: #f4f4f5;
+  z-index: 8;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  font-family: "JetBrains Mono", "Plus Jakarta Sans", monospace;
+}
 
+.pgrun-export-drawer.hidden {
+  display: none;
+}
+
+.pgrun-exp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #27272a;
+}
+
+.pgrun-exp-head strong {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fb923c;
+  text-transform: uppercase;
+}
+
+.pgrun-exp-close {
+  border: 1px solid #3f3f46;
+  background: #27272a;
+  color: #e4e4e7;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pgrun-exp-close:hover {
+  border-color: #ea580c;
+  color: #ffffff;
+}
+
+.pgrun-exp-desc {
+  margin: 8px 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a1a1aa;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.pgrun-exp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.pgrun-exp-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  color: #fafafa;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.pgrun-exp-btn:hover {
+  border-color: #ea580c;
+  background: #27272a;
+}
+
+.pgrun-exp-btn.primary {
+  border-color: #ea580c;
+  background: rgba(234, 88, 12, 0.16);
+}
+
+.pgrun-exp-btn.primary:hover {
+  background: #ea580c;
+}
+
+.pgrun-exp-btn strong {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pgrun-exp-btn small {
+  font-size: 9.5px;
+  color: #a1a1aa;
+}
+
+.pgrun-exp-btn.primary:hover small {
+  color: #ffedd5;
+}
+
+.pgrun-exp-status {
+  margin-top: 9px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: #18181b;
+  border: 1px solid #27272a;
+  font-size: 10.5px;
+  color: #fed7aa;
+  line-height: 1.4;
+}
+
+.pgrun-exp-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.pgrun-exp-actions.hidden {
+  display: none;
+}
+
+.pgrun-exp-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #27272a;
+  color: #fafafa;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.pgrun-exp-action-btn.primary {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+}
+
+.pgrun-exp-action-btn:hover {
+  border-color: #fb923c;
+}
+
+.pgrun-exp-preview {
+  margin-top: 8px;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid #3f3f46;
+  background: #09090b;
+}
+
+.pgrun-exp-preview.hidden {
+  display: none;
+}
+
+.pgrun-exp-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pgrun-exp-code {
+  margin: 8px 0 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: #09090b;
+  border: 1px solid #27272a;
+  color: #a1a1aa;
+  font-size: 10px;
+  line-height: 1.4;
+  max-height: 110px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.pgrun-exp-btn.full-span {
+  grid-column: 1 / -1;
+  border-color: rgba(234, 88, 12, 0.55);
+  background: rgba(234, 88, 12, 0.1);
+}
+
+.pgrun-exp-btn.full-span:hover {
+  background: rgba(234, 88, 12, 0.24);
+  border-color: #ea580c;
+}
+
+.tenk-filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.tenk-filter-chip {
+  border: 1px solid #27272a;
+  background: #121316;
+  color: #a1a1aa;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.tenk-filter-chip:hover {
+  border-color: #52525b;
+  color: #f4f4f5;
+}
+
+.tenk-filter-chip.active {
+  border-color: #ea580c;
+  background: rgba(234, 88, 12, 0.18);
+  color: #fb923c;
+}
+
+.tenk-bench-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.tenk-bench-btn {
+  border: 1px solid #3f3f46;
+  background: #121316;
+  color: #e4e4e7;
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.tenk-bench-btn:hover,
+.tenk-bench-btn.active {
+  border-color: #ea580c;
+  background: rgba(234, 88, 12, 0.2);
+  color: #fb923c;
+}
+
+.tenk-spark-wrap {
+  margin-top: 8px;
+  border-radius: 6px;
+  border: 1px solid #27272a;
+  background: #121316;
+  overflow: hidden;
+}
+
+#inspCashflowCanvas {
+  display: block;
+  width: 100%;
+  height: 68px;
+}
+
+.tenk-jump-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tenk-jump-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+.tenk-jump-input {
+  width: 72px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #121316;
+  color: #fafafa;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tenk-jump-btn {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  color: #e4e4e7;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tenk-jump-btn:hover,
+.tenk-jump-btn.active {
+  border-color: #ea580c;
+  background: rgba(234, 88, 12, 0.22);
+  color: #fb923c;
+}
+
+.tenk-jump-btn.tour {
+  flex: 1;
+  text-align: center;
+}
 
 /* Keep the engine evidence distinct from illustrative spatial telemetry. */
 .tenk-engine-note,
@@ -1787,23 +2137,50 @@ button:disabled {
   overflow-wrap: anywhere;
   margin: 8px 0;
 }
-.tenk-engine-status { font-family: "JetBrains Mono", monospace; }
+.tenk-engine-status {
+  font-family: "JetBrains Mono", monospace;
+}
 
 /* These overrides follow the matrix base rules so narrow screens stay usable. */
 @media (max-width: 1100px) {
-  .tenk-body { grid-template-columns: minmax(0, 1fr); }
-  .tenk-kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tenk-mode-tabs { flex-wrap: wrap; }
-  .tenk-canvas-wrap, .tenk-inspector, .tenk-kpi-card { min-width: 0; }
+  .tenk-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tenk-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tenk-mode-tabs {
+    flex-wrap: wrap;
+  }
+  .tenk-canvas-wrap,
+  .tenk-inspector,
+  .tenk-kpi-card {
+    min-width: 0;
+  }
 }
+
 @media (max-width: 768px) {
-  .tenk-command-shell { padding: 14px 10px; }
-  .tenk-insp-head { flex-wrap: wrap; }
-  #tenKWaferCanvas { scroll-margin-top: 160px; }
-  .rea-env-controls { flex-wrap: wrap; }
+  .tenk-command-shell {
+    padding: 14px 10px;
+  }
+  .tenk-insp-head {
+    flex-wrap: wrap;
+  }
+  #tenKWaferCanvas {
+    scroll-margin-top: 160px;
+  }
+  .rea-env-controls {
+    flex-wrap: wrap;
+  }
   .pgrun-readout {
     max-width: calc(100% - 20px);
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+  .pgrun-export-drawer {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
   }
 }

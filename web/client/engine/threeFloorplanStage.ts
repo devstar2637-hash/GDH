@@ -2,12 +2,15 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import { OBJExporter } from "three/addons/exporters/OBJExporter.js";
 import {
   sample,
   type Scene,
   type SceneObject,
   type SimResult,
 } from "./rehearsalCore.ts";
+import { entranceFixtureGap, spatialWaitLabel } from "./spatialTelemetry.ts";
 
 export interface ThreeStageConfig {
   container: HTMLElement;
@@ -1064,15 +1067,39 @@ export class ThreeFloorplanStage {
       ctx.restore();
     }
 
+    // Architectural CAD metric scale ticks along top edge (0m..12m)
+    ctx.save();
+    ctx.strokeStyle =
+      this.theme === "dark"
+        ? "rgba(255,255,255,0.22)"
+        : "rgba(15,23,42,0.22)";
     ctx.fillStyle =
       this.theme === "dark"
-        ? "rgba(255,255,255,0.42)"
-        : "rgba(15,23,42,0.48)";
+        ? "rgba(255,255,255,0.46)"
+        : "rgba(15,23,42,0.52)";
+    ctx.lineWidth = 1.5;
+    ctx.font = "700 13px 'JetBrains Mono', monospace";
+    for (let m = 1; m < 12; m++) {
+      const tx = (m / 12) * w;
+      ctx.beginPath();
+      ctx.moveTo(tx, 0);
+      ctx.lineTo(tx, 12);
+      ctx.stroke();
+      if (m % 2 === 0) {
+        ctx.fillText(`${m}.0m`, tx + 4, 15);
+      }
+    }
+    ctx.restore();
+
+    ctx.fillStyle =
+      this.theme === "dark"
+        ? "rgba(255,255,255,0.48)"
+        : "rgba(15,23,42,0.54)";
     ctx.font = "700 18px 'JetBrains Mono', monospace";
     ctx.fillText(
       `FLOORPLATE · 12.0m × 9.0m (${payload.pyeong}PY) · ${payload.districtName.toUpperCase()}`,
       34,
-      38
+      42
     );
 
     ctx.fillText(
@@ -1081,12 +1108,53 @@ export class ThreeFloorplanStage {
       515
     );
 
+    // Entrance-to-fixture gap is geometry, not the minimum navigable corridor width.
+    const dispObj =
+      payload.scene.objects.find((o) => o.id === "display") ||
+      payload.scene.objects[0];
     const ent = payload.scene.entrance;
     const ext = payload.scene.exit;
     const entPx = (ent.x / 12) * w;
     const entPy = (ent.y / 9) * h;
     const extPx = (ext.x / 12) * w;
     const extPy = (ext.y / 9) * h;
+
+    if (dispObj) {
+      const dispCenterX = dispObj.x + dispObj.w * 0.5;
+      const dispBottomY = dispObj.y + dispObj.h;
+      const clearanceM = entranceFixtureGap(payload.scene, dispObj);
+      const dPx = (dispCenterX / 12) * w;
+      const dPy = (dispBottomY / 9) * h;
+
+      ctx.save();
+      ctx.strokeStyle = payload.result.routeBlocked ? "#dc2626" : "#ea580c";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(entPx, entPy - 18);
+      ctx.lineTo(dPx, dPy + 10);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const midX = (entPx + dPx) * 0.5;
+      const midY = (entPy - 18 + dPy + 10) * 0.5;
+      const badgeText = payload.result.routeBlocked
+        ? `ROUTE BLOCKED · ENTRANCE GAP ${clearanceM.toFixed(2)}m`
+        : `ENTRANCE-DISPLAY GAP ${clearanceM.toFixed(2)}m [geometric]`;
+      ctx.font = "700 15px 'JetBrains Mono', monospace";
+      const tw = ctx.measureText(badgeText).width + 18;
+      ctx.fillStyle = payload.result.routeBlocked
+        ? "rgba(185, 28, 28, 0.92)"
+        : "rgba(24, 24, 27, 0.88)";
+      ctx.fillRect(midX - tw * 0.5, midY - 13, tw, 26);
+      ctx.strokeStyle = payload.result.routeBlocked ? "#fca5a5" : "#ea580c";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(midX - tw * 0.5, midY - 13, tw, 26);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.fillText(badgeText, midX, midY + 5);
+      ctx.restore();
+    }
 
     ctx.fillStyle = this.accentHex;
     ctx.font = "700 20px 'JetBrains Mono', sans-serif";
@@ -1281,7 +1349,7 @@ export class ThreeFloorplanStage {
     this.orderCounterGroup.userData = {
       partKey: "order-pos",
       title: `ORDER & POS COUNTER · STAFF ${payload.orderStaff}`,
-      subtitle: `Mean Wait ${Math.round(payload.result.meanWaitSec ?? 0)}s · P90 Wait ${Math.round(payload.result.p90WaitSec ?? 0)}s`,
+      subtitle: `Wait ${spatialWaitLabel(payload.result)} · P90 ${payload.result.p90WaitSec === null ? "N/A" : Math.round(payload.result.p90WaitSec) + "s"}`,
       body: `Primary point-of-sale counter where guests place orders. When arrival rate (${payload.arrivalRatePerMin.toFixed(1)}/min) exceeds service throughput, the 16-slot LED buffer illuminates in Signal Orange.`,
     };
 
@@ -1341,7 +1409,7 @@ export class ThreeFloorplanStage {
         `staff ${payload.orderStaff}/2`,
         Math.min(24, frame.orderQueue * 3 + 4),
         24,
-        `queue ${frame.orderQueue}  ·  wait ${Math.round(payload.result.meanWaitSec ?? 0)}s`,
+        `queue ${frame.orderQueue}  ·  wait ${spatialWaitLabel(payload.result)}`,
         frame.orderQueue >= 3
       );
       this.orderFrontTex.needsUpdate = true;
@@ -1627,6 +1695,8 @@ export class ThreeFloorplanStage {
   }
 
   public snapToIsoView(): void {
+    this.controls.minDistance = 6.2;
+    this.controls.maxPolarAngle = Math.PI * 0.37;
     this.camAnim = {
       targetPos: new THREE.Vector3(-9.8, 11.0, 11.4),
       targetLook: new THREE.Vector3(0, 0.25, 0),
@@ -1634,9 +1704,281 @@ export class ThreeFloorplanStage {
   }
 
   public snapToTopView(): void {
+    this.controls.minDistance = 6.2;
+    this.controls.maxPolarAngle = Math.PI * 0.37;
     this.camAnim = {
       targetPos: new THREE.Vector3(0, 18.2, 0.01),
       targetLook: new THREE.Vector3(0, 0, 0),
+    };
+  }
+
+  public snapToPovView(): void {
+    this.controls.minDistance = 1.8;
+    this.controls.maxPolarAngle = Math.PI * 0.46;
+    this.camAnim = {
+      targetPos: new THREE.Vector3(-1.4, 2.35, 5.4),
+      targetLook: new THREE.Vector3(0.4, 0.65, -2.2),
+    };
+  }
+
+  public exportHighResSnapshot(meta: {
+    title: string;
+    subtitle: string;
+    metrics: string;
+  }): { dataUrl: string; width: number; height: number } {
+    const prevSize = new THREE.Vector2();
+    this.renderer.getSize(prevSize);
+    const prevPr = this.renderer.getPixelRatio();
+
+    const snapW = 1920;
+    const snapH = 1080;
+    const sheetH = 1200; // +120px architectural documentation title block
+    const snapAspect = snapW / snapH;
+
+    this.perspCam.aspect = snapAspect;
+    this.perspCam.updateProjectionMatrix();
+
+    const frustumH = 11.2;
+    this.orthoCam.left = (-frustumH * snapAspect) / 2;
+    this.orthoCam.right = (frustumH * snapAspect) / 2;
+    this.orthoCam.top = frustumH / 2;
+    this.orthoCam.bottom = -frustumH / 2;
+    this.orthoCam.updateProjectionMatrix();
+
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(snapW, snapH, false);
+    this.renderer.render(this.scene3d, this.activeCam);
+
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = snapW;
+    outCanvas.height = sheetH;
+    const ctx = outCanvas.getContext("2d")!;
+
+    // Draw 3D WebGL render
+    ctx.drawImage(this.renderer.domElement, 0, 0, snapW, snapH);
+
+    // Draw architectural documentation title block at bottom (120px height)
+    ctx.fillStyle = "#121316";
+    ctx.fillRect(0, snapH, snapW, sheetH - snapH);
+
+    // Top orange accent rule on title block
+    ctx.fillStyle = "#ea580c";
+    ctx.fillRect(0, snapH, snapW, 4);
+
+    // Left brand & store title
+    ctx.fillStyle = "#fb923c";
+    ctx.font = '700 15px "JetBrains Mono", monospace';
+    ctx.fillText("REA · A THOUSAND STORES — 3D SPATIAL DESIGN & STRESS-TEST SHEET", 32, snapH + 34);
+
+    ctx.fillStyle = "#fafafa";
+    ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(meta.title, 32, snapH + 66);
+
+    ctx.fillStyle = "#a1a1aa";
+    ctx.font = '600 14px "JetBrains Mono", monospace';
+    ctx.fillText(meta.subtitle, 32, snapH + 94);
+
+    // Right telemetry readout block
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#ea580c";
+    ctx.font = '700 15px "JetBrains Mono", monospace';
+    ctx.fillText("SPATIAL MODEL · WAFER / SWARM PREVIEW [ASSUMED]", snapW - 32, snapH + 40);
+
+    ctx.fillStyle = "#f4f4f5";
+    ctx.font = '700 16px "JetBrains Mono", monospace';
+    ctx.fillText(meta.metrics, snapW - 32, snapH + 72);
+
+    ctx.fillStyle = "#71717a";
+    ctx.font = '500 12px "JetBrains Mono", monospace';
+    ctx.fillText(`SCALE: 12.0m × 9.0m METRIC GRID · EXPORTED ${new Date().toISOString().slice(0, 19).replace("T", " ")} UTC`, snapW - 32, snapH + 96);
+
+    const dataUrl = outCanvas.toDataURL("image/png");
+
+    // Restore original viewport size & aspect ratio seamlessly
+    this.renderer.setPixelRatio(prevPr);
+    this.resize();
+    this.renderer.render(this.scene3d, this.activeCam);
+
+    return { dataUrl, width: snapW, height: sheetH };
+  }
+
+  public exportMultiViewBlueprintSheet(meta: {
+    title: string;
+    subtitle: string;
+    metrics: string;
+    fixtures: Array<{ id: string; label: string; x: number; y: number; w: number; h: number }>;
+  }): { dataUrl: string; width: number; height: number } {
+    const prevPr = this.renderer.getPixelRatio();
+    const prevCamPos = this.perspCam.position.clone();
+    const prevTarget = this.controls.target.clone();
+
+    const sheetW = 1920;
+    const sheetH = 1280;
+    const panelW = 944;
+    const panelH = 980;
+    const panelAspect = panelW / panelH;
+
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = sheetW;
+    outCanvas.height = sheetH;
+    const ctx = outCanvas.getContext("2d")!;
+
+    ctx.fillStyle = "#09090b";
+    ctx.fillRect(0, 0, sheetW, sheetH);
+
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(panelW, panelH, false);
+
+    // 1. Render Left Panel: 360° Isometric Perspective View
+    this.perspCam.aspect = panelAspect;
+    this.perspCam.position.set(-11.4, 12.6, 13.2);
+    this.perspCam.lookAt(0, 0.25, 0);
+    this.perspCam.updateProjectionMatrix();
+    this.renderer.render(this.scene3d, this.perspCam);
+    ctx.drawImage(this.renderer.domElement, 12, 52, panelW, panelH);
+
+    // 2. Render Right Panel: Top-Down 2D Orthographic CAD View
+    const frustumH = 14.2;
+    this.orthoCam.left = (-frustumH * panelAspect) / 2;
+    this.orthoCam.right = (frustumH * panelAspect) / 2;
+    this.orthoCam.top = frustumH / 2;
+    this.orthoCam.bottom = -frustumH / 2;
+    this.orthoCam.position.set(0, 18.2, 0.01);
+    this.orthoCam.lookAt(0, 0, 0);
+    this.orthoCam.updateProjectionMatrix();
+    this.renderer.render(this.scene3d, this.orthoCam);
+    ctx.drawImage(this.renderer.domElement, 964, 52, panelW, panelH);
+
+    // Panel Borders & Top Viewport Headers
+    ctx.strokeStyle = "#27272a";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(12, 52, panelW, panelH);
+    ctx.strokeRect(964, 52, panelW, panelH);
+
+    ctx.fillStyle = "#fb923c";
+    ctx.font = '700 14px "JetBrains Mono", monospace';
+    ctx.textAlign = "left";
+    ctx.fillText("VIEW A · 360° ISOMETRIC SPATIAL FLOW & 10K SWARM", 20, 34);
+    ctx.fillText("VIEW B · ORTHOGRAPHIC 2D CAD METRIC PLAN (12.0m × 9.0m)", 972, 34);
+
+    // Bottom Architectural Engineering Title Block & Fixture Coordinate Schedule
+    const blockY = 1044;
+    ctx.fillStyle = "#121316";
+    ctx.fillRect(0, blockY, sheetW, sheetH - blockY);
+    ctx.fillStyle = "#ea580c";
+    ctx.fillRect(0, blockY, sheetW, 4);
+
+    ctx.fillStyle = "#fb923c";
+    ctx.font = '700 14px "JetBrains Mono", monospace';
+    ctx.fillText("REA · A THOUSAND STORES — DUAL-VIEWPORT ARCHITECTURAL CAD BLUEPRINT SHEET", 32, blockY + 34);
+
+    ctx.fillStyle = "#fafafa";
+    ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(meta.title, 32, blockY + 68);
+
+    ctx.fillStyle = "#a1a1aa";
+    ctx.font = '600 13.5px "JetBrains Mono", monospace';
+    ctx.fillText(meta.subtitle, 32, blockY + 96);
+
+    ctx.fillStyle = "#f4f4f5";
+    ctx.font = '700 14.5px "JetBrains Mono", monospace';
+    ctx.fillText(meta.metrics, 32, blockY + 126);
+
+    // Fixture Coordinate Schedule Table on the right of Title Block
+    ctx.fillStyle = "#fb923c";
+    ctx.font = '700 13px "JetBrains Mono", monospace';
+    ctx.fillText("3D FIXTURE COORDINATE SCHEDULE (1 UNIT = 1.0 METER)", 1020, blockY + 34);
+
+    ctx.fillStyle = "#d4d4d8";
+    ctx.font = '500 12.5px "JetBrains Mono", monospace';
+    meta.fixtures.slice(0, 6).forEach((fx, idx) => {
+      const col = idx < 3 ? 1020 : 1460;
+      const rowY = blockY + 62 + (idx % 3) * 26;
+      ctx.fillText(
+        `• ${fx.label.slice(0, 18).padEnd(18, " ")} X:${fx.x.toFixed(1)}m Y:${fx.y.toFixed(1)}m (${fx.w.toFixed(1)}×${fx.h.toFixed(1)}m)`,
+        col,
+        rowY
+      );
+    });
+
+    ctx.fillStyle = "#71717a";
+    ctx.font = '500 12px "JetBrains Mono", monospace';
+    ctx.fillText(
+      `SPATIAL PREVIEW [ASSUMED] · FINANCIAL ENGINE VERIFIED SEPARATELY · EXPORTED ${new Date().toISOString().slice(0, 19).replace("T", " ")} UTC`,
+      32,
+      blockY + 162
+    );
+
+    const dataUrl = outCanvas.toDataURL("image/png");
+
+    // Restore original camera and viewport state
+    this.perspCam.position.copy(prevCamPos);
+    this.controls.target.copy(prevTarget);
+    this.perspCam.lookAt(prevTarget);
+    this.renderer.setPixelRatio(prevPr);
+    this.resize();
+    this.renderer.render(this.scene3d, this.activeCam);
+
+    return { dataUrl, width: sheetW, height: sheetH };
+  }
+
+  public async exportGLTF(binary = false): Promise<{
+    blob: Blob;
+    ext: "gltf" | "glb";
+    sizeBytes: number;
+    textPreview?: string;
+  }> {
+    const exporter = new GLTFExporter();
+    const result = await exporter.parseAsync(this.rootGroup, {
+      binary,
+      onlyVisible: true,
+    });
+    if (result instanceof ArrayBuffer) {
+      const blob = new Blob([result], { type: "model/gltf-binary" });
+      return {
+        blob,
+        ext: "glb",
+        sizeBytes: blob.size,
+        textPreview: `GLB Binary Container (glTF 2.0) · ${blob.size.toLocaleString("en-US")} bytes · Magic: 0x46546C67 ("glTF")`,
+      };
+    }
+    const jsonText = JSON.stringify(result, null, 2);
+    const blob = new Blob([jsonText], { type: "model/gltf+json;charset=utf-8" });
+    return {
+      blob,
+      ext: "gltf",
+      sizeBytes: blob.size,
+      textPreview: jsonText.slice(0, 720) + (jsonText.length > 720 ? "\n  ...\n}" : ""),
+    };
+  }
+
+  public exportOBJ(): {
+    blob: Blob;
+    ext: "obj";
+    sizeBytes: number;
+    vertexCount: number;
+    textPreview: string;
+    fullText: string;
+  } {
+    const exporter = new OBJExporter();
+    const objContent = exporter.parse(this.rootGroup);
+    const header = [
+      "# REA · A Thousand Stores — 3D Floorplan CAD Mesh (.OBJ)",
+      "# Metric Scale: 1 unit = 1.0 meter (12.0m x 9.0m store footprint)",
+      `# Exported: ${new Date().toISOString()}`,
+      "",
+    ].join("\n");
+    const fullText = header + objContent;
+    const vertexMatches = objContent.match(/^v\s+/gm);
+    const vertexCount = vertexMatches ? vertexMatches.length : 0;
+    const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
+    return {
+      blob,
+      ext: "obj",
+      sizeBytes: blob.size,
+      vertexCount,
+      textPreview: fullText.split("\n").slice(0, 16).join("\n") + "\n...",
+      fullText,
     };
   }
 

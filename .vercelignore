@@ -1,0 +1,12 @@
+.git
+.env*
+node_modules
+dist
+runs
+tests
+data/seoul/**/*.zip
+data/seoul/2021
+data/seoul/2022
+data/seoul/2023
+data/seoul/2024
+data/seoul/2025
