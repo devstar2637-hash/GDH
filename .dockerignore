@@ -1,0 +1,6 @@
+node_modules
+.git
+data/seoul/raw
+runs
+*.log
+.env*
