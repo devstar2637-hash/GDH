@@ -4,6 +4,13 @@
 // Step 3: Auto-Generated 2.5D Store Floorplan (드래그 배치 & 손님 동선) + 36-Month Capital Survival Report
 
 import type { RunResult, SimResult } from "../../shared/types.js";
+import {
+  createStoreWorld3D,
+  createDefaultStorePlan,
+  type StoreWorld3DController,
+  type StoreFurnitureInput,
+  type SceneMoodId,
+} from "./storeStudio3D.js";
 
 interface PeakQueueSimSummary {
   peakArrivalCupsPerHour: number;
@@ -883,6 +890,9 @@ const state = {
   pickupStaff: 2,
   preset: "both" as "layout" | "staff" | "both" | "custom",
   walkMode: false,
+  cadMode2D: false,
+  sceneMood: "cozy" as SceneMoodId,
+  acOn: true,
   lightsOn: true,
   dimsOn: true,
   heatOn: false,
@@ -910,6 +920,35 @@ let macroSyncTimer = 0;
 let lastFrameTs = 0;
 let frameCounter = 0;
 let currentEnvelope: ApiRunEnvelope | null = null;
+let webglController: StoreWorld3DController | null = null;
+const historyStack: SceneObject[][] = [];
+const redoStack: SceneObject[][] = [];
+
+function pushFurnitureHistory(): void {
+  historyStack.push(state.plan.objects.map((o) => ({ ...o })));
+  if (historyStack.length > 35) historyStack.shift();
+  redoStack.length = 0;
+}
+
+function undoFurniture(): void {
+  const prev = historyStack.pop();
+  if (!prev) return;
+  redoStack.push(state.plan.objects.map((o) => ({ ...o })));
+  state.plan.objects = prev.map((o) => ({ ...o }));
+  state.plan.objects.forEach((o) => syncOrderPickupAnchorFromObject(o));
+  recomputeRehearsal();
+  scheduleMacroSimulation();
+}
+
+function redoFurniture(): void {
+  const next = redoStack.pop();
+  if (!next) return;
+  historyStack.push(state.plan.objects.map((o) => ({ ...o })));
+  state.plan.objects = next.map((o) => ({ ...o }));
+  state.plan.objects.forEach((o) => syncOrderPickupAnchorFromObject(o));
+  recomputeRehearsal();
+  scheduleMacroSimulation();
+}
 
 function selectedMovable(): SceneObject {
   const found = state.plan.objects.find((o) => o.id === state.selected && o.movable);
@@ -942,6 +981,17 @@ function fitView(canvas: HTMLCanvasElement): IsoView {
   return { w: b.width, h: b.height, s, ox: b.width * 0.44, oy: state.isoAngleAlt ? 54 : 38 };
 }
 
+function getCadBounds(view: IsoView): { ox: number; oy: number; scale: number; pw: number; ph: number } {
+  const padX = 36;
+  const padY = 30;
+  const scale = Math.min((view.w - padX * 2) / 12, (view.h - padY * 2) / 9);
+  const pw = scale * 12;
+  const ph = scale * 9;
+  const ox = (view.w - pw) / 2;
+  const oy = (view.h - ph) / 2 + 2;
+  return { ox, oy, scale, pw, ph };
+}
+
 function project(view: IsoView, x: number, y: number, z = 0): Pt2D {
   const tilt = state.isoAngleAlt ? 0.37 : 0.48;
   const zScale = state.isoAngleAlt ? 0.82 : 0.65;
@@ -952,6 +1002,13 @@ function project(view: IsoView, x: number, y: number, z = 0): Pt2D {
 }
 
 function unproject(view: IsoView, px: number, py: number): Pt2D {
+  if (state.cadMode2D) {
+    const cad = getCadBounds(view);
+    return {
+      x: (px - cad.ox) / cad.scale,
+      y: (py - cad.oy) / cad.scale,
+    };
+  }
   const tilt = state.isoAngleAlt ? 0.37 : 0.48;
   const a = (px - view.ox) / view.s;
   const b = (py - view.oy) / (view.s * tilt);
@@ -1595,6 +1652,358 @@ function drawBox3D(ctx: CanvasRenderingContext2D, v: IsoView, o: SceneObject, is
   }
 }
 
+function drawCadBlueprint2D(
+  ctx: CanvasRenderingContext2D,
+  v: IsoView,
+  scene: SceneData,
+  r: RehearsalSimResult | undefined,
+  idx: 0 | 1
+): void {
+  const cad = getCadBounds(v);
+  const { ox, oy, scale, pw, ph } = cad;
+  const cx = (mx: number) => ox + mx * scale;
+  const cy = (my: number) => oy + my * scale;
+  const catId = state.categoryId;
+  const cat = currentCategory();
+
+  // 1. House-Control / Planner5D Precision Dark CAD Background
+  ctx.fillStyle = "#10121a";
+  ctx.fillRect(0, 0, v.w, v.h);
+
+  // 0.5m minor & 1.0m major CAD Grid
+  for (let gx = 0; gx <= 12; gx += 0.5) {
+    const x = cx(gx);
+    ctx.strokeStyle = gx % 1 === 0 ? "rgba(111, 176, 255, 0.13)" : "rgba(111, 176, 255, 0.05)";
+    ctx.lineWidth = gx % 1 === 0 ? 0.9 : 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, oy);
+    ctx.lineTo(x, oy + ph);
+    ctx.stroke();
+  }
+  for (let gy = 0; gy <= 9; gy += 0.5) {
+    const y = cy(gy);
+    ctx.strokeStyle = gy % 1 === 0 ? "rgba(111, 176, 255, 0.13)" : "rgba(111, 176, 255, 0.05)";
+    ctx.lineWidth = gy % 1 === 0 ? 0.9 : 0.5;
+    ctx.beginPath();
+    ctx.moveTo(ox, y);
+    ctx.lineTo(ox + pw, y);
+    ctx.stroke();
+  }
+
+  // 2. Multi-Room Architectural Zones (Hall, Service Bar / Baking / Photo, Prep / Goods)
+  const zones =
+    catId === "bakery"
+      ? [
+          { name: "BOULANGERIE HALL · 빵 매대 홀", x: 0, y: 2.35, w: 12, h: 6.65, fill: "rgba(217, 154, 78, 0.09)" },
+          { name: "CAKE POS · 결제·쇼케이스", x: 0, y: 0, w: 7.2, h: 2.35, fill: "rgba(111, 176, 255, 0.08)" },
+          { name: "DECK OVEN ROOM · 오픈 베이킹룸", x: 7.2, y: 0, w: 4.8, h: 2.35, fill: "rgba(233, 164, 90, 0.13)" },
+        ]
+      : catId === "popup"
+        ? [
+            { name: "RUNWAY GALLERY · 메인 팝업 쇼룸", x: 0, y: 2.3, w: 12, h: 6.7, fill: "rgba(93, 142, 245, 0.12)" },
+            { name: "QR RECEPTION · 체크인·결제", x: 0, y: 0, w: 7.1, h: 2.3, fill: "rgba(168, 85, 247, 0.10)" },
+            { name: "LUCKY DRAW · 기프트 픽업부스", x: 7.1, y: 0, w: 4.9, h: 2.3, fill: "rgba(56, 189, 248, 0.10)" },
+          ]
+        : catId === "dining"
+          ? [
+              { name: "BOOTH LOUNGE · 다이닝 홀", x: 0, y: 2.55, w: 12, h: 6.45, fill: "rgba(180, 125, 78, 0.09)" },
+              { name: "OPEN KITCHEN BAR · 바 카운터", x: 0, y: 0, w: 7.2, h: 2.55, fill: "rgba(111, 176, 255, 0.09)" },
+              { name: "HIGHBALL PASS · 주방·주류 패스", x: 7.2, y: 0, w: 4.8, h: 2.55, fill: "rgba(74, 222, 128, 0.08)" },
+            ]
+          : [
+              { name: "OAK HALL · 홀 라운지 좌석존", x: 0, y: 2.4, w: 12, h: 6.6, fill: "rgba(212, 168, 87, 0.08)" },
+              { name: "ESPRESSO BAR · 머신·주문바", x: 0, y: 0, w: 7.2, h: 2.4, fill: "rgba(111, 176, 255, 0.09)" },
+              { name: "ROASTERY & PICKUP · 브루잉·픽업", x: 7.2, y: 0, w: 4.8, h: 2.4, fill: "rgba(74, 222, 128, 0.08)" },
+            ];
+
+  for (const z of zones) {
+    ctx.fillStyle = z.fill;
+    ctx.fillRect(cx(z.x), cy(z.y), z.w * scale, z.h * scale);
+    ctx.strokeStyle = "rgba(223, 227, 236, 0.22)";
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx(z.x), cy(z.y), z.w * scale, z.h * scale);
+    ctx.setLineDash([]);
+
+    const areaM2 = (z.w * z.h).toFixed(1);
+    ctx.fillStyle = "rgba(223, 227, 236, 0.42)";
+    ctx.font = "600 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(`${z.name} (${areaM2}㎡)`, cx(z.x) + 6, cy(z.y) + 13);
+  }
+
+  // 3. Kelvin Lighting Radial Halos & Fixture Nodes (#ffb46b)
+  const lightNodes: [number, number, string][] = [
+    [5.4, 1.2, "3100K BAR SPOT"],
+    [8.6, 1.2, "3000K PICKUP"],
+    [3.2, 4.6, "2700K PENDANT"],
+    [6.6, 5.8, "2700K LOUNGE"],
+    [9.2, 5.8, "2800K WINDOW"],
+  ];
+  for (const [lx, ly, lName] of lightNodes) {
+    const px = cx(lx);
+    const py = cy(ly);
+    if (state.lightsOn) {
+      const rad = 1.85 * scale;
+      const g = ctx.createRadialGradient(px, py, 2, px, py, rad);
+      g.addColorStop(0, "rgba(255, 180, 107, 0.25)");
+      g.addColorStop(0.55, "rgba(255, 180, 107, 0.08)");
+      g.addColorStop(1, "rgba(255, 180, 107, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = state.lightsOn ? "#ffb46b" : "#596273";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px - 6, py);
+    ctx.lineTo(px + 6, py);
+    ctx.moveTo(px, py - 6);
+    ctx.lineTo(px, py + 6);
+    ctx.stroke();
+    if (state.dimsOn) {
+      ctx.fillStyle = state.lightsOn ? "rgba(255, 180, 107, 0.72)" : "rgba(148, 160, 173, 0.45)";
+      ctx.font = "600 8px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(lName, px, py - 8);
+    }
+  }
+
+  // 4. Wall-Mounted Inverter AC Unit & Animated Airflow Vectors (#5db2ff)
+  const acX = cx(2.6);
+  const acY = cy(0.18);
+  ctx.fillStyle = "#19253a";
+  ctx.strokeStyle = "#5db2ff";
+  ctx.lineWidth = 1.4;
+  ctx.fillRect(acX - 22, acY - 5, 44, 10);
+  ctx.strokeRect(acX - 22, acY - 5, 44, 10);
+  if (state.acOn) {
+    const pulse = (state.t * 0.8) % 1;
+    for (const dx of [-14, 0, 14]) {
+      ctx.strokeStyle = `rgba(93, 178, 255, ${(0.65 - pulse * 0.35).toFixed(2)})`;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(acX + dx, acY + 6);
+      ctx.lineTo(acX + dx * 1.4, acY + 18 + pulse * 18);
+      ctx.stroke();
+    }
+  }
+
+  // 5. Thick Architectural Walls (#dfe3ec), Door Swing Arcs (#e9a45a) & Glazed Windows (#6fb0ff)
+  ctx.strokeStyle = "#dfe3ec";
+  ctx.lineWidth = 4.2;
+  ctx.strokeRect(ox, oy, pw, ph);
+
+  // Double-line South Facade Window Glazing (x: 2.0..10.2, y: 9.0)
+  ctx.strokeStyle = "#6fb0ff";
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.moveTo(cx(2.0), cy(9.0) - 2);
+  ctx.lineTo(cx(10.2), cy(9.0) - 2);
+  ctx.moveTo(cx(2.0), cy(9.0) + 2);
+  ctx.lineTo(cx(10.2), cy(9.0) + 2);
+  ctx.stroke();
+
+  // Entrance Door Swing Arc (Left wall x=0, y=3.8..5.1) in House-Control Amber (#e9a45a)
+  const doorHingeX = cx(0);
+  const doorHingeY = cy(3.85);
+  const doorRadius = 1.25 * scale;
+  ctx.strokeStyle = "#10121a";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cx(0), cy(3.85));
+  ctx.lineTo(cx(0), cy(5.1));
+  ctx.stroke();
+
+  ctx.strokeStyle = "#e9a45a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(doorHingeX, doorHingeY);
+  ctx.lineTo(doorHingeX + doorRadius, doorHingeY);
+  ctx.stroke();
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.arc(doorHingeX, doorHingeY, doorRadius, 0, Math.PI / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Exit Door Swing Arc (Right wall x=12, y=3.9..5.1)
+  const exitHingeX = cx(12);
+  const exitHingeY = cy(3.9);
+  const exitRadius = 1.15 * scale;
+  ctx.strokeStyle = "#10121a";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cx(12), cy(3.9));
+  ctx.lineTo(cx(12), cy(5.05));
+  ctx.stroke();
+  ctx.strokeStyle = "#e9a45a";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(exitHingeX, exitHingeY);
+  ctx.lineTo(exitHingeX - exitRadius, exitHingeY);
+  ctx.stroke();
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.arc(exitHingeX, exitHingeY, exitRadius, Math.PI / 2, Math.PI);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 6. Congestion Heatmap & A* Customer Route
+  const f = sampleFrame(r, state.t);
+  if (state.heatOn) {
+    for (const [pt, qLen] of [
+      [scene.orderPoint, f.orderQueue || 0],
+      [scene.pickupPoint, f.pickupQueue || 0],
+    ] as [Pt2D, number][]) {
+      const hx = cx(pt.x);
+      const hy = cy(pt.y);
+      const rad = 1.8 * scale;
+      const g = ctx.createRadialGradient(hx, hy, 3, hx, hy, rad);
+      const a = Math.min(0.65, 0.22 + qLen * 0.07);
+      g.addColorStop(0, `rgba(239, 68, 68, ${a.toFixed(2)})`);
+      g.addColorStop(1, "rgba(239, 68, 68, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(hx, hy, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  if (r && !r.routeBlocked && r.routePoints.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = idx ? "#6fb0ff" : "#e9a45a";
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    r.routePoints.forEach((pt, i) => {
+      if (i) ctx.lineTo(cx(pt.x), cy(pt.y));
+      else ctx.moveTo(cx(pt.x), cy(pt.y));
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 7. CAD Architectural Furniture Blocks + Orientation Ticks + Corner Handles
+  for (const o of scene.objects) {
+    const fx = cx(o.x);
+    const fy = cy(o.y);
+    const fw = o.w * scale;
+    const fh = o.h * scale;
+    const isSel = idx === 1 && o.id === state.selected;
+
+    const fillMap: Record<SceneObject["kind"], string> = {
+      counter: "rgba(59, 130, 246, 0.24)",
+      pickup: "rgba(34, 197, 94, 0.22)",
+      display: "rgba(233, 164, 90, 0.26)",
+      table: "rgba(148, 163, 184, 0.20)",
+    };
+    const strokeMap: Record<SceneObject["kind"], string> = {
+      counter: "#6fb0ff",
+      pickup: "#4ade80",
+      display: "#e9a45a",
+      table: "#cbd5e1",
+    };
+
+    ctx.fillStyle = isSel ? "rgba(111, 176, 255, 0.34)" : fillMap[o.kind];
+    ctx.strokeStyle = isSel ? "#ffffff" : strokeMap[o.kind];
+    ctx.lineWidth = isSel ? 2.2 : 1.4;
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Internal CAD detail lines (espresso group heads / tray grid / chairs)
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = 1;
+    if (o.kind === "counter") {
+      ctx.strokeRect(fx + 6, fy + 5, Math.min(28, fw * 0.38), Math.max(8, fh - 10));
+      ctx.beginPath();
+      ctx.arc(fx + fw - 12, fy + fh / 2, 4, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (o.kind === "display") {
+      ctx.beginPath();
+      ctx.moveTo(fx + fw * 0.5, fy + 4);
+      ctx.lineTo(fx + fw * 0.5, fy + fh - 4);
+      ctx.moveTo(fx + 4, fy + fh * 0.5);
+      ctx.lineTo(fx + fw - 4, fy + fh * 0.5);
+      ctx.stroke();
+    } else if (o.kind === "table") {
+      // Plan-view chair arcs on left & right of table
+      ctx.beginPath();
+      ctx.arc(fx - 4, fy + fh * 0.5, 5, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(fx + fw + 4, fy + fh * 0.5, 5, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.stroke();
+    }
+
+    // Front-facing orientation tick on south edge
+    ctx.strokeStyle = isSel ? "#6fb0ff" : strokeMap[o.kind];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(fx + fw * 0.5 - 6, fy + fh);
+    ctx.lineTo(fx + fw * 0.5, fy + fh + 5);
+    ctx.lineTo(fx + fw * 0.5 + 6, fy + fh);
+    ctx.stroke();
+
+    // 4 Corner CAD Selection Handles when selected
+    if (isSel) {
+      ctx.fillStyle = "#6fb0ff";
+      for (const [hx, hy] of [
+        [fx, fy],
+        [fx + fw, fy],
+        [fx, fy + fh],
+        [fx + fw, fy + fh],
+      ]) {
+        ctx.fillRect(hx - 3.5, hy - 3.5, 7, 7);
+      }
+    }
+
+    // Label & CAD Dimension Callout
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "700 10px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(o.label, fx + fw / 2, fy + fh / 2 - (state.dimsOn ? 2 : -3));
+    if (state.dimsOn) {
+      ctx.fillStyle = "#9ec5ff";
+      ctx.font = "600 8.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillText(`${o.w.toFixed(1)}×${o.h.toFixed(1)}m`, fx + fw / 2, fy + fh / 2 + 10);
+    }
+  }
+
+  // 8. Live Customers in CAD Plan View
+  for (const c of f.customers || []) {
+    const px = cx(c.x);
+    const py = cy(c.y);
+    ctx.fillStyle = c.state.includes("Pickup")
+      ? "#f59e0b"
+      : c.state.includes("Order")
+        ? "#60a5fa"
+        : "#34d399";
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#10121a";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+
+  // 9. Exterior CAD Dimension Rulers (12.0m x 9.0m)
+  if (state.dimsOn) {
+    ctx.fillStyle = "#6fb0ff";
+    ctx.font = "600 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(`⟵ 12.0m CAD ARCHITECTURAL PLAN (${cat.name}) ⟶`, ox + pw / 2, oy - 10);
+    ctx.fillStyle = "#e9a45a";
+    ctx.fillText(`주문대기 ${f.orderQueue || 0}명 · 픽업대기 ${f.pickupQueue || 0}명 · 완료 ${f.completed || 0}명`, ox + pw / 2, oy + ph + 18);
+  }
+}
+
 function drawWorld(
   canvas: HTMLCanvasElement,
   scene: SceneData,
@@ -1606,6 +2015,11 @@ function drawWorld(
   const ctx = canvas.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, v.w, v.h);
+
+  if (state.cadMode2D) {
+    drawCadBlueprint2D(ctx, v, scene, r, idx);
+    return;
+  }
 
   const catId = state.categoryId;
 
@@ -2053,6 +2467,101 @@ function drawAllWorlds(): void {
   if (clk) clk.textContent = formatClock(state.t) + " / 10:00";
 }
 
+function toStoreFurnitureInputs(scene: SceneData): StoreFurnitureInput[] {
+  return scene.objects.map((o) => {
+    const type =
+      o.kind === "counter"
+        ? "counter"
+        : o.kind === "pickup"
+          ? "prep"
+          : o.kind === "display"
+            ? "showcase"
+            : o.id === "table-b"
+              ? "sofa"
+              : o.id === "table-c"
+                ? "table2"
+                : "table4";
+    const color =
+      o.kind === "counter"
+        ? "#b45309"
+        : o.kind === "pickup"
+          ? "#0284c7"
+          : o.kind === "display"
+            ? "#0d9488"
+            : "#4f46e5";
+    return {
+      id: o.id,
+      type,
+      label: o.label,
+      x: Math.max(0.05, Math.min(0.88, o.x / scene.width)),
+      y: Math.max(0.05, Math.min(0.88, o.y / scene.height)),
+      w: Math.max(0.08, o.w / scene.width),
+      h: Math.max(0.08, o.h / scene.height),
+      seats: o.kind === "table" ? (o.id === "table-c" ? 2 : 4) : 0,
+      costManwon: o.kind === "counter" ? 650 : o.kind === "display" ? 420 : o.kind === "pickup" ? 240 : 120,
+      color,
+      rot: o.h > o.w * 1.15 ? 90 : 0,
+    };
+  });
+}
+
+function syncWebglStage(): void {
+  if (!webglController) return;
+  const cat3D = state.categoryId === "dining" ? "takeout" : state.categoryId;
+  const doc = createDefaultStorePlan(cat3D);
+  for (const l of doc.lights) {
+    l.on = state.lightsOn;
+  }
+  for (const ac of doc.acs) {
+    ac.on = state.acOn;
+  }
+  webglController.rebuild(doc, toStoreFurnitureInputs(state.plan), state.selected, {
+    flow: true,
+    heat: state.heatOn,
+    light: state.lightsOn,
+  });
+  webglController.setSceneMood(state.sceneMood);
+}
+
+function initWebglStage(): void {
+  const canvas = $<HTMLCanvasElement>("webglStageCanvas");
+  if (!canvas || webglController) return;
+  try {
+    const cat3D = state.categoryId === "dining" ? "takeout" : state.categoryId;
+    const doc = createDefaultStorePlan(cat3D);
+    webglController = createStoreWorld3D(canvas, doc, toStoreFurnitureInputs(state.plan), {
+      onSelectFurniture: (id) => {
+        const found = state.plan.objects.find((o) => o.id === id && o.movable);
+        if (found) {
+          state.selected = found.id;
+          syncSpatialControls();
+          updateReaEvidenceTerminal();
+          drawAllWorlds();
+          syncWebglStage();
+          notifySdkListeners();
+        }
+      },
+      onSelectRoom: (roomId) => {
+        document.querySelectorAll<HTMLElement>("[data-webgl-zone]").forEach((btn) => {
+          btn.classList.toggle("active", btn.getAttribute("data-webgl-zone") === roomId);
+        });
+        webglController?.focusZone(roomId);
+      },
+      onHoverInfo: (label) => {
+        const el = $("webglHoverStatus");
+        if (el) {
+          el.textContent =
+            label ||
+            "집기·조명·에어컨 클릭 시 즉시 토글 · 2D CAD / 2.5D 도면에서 가구를 드래그하면 3D가 실시간 동기화됩니다";
+        }
+      },
+    });
+  } catch {
+    // Graceful fallback in headless or non-WebGL environments
+    webglController = null;
+  }
+}
+
 // ============================================================================
 // 4. CATEGORY RECOMMENDATION & CAPITAL FEASIBILITY ENGINE
 // ============================================================================
@@ -2274,6 +2783,7 @@ function recomputeRehearsal(): void {
   state.rev++;
   renderSpatialVerdict();
   drawAllWorlds();
+  syncWebglStage();
 }
 
 function queueRecomputeRehearsal(): void {
@@ -2788,6 +3298,7 @@ function setObjectPosition(x: number, y: number, immediate = true): void {
 function rotateSelectedFurniture(): void {
   const o = selectedMovable();
   if (!o) return;
+  pushFurnitureHistory();
   const nextW = o.h;
   const nextH = o.w;
   o.w = nextW;
@@ -2801,6 +3312,7 @@ function rotateSelectedFurniture(): void {
 }
 
 function addExtraFurniture(): void {
+  pushFurnitureHistory();
   const cat = currentCategory();
   const idx = state.plan.objects.filter((o) => o.id.startsWith("extra-")).length + 1;
   const id = `extra-${idx}`;
@@ -2823,6 +3335,7 @@ function addExtraFurniture(): void {
 }
 
 function setPreset(kind: "layout" | "staff" | "both"): void {
+  pushFurnitureHistory();
   state.preset = kind;
   state.plan = makeScene(kind === "staff" ? "baseline" : "proposed", currentCategory());
   state.selected = "display";
@@ -3049,7 +3562,7 @@ function bindEvents(): void {
     scheduleMacroSimulation();
   });
 
-  // 5. 2.5D Isometric Canvas Pointer Dragging (All furniture movable: counter, pickup, display, table-a/b/c, extra-*)
+  // 5. 2.5D Isometric / 2D CAD Canvas Pointer Dragging (All furniture movable: counter, pickup, display, table-a/b/c, extra-*)
   const planCanvas = $<HTMLCanvasElement>("planCanvas");
   planCanvas?.addEventListener("pointerdown", (e) => {
     if (!views[1]) return;
@@ -3066,12 +3579,14 @@ function bindEvents(): void {
           pt.y <= a.y + a.h + 0.35
       );
     if (hit) {
+      pushFurnitureHistory();
       state.selected = hit.id;
       drag = { id: hit.id, dx: pt.x - hit.x, dy: pt.y - hit.y };
       planCanvas.setPointerCapture(e.pointerId);
       planCanvas.style.cursor = "grabbing";
       updateReaEvidenceTerminal();
       drawAllWorlds();
+      syncWebglStage();
     }
   });
   planCanvas?.addEventListener("pointermove", (e) => {
@@ -3121,10 +3636,11 @@ function bindEvents(): void {
     state.speed = Number((e.target as HTMLSelectElement).value);
   });
 
-  // 7. Walkthrough Mode (WASD / Arrow Keys) & Store Control HUD (L, G, H, I, R, +, T)
+  // 7. Walkthrough Mode (WASD / Arrow Keys) & Store Control HUD (L, G, H, I, C, R, +, T)
   const toggleLights = () => {
     state.lightsOn = !state.lightsOn;
     $("hudLightsBtn")?.classList.toggle("on", state.lightsOn);
+    webglController?.toggleAllLights(state.lightsOn);
     drawAllWorlds();
   };
   const toggleDims = () => {
@@ -3136,10 +3652,16 @@ function bindEvents(): void {
     state.heatOn = !state.heatOn;
     $("hudHeatBtn")?.classList.toggle("on", state.heatOn);
     drawAllWorlds();
+    syncWebglStage();
   };
   const toggleIsoAngle = () => {
     state.isoAngleAlt = !state.isoAngleAlt;
     $("hudIsoAngleBtn")?.classList.toggle("on", state.isoAngleAlt);
+    drawAllWorlds();
+  };
+  const toggleCadMode = () => {
+    state.cadMode2D = !state.cadMode2D;
+    $("hudCadModeBtn")?.classList.toggle("on", state.cadMode2D);
     drawAllWorlds();
   };
   const toggleTheme = () => {
@@ -3158,9 +3680,43 @@ function bindEvents(): void {
   $("hudDimsBtn")?.addEventListener("click", toggleDims);
   $("hudHeatBtn")?.addEventListener("click", toggleHeat);
   $("hudIsoAngleBtn")?.addEventListener("click", toggleIsoAngle);
+  $("hudCadModeBtn")?.addEventListener("click", toggleCadMode);
   $("hudRotateBtn")?.addEventListener("click", rotateSelectedFurniture);
   $("hudAddTableBtn")?.addEventListener("click", addExtraFurniture);
+  $("hudUndoBtn")?.addEventListener("click", undoFurniture);
+  $("hudRedoBtn")?.addEventListener("click", redoFurniture);
   $("hudThemeBtn")?.addEventListener("click", toggleTheme);
+
+  // 7B. Three.js WebGL 3D Store Architecture Stage Controls (Moods, Zone Focus, AC Airflow)
+  document.querySelectorAll<HTMLButtonElement>("[data-webgl-mood]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-webgl-mood]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const mood = (btn.getAttribute("data-webgl-mood") || "cozy") as SceneMoodId;
+      state.sceneMood = mood;
+      webglController?.setSceneMood(mood);
+      drawAllWorlds();
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>("[data-webgl-zone]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-webgl-zone]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const zone = btn.getAttribute("data-webgl-zone") || "";
+      webglController?.focusZone(zone || null);
+    });
+  });
+
+  $("webglAcBtn")?.addEventListener("click", () => {
+    if (webglController) {
+      state.acOn = webglController.toggleAC();
+    } else {
+      state.acOn = !state.acOn;
+    }
+    $("webglAcBtn")?.classList.toggle("active", state.acOn);
+    drawAllWorlds();
+  });
 
   $("walkBtn")?.addEventListener("click", () => {
     state.walkMode = !state.walkMode;
@@ -3176,6 +3732,12 @@ function bindEvents(): void {
   window.addEventListener("keydown", (e) => {
     const tag = (e.target as HTMLElement | null)?.tagName || "";
     if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) return;
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      if (e.shiftKey) redoFurniture();
+      else undoFurniture();
+      return;
+    }
     const k = e.key.toLowerCase();
     if (k === "l") {
       toggleLights();
@@ -3191,6 +3753,10 @@ function bindEvents(): void {
     }
     if (k === "i") {
       toggleIsoAngle();
+      return;
+    }
+    if (k === "c") {
+      toggleCadMode();
       return;
     }
     if (k === "r") {
@@ -3327,6 +3893,7 @@ function bindEvents(): void {
 
   new ResizeObserver(() => {
     drawAllWorlds();
+    webglController?.resize();
     if (currentEnvelope) {
       drawCashflowChart(currentEnvelope.run);
       drawLandscapeChart(currentEnvelope.run);
@@ -3627,11 +4194,23 @@ const ThousandStoresSDK = {
   addFurniture() {
     addExtraFurniture();
   },
-  toggleHud(feature: "lights" | "dims" | "heat" | "isoAngle" | "darkTheme" | "walkMode") {
+  undo() {
+    undoFurniture();
+  },
+  redo() {
+    redoFurniture();
+  },
+  setSceneMood(mood: SceneMoodId) {
+    state.sceneMood = mood;
+    webglController?.setSceneMood(mood);
+    drawAllWorlds();
+  },
+  toggleHud(feature: "lights" | "dims" | "heat" | "isoAngle" | "cadMode" | "darkTheme" | "walkMode") {
     if (feature === "lights") $("hudLightsBtn")?.click();
     else if (feature === "dims") $("hudDimsBtn")?.click();
     else if (feature === "heat") $("hudHeatBtn")?.click();
     else if (feature === "isoAngle") $("hudIsoAngleBtn")?.click();
+    else if (feature === "cadMode") $("hudCadModeBtn")?.click();
     else if (feature === "darkTheme") $("hudThemeBtn")?.click();
     else if (feature === "walkMode") $("walkBtn")?.click();
   },
@@ -3676,6 +4255,7 @@ if (typeof window !== "undefined") {
 
 async function boot(): Promise<void> {
   initGradientAsciiBackground();
+  initWebglStage();
   bindEvents();
   renderRecommendedCategories();
   recomputeRehearsal();

@@ -958,6 +958,93 @@
       color: var(--accent);
     }
 
+    /* Three.js WebGL 3D Store Architecture & CAD Studio Stage */
+    .webgl-stage-panel {
+      margin-top: 12px;
+      border: 1px solid #2b3542;
+      border-radius: 12px;
+      background: #0d121d;
+      color: #eef2f8;
+      padding: 11px 12px;
+      overflow: hidden;
+    }
+    .webgl-stage-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .webgl-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .webgl-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(76, 139, 245, 0.18);
+      border: 1px solid rgba(110, 162, 235, 0.42);
+      color: #9ec5ff;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .webgl-toolbar {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .webgl-chip {
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: #d6dfec;
+      font-size: 11.5px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .webgl-chip:hover {
+      border-color: #6ea2eb;
+      color: #ffffff;
+    }
+    .webgl-chip.active {
+      background: #294f82;
+      border-color: #6ea2eb;
+      color: #ffffff;
+    }
+    canvas.webgl-stage-canvas {
+      width: 100%;
+      height: 310px;
+      display: block;
+      border-radius: 9px;
+      background: #0a0e1a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: grab;
+      touch-action: none;
+    }
+    canvas.webgl-stage-canvas:active {
+      cursor: grabbing;
+    }
+    .webgl-stage-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+      font-size: 11.5px;
+      color: #a7b4c6;
+      font-family: var(--font-mono);
+    }
+
     @media (max-width: 1080px) {
       .home-start-grid, .flow-steps, .step-selector, .founder-inputs, .cat-grid, .workspace, .worlds, .expert-grid-2 {
         grid-template-columns: 1fr;
@@ -1170,12 +1257,15 @@
         <!-- House-Control / pgrun.dev / Planner5D / rea.tools Interactive Store HUD -->
         <div class="hud-bar" role="toolbar" aria-label="2.5D 매장 제어 및 CAD 도면 옵션">
           <span class="small" style="font-weight:700;padding:0 4px;font-family:var(--font-mono)">STORE HUD</span>
+          <button class="hud-btn" id="hudCadModeBtn" type="button" title="2D 정밀 건축 CAD 도면(문 스윙 아크·창호·조명 헤일로·공조 기류)과 2.5D 입체 도면 전환 (단축키 C)">🗺️ 2D 건축 CAD <kbd>C</kbd></button>
           <button class="hud-btn on" id="hudLightsBtn" type="button" title="매장 조명 켜기/끄기 (단축키 L)">💡 조명 <kbd>L</kbd></button>
           <button class="hud-btn on" id="hudDimsBtn" type="button" title="Planner5D 건축 치수선 표시 (단축키 G)">📐 치수·CAD <kbd>G</kbd></button>
           <button class="hud-btn" id="hudHeatBtn" type="button" title="손님 병목·대기열 히트맵 표시 (단축키 H)">🔥 혼잡 히트맵 <kbd>H</kbd></button>
           <button class="hud-btn" id="hudIsoAngleBtn" type="button" title="2.5D 카메라 각도 전환 (단축키 I)">🔄 각도 <kbd>I</kbd></button>
-          <button class="hud-btn" id="hudRotateBtn" type="button" title="선택한 가구 90도 회전 (단축키 R)">↻ 가구 회전 <kbd>R</kbd></button>
+          <button class="hud-btn" id="hudRotateBtn" type="button" title="선택한 가구 90도 회전 (단축키 R)">↻ 회전 <kbd>R</kbd></button>
           <button class="hud-btn" id="hudAddTableBtn" type="button" title="매장에 테이블/포디움 추가">+ 가구 추가</button>
+          <button class="hud-btn" id="hudUndoBtn" type="button" title="가구 배치 실행취소 (⌘Z)">↶ 실행취소</button>
+          <button class="hud-btn" id="hudRedoBtn" type="button" title="가구 배치 다시실행 (⌘⇧Z)">↷ 다시실행</button>
           <button class="hud-btn" id="hudThemeBtn" type="button" title="라이트 / 다크 CAD 테마 전환 (단축키 T)" style="margin-left:auto">◐ 다크·CAD <kbd>T</kbd></button>
         </div>
 
@@ -1217,6 +1307,32 @@
           </select>
           <button id="walkBtn" type="button">내가 손님으로 걸어보기 (WASD)</button>
         </div>
+
+        <!-- Three.js WebGL 3D Real-Time Store Architecture, Kelvin Lighting & AC Airflow Stage -->
+        <section class="webgl-stage-panel" id="webglStagePanel" aria-label="Three.js 3D 실시간 매장 건축 쇼룸">
+          <div class="webgl-stage-head">
+            <div class="webgl-title-wrap">
+              <span class="webgl-badge">THREE.JS WEBGL 3D · BLOOM</span>
+              <strong style="font-size:13.5px;letter-spacing:-0.01em">실시간 3D 건축·조명(Kelvin)·에어컨 기류 쇼룸</strong>
+            </div>
+            <div class="webgl-toolbar" role="group" aria-label="3D 쇼룸 조명 무드 및 구역 포커스">
+              <button type="button" class="webgl-chip active" data-webgl-mood="cozy">🕯️ 코지 2800K</button>
+              <button type="button" class="webgl-chip" data-webgl-mood="bright">☀️ 낮 피크</button>
+              <button type="button" class="webgl-chip" data-webgl-mood="peak">🔥 러시 아워</button>
+              <button type="button" class="webgl-chip" data-webgl-mood="night">🌙 나이트 쇼룸</button>
+              <span style="opacity:0.25">|</span>
+              <button type="button" class="webgl-chip active" data-webgl-zone="">전체 매장</button>
+              <button type="button" class="webgl-chip" data-webgl-zone="hall">홀·메인존</button>
+              <button type="button" class="webgl-chip" data-webgl-zone="bar">카운터·작업존</button>
+              <button type="button" class="webgl-chip active" id="webglAcBtn" title="3D 벽걸이 에어컨 64-라인 냉기 기류 시뮬레이션 토글">❄️ 에어컨 기류 ON</button>
+            </div>
+          </div>
+          <canvas id="webglStageCanvas" class="webgl-stage-canvas" aria-label="Three.js 3D 매장 건축 쇼룸 — 마우스 드래그로 360도 회전, 휠로 줌, 조명·에어컨·가구 클릭"></canvas>
+          <div class="webgl-stage-foot">
+            <span id="webglHoverStatus">🖱️ 3D 드래그: 360° 회전 (외벽 자동 컷어웨이) · 휠: 줌 · 조명/에어컨/가구 클릭 시 즉시 제어</span>
+            <span id="webglRoomSummary">홀 라운지 · 에스프레소 바 · 로스터리 (AC 23°C 가동 중)</span>
+          </div>
+        </section>
 
         <!-- rea.tools (morluto/rea) style .step-selector + .agent-terminal -->
         <div class="rea-evidence" id="evidence" aria-label="단계별 공간·손익 분석 근거">
