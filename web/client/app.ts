@@ -1,106 +1,179 @@
-// web/client/app.ts — Lane A3 browser client.
-// Renders all 6 screens exclusively from RunResult & server payload (never computes money on the client).
-// Enforces AT-02 (hide distributions when uncalibrated), AT-07 (live cliff flip),
-// AT-12 (source tag on every number, export), AT-14 (always-visible StatusBar), and AT-16 (10k scatter + saturation curve).
+// A3 six-screen client connected to the validated server contract.
+// Only an explicit AI button invokes a provider. Financial results come from the server.
+import type { RunResult, TokenUsage } from "../../shared/types.js";
 
-import type { RunResult } from "../../shared/types.js";
-
-interface PeakQueueSimSummary {
-  peakArrivalCupsPerHour: number;
-  serviceCapacityCupsPerHour: number;
-  utilizationPct: number;
-  avgWaitSec: number;
-  lostDemandPct: number;
-  bottleneckNote: string;
+type Decision = "hold" | "measure" | "proceed";
+interface MarketSummary {
+  latestStoreCount: number | null;
+  meanQuarterlyOpenRatePct: number | null;
+  meanQuarterlyCloseRatePct: number | null;
+  datasetName: string;
+  asOf: string;
+  sourceNote: string;
 }
-
+interface ApiContext {
+  seoulSummary: MarketSummary | null;
+  inputFiles?: string[];
+  byteFingerprint?: string;
+  rawReconciliationVerified?: boolean;
+}
+interface ServerEnvelope {
+  runId: string;
+  state: "DONE" | "FAIL" | "BLOCKED";
+  reason: string | null;
+  inputHash: string;
+  engineSha: string;
+  createdAt: string;
+  replay: boolean;
+  mode: "preview" | "ai";
+  ai: { status: string; model: string | null; tokens: TokenUsage[]; reason: string | null; requestsCompleted?: number };
+  calibrationStatus: string;
+  calibrationNote: string;
+  inputSnapshot: Record<string, unknown>;
+  generation: {
+    kind: string;
+    requestedCandidates: number;
+    calculatedCandidates: number;
+    uniqueDesignIds: number;
+    uniqueAssumptionSets: number;
+    seedFamilies: number | null;
+  };
+  result: RunResult | null;
+  [key: string]: unknown;
+}
 interface ApiRunEnvelope {
   run: RunResult;
-  seoulSummary: {
-    latestStoreCount: number;
-    meanQuarterlyOpenRatePct: number;
-    meanQuarterlyCloseRatePct: number;
-    datasetName: string;
-    asOf: string;
-  };
-  peakQueueSim: PeakQueueSimSummary;
+  seoulSummary: MarketSummary | null;
+  peakQueueSim: null;
+  evidence: ServerEnvelope;
 }
-
 let currentEnvelope: ApiRunEnvelope | null = null;
-let selectedDecision: "proceed" | "hold" | "measure" = "hold";
+let marketContext: ApiContext | null = null;
+let selectedDecision: Decision | null = null;
+let decisionAt: string | null = null;
+let revision = 0;
+let resultRevision: number | null = null;
+let resultFingerprint: string | null = null;
+let activeRequest: number | null = null;
+let requestSerial = 0;
 
 function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id);
-  if (!el) {
-    throw new Error(`Missing DOM element #${id}`);
-  }
+  if (!el) throw new Error(`Missing DOM element #${id}`);
   return el as T;
 }
-
-function fmtInt(n: number): string {
-  return Math.round(n).toLocaleString("ko-KR");
+function text(id: string, value: string): void {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
-
-function fmtManwon(krw: number): string {
-  const man = Math.round(krw / 10_000);
-  return `${man.toLocaleString("ko-KR")}만 원`;
+function escapeHtml(value: unknown): string {
+  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
-
+function fmtInt(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value) ? Math.round(value).toLocaleString("ko-KR") : "미확인";
+}
+function fmtManwon(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value) ? `${Math.round(value / 10000).toLocaleString("ko-KR")}만 원` : "미확인";
+}
+function diagnostic(value: number | null | undefined): string {
+  return typeof value === "number" && Number.isFinite(value) ? `${value.toFixed(2)} pp (집계 참고값)` : "미확인";
+}
 function srcBadge(kind: string, label?: string): string {
-  const cls =
-    kind === "public"
-      ? "src-public"
-      : kind === "onsite"
-        ? "src-onsite"
-        : kind === "assumed"
-          ? "src-assumed"
-          : kind === "synthetic"
-            ? "src-synthetic"
-            : "src-computed";
-  return `<span class="src-tag ${cls}">${kind}${label ? `: ${label}` : ""}</span>`;
+  return `<span class="src-tag src-${escapeHtml(kind)}">${escapeHtml(kind)}${label ? `: ${escapeHtml(label)}` : ""}</span>`;
 }
-
-function renderStatusBar(run: RunResult): void {
-  const sb = run.status;
-  const endState = sb.endState ?? "DONE";
-  const endEl = byId("sbEndState");
-  endEl.textContent = sb.endReason ? `${endState} (${sb.endReason})` : endState;
-  endEl.className =
-    endState === "DONE"
-      ? "badge badge-done"
-      : endState === "FAIL"
-        ? "badge badge-fail"
-        : "badge badge-blocked";
-
-  const replayEl = byId("sbReplayBadge");
-  if (sb.replay) {
-    replayEl.textContent = "재생 (REPLAY)";
-    replayEl.className = "badge badge-replay";
-  } else {
-    replayEl.textContent = "실시간 (LIVE)";
-    replayEl.className = "badge badge-live";
+function rows(id: string, values: string[][]): void {
+  byId(id).innerHTML = values.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
+}
+function announce(message: string, error = false): void {
+  const el = document.getElementById("runMessage") ?? document.getElementById("patchAttackAlert");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("hidden");
+  el.classList.toggle("callout-rose", error);
+  el.dataset.state = error ? "error" : "info";
+}
+function resetDecision(): void {
+  selectedDecision = null;
+  decisionAt = null;
+  for (const id of ["decHold", "decMeasure", "decProceed"]) document.getElementById(id)?.classList.remove("active");
+  text("selectedDecisionText", "미선택 — 현재 실행 결과를 확인한 뒤 직접 선택하세요.");
+}
+function fresh(): boolean {
+  if (!currentEnvelope || resultRevision !== revision || activeRequest !== null) return false;
+  if (currentEnvelope.evidence.state !== "DONE" || currentEnvelope.run.status.endState !== "DONE") return false;
+  try { return resultFingerprint === JSON.stringify(collectPayload(currentEnvelope.evidence.mode)); }
+  catch { return false; }
+}
+function updateControls(): void {
+  const usable = fresh();
+  document.getElementById("statusBar")?.setAttribute("data-fresh", String(usable));
+  for (const id of ["btnSubmitRun", "btnRunDefault10k", "btnRunAi"]) {
+    const el = document.getElementById(id) as HTMLButtonElement | null;
+    if (el) el.disabled = activeRequest !== null;
   }
-
-  byId("sbRunId").textContent = sb.runId;
-  byId("sbInputHash").textContent = (sb.inputHash ?? "-").slice(0, 8);
-  byId("sbEngineSha").textContent = sb.engineSha ?? "-";
-  byId("sbComputeMs").textContent = `${(run.computeMs ?? 0).toFixed(1)} ms`;
-  byId("sbInputFiles").textContent = sb.inputFiles.join(", ");
-  byId("sbTokensTotal").textContent = `${fmtInt(sb.tokenTotal.input)} in / ${fmtInt(sb.tokenTotal.output)} out (${sb.tokens.length} calls)`;
-
-  const gateStrip = byId("sbGateLog");
-  gateStrip.innerHTML = sb.gateLog
-    .map((g) => {
-      const cls =
-        g.passed === true
-          ? "badge-done"
-          : g.passed === false
-            ? "badge-fail"
-            : "badge-blocked";
-      const timeShort = g.at.split("T")[1]?.slice(0, 8) ?? g.at;
-      return `<span class="badge ${cls}" title="${g.detail}">${g.gate}: ${g.passed ? "PASS" : "FAIL"} (${timeShort})</span>`;
-    })
-    .join("");
+  for (const id of ["decHold", "decMeasure", "decProceed"]) {
+    const el = document.getElementById(id);
+    if (el) { el.setAttribute("aria-disabled", String(!usable)); el.classList.toggle("disabled", !usable); }
+  }
+  for (const id of ["btnExportCsv", "btnExportMd", "btnExportJson"]) {
+    const el = document.getElementById(id) as HTMLButtonElement | null;
+    if (el) el.disabled = !usable || selectedDecision === null;
+  }
+}
+function clearCalculatedView(): void {
+  byId("calibratedDistributionContainer").classList.add("hidden");
+  byId("uncalibratedPanel").classList.remove("hidden");
+  for (const id of ["landscapeCanvas", "saturationCanvas", "cashflowCanvas"]) {
+    const canvas = document.getElementById(id) as HTMLCanvasElement | null;
+    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  for (const id of ["uncalibratedTableBody", "roundsTableBody", "verificationTableBody"]) rows(id, []);
+  for (const id of ["cliffHeadline", "cliffFlipDetail", "measureVariable", "measureAction", "measureReason", "kpiLeaderId", "kpiLeaderPnl"]) text(id, "현재 입력의 실행 결과 없음");
+  text("peakQueuePanel", "대기열 모델 미실행 — 대기시간·이탈률 추정값 없음.");
+  text("heroCalibrationBadge", "현금흐름 보정 미검증");
+  text("sec2CalibBadge", "현금흐름 보정 미검증");
+  text("heroBaselineBadge", "AI 개선 효과 미검증");
+  text("sec5BaselineBadge", "AI 개선 효과 미검증");
+}
+function invalidate(message: string): void {
+  currentEnvelope = null;
+  resultRevision = null;
+  resultFingerprint = null;
+  resetDecision();
+  clearCalculatedView();
+  text("sbEndState", activeRequest === null ? "미실행 / 입력 변경" : "실행 중 · 입력 변경");
+  text("sbRunId", "-");
+  text("sbInputHash", "-");
+  text("sbEngineSha", "-");
+  text("sbComputeMs", "-");
+  text("sbTokensTotal", "미실행");
+  text("sbInputFiles", "현재 입력 결과 없음");
+  text("sbGateLog", "검증 미실행");
+  announce(message);
+  updateControls();
+}
+function renderStatusBar(evidence: ServerEnvelope): void {
+  const run = evidence.result;
+  text("sbEndState", `${evidence.state}${evidence.reason ? ` · ${evidence.reason}` : ""}`);
+  text("sbRunId", evidence.runId);
+  text("sbInputHash", evidence.inputHash);
+  text("sbEngineSha", evidence.engineSha);
+  text("sbComputeMs", run?.computeMs === undefined ? "미확인" : `${run.computeMs.toFixed(1)} ms (계산 단계)`);
+  text("sbInputFiles", run?.status.inputFiles.join(", ") || "결과 없음");
+  text("sbReplayBadge", evidence.replay ? "저장 결과 재생" : evidence.mode === "ai" ? `모델 상태: ${evidence.ai.status}` : "로컬 가정 계산 · 모델 미호출");
+  const tokens = evidence.ai.tokens;
+  const input = tokens.reduce((sum, usage) => sum + usage.inputTokens, 0);
+  const output = tokens.reduce((sum, usage) => sum + usage.outputTokens, 0);
+  text("sbTokensTotal", `${input.toLocaleString()} in / ${output.toLocaleString()} out · ${tokens.length}개 사용량 기록${evidence.ai.model ? ` · ${evidence.ai.model}` : " · 모델 없음"}`);
+  const strip = byId("sbGateLog");
+  strip.replaceChildren();
+  for (const gate of run?.status.gateLog ?? []) {
+    const badge = document.createElement("span");
+    badge.className = `badge ${gate.passed === true ? "badge-done" : gate.passed === false ? "badge-fail" : "badge-blocked"}`;
+    badge.textContent = `${gate.gate}: ${gate.passed === true ? "통과" : gate.passed === false ? "미충족" : "미검증"}`;
+    badge.title = gate.detail;
+    strip.append(badge);
+  }
 }
 
 function renderLandscapeCanvas(run: RunResult): void {
@@ -310,7 +383,7 @@ function renderSaturationCanvas(run: RunResult): void {
       : `still growing at 10,000 (실패 가족 ${c1.failureFamilies} → ${c2.failureFamilies} → ${c3.failureFamilies})`;
     byId("saturationStatusBadge").textContent = `computed: ${statusText}`;
     byId("saturationSummaryText").innerHTML =
-      `<strong>500 AI design families x 20 variations</strong> · N=1,000(${c1.failureFamilies}가족/${c1.nonDominated}비지배) → N=3,000(${c2.failureFamilies}가족/${c2.nonDominated}비지배) → N=10,000(${c3.failureFamilies}가족/${c3.nonDominated}비지배) · <strong>${statusText}</strong> ${srcBadge("computed")}`;
+      `<strong>계산된 후보 집합</strong> · N=1,000(${c1.failureFamilies}가족/${c1.nonDominated}비지배) → N=3,000(${c2.failureFamilies}가족/${c2.nonDominated}비지배) → N=10,000(${c3.failureFamilies}가족/${c3.nonDominated}비지배) · <strong>${statusText}</strong> ${srcBadge("computed")}`;
   }
 }
 
@@ -324,8 +397,7 @@ function renderCashflowCanvas(run: RunResult): void {
   ctx.clearRect(0, 0, w, h);
 
   const leader =
-    run.results.find((r) => r.designId === run.leaderDesignId && r.months.length > 0) ??
-    run.results.find((r) => r.months.length > 0);
+    run.results.find((r) => r.designId === run.leaderDesignId && r.constraintsOk && r.months.length > 0);
   const deadSample = run.results.find(
     (r) => (r.deathMonth !== null || r.survivedMonths < 36) && r.months.length > 0
   );
@@ -399,391 +471,303 @@ function renderCashflowCanvas(run: RunResult): void {
   }
 }
 
+function renderContext(): void {
+  const summary = marketContext?.seoulSummary;
+  text("pubStoreCount", summary?.latestStoreCount == null ? "미확인" : `${fmtInt(summary.latestStoreCount)}개 · 보관 요약`);
+  text("pubOpenRate", summary?.meanQuarterlyOpenRatePct == null ? "미확인" : `${summary.meanQuarterlyOpenRatePct.toFixed(2)}% · 집계 참고`);
+  text("pubCloseRate", summary?.meanQuarterlyCloseRatePct == null ? "미확인" : `${summary.meanQuarterlyCloseRatePct.toFixed(2)}% · 집계 참고`);
+  text("contextSourceNote", summary ? `${summary.datasetName} · ${summary.asOf} · ${summary.sourceNote || "원자료 재대조 미확인"}` : "상권 맥락 미확인. 입력한 가정의 계산만 실행할 수 있습니다.");
+}
 function renderAllScreens(envelope: ApiRunEnvelope): void {
   currentEnvelope = envelope;
-  const { run, seoulSummary, peakQueueSim } = envelope;
+  const { run, evidence } = envelope;
+  renderStatusBar(evidence);
+  renderContext();
+  const generation = evidence.generation;
+  const origin = generation.kind === "live_model_proposals" ? "모델 제안 기반" : "결정적 가정 후보 · 모델 미호출";
+  text("heroModeBadge", `${origin} · 계산 ${fmtInt(generation.calculatedCandidates)}개`);
+  text("landscapeModeLabel", `보정 미검증 · ${fmtInt(generation.calculatedCandidates)}개 계산`);
+  text("heroCalibrationBadge", "현금흐름 보정 미검증");
+  text("sec2CalibBadge", "현금흐름 보정 미검증");
+  text("heroBaselineBadge", "탐색기 · AI 개선 효과 미검증");
+  text("sec5BaselineBadge", "탐색기 · AI 개선 효과 미검증");
 
-  // 0. Status Bar (AT-14)
-  renderStatusBar(run);
+  // No aggregate diagnostic can unlock a population distribution in this UI.
+  byId("calibratedDistributionContainer").classList.add("hidden");
+  byId("uncalibratedPanel").classList.remove("hidden");
+  rows("uncalibratedTableBody", [
+    ["현금흐름 보정", "미검증", evidence.calibrationNote, "집계 참고값은 개별 점포 예측 검증이 아님", "근거 범위"],
+    ["집계 휴리스틱 비교", "진단 참고용", diagnostic(run.calibration.errorPp), diagnostic(run.calibration.holdoutErrorPp), "숨김 홀드아웃 검증 아님"],
+    ["생성/계산 개수", `${fmtInt(generation.requestedCandidates)}개 요청`, `${fmtInt(generation.calculatedCandidates)}개 계산`, `${fmtInt(generation.uniqueDesignIds)}개 ID / ${fmtInt(generation.uniqueAssumptionSets)}개 가정 조합`, origin],
+    ["예산 / 예비비", fmtManwon(run.constraints.budgetKrw), `${(run.constraints.reserveRatioMin * 100).toFixed(0)}%`, "사용자가 입력한 가정", "현장 실측 미확인"],
+  ]);
+  text("peakQueuePanel", "대기열 모델 미실행 — 대기시간·이탈률 추정값 없음.");
+  const leader = run.results.find((result) => result.designId === run.leaderDesignId && result.constraintsOk);
+  if (leader?.months.length) renderCashflowCanvas(run);
+  text("kpiLeaderId", run.leaderDesignId || "없음");
+  text("kpiLeaderPnl", leader ? `개별 계산 예시 · ${leader.months.length}개월 원장 · 손익 ${fmtManwon(leader.cumPnL)}` : "선두 후보 원장 미확인");
 
-  // Hero Badges
-  const modeLabel =
-    run.mode === 1000
-      ? "1,000 variants (spike mode)"
-      : "500 AI design families x 20 variations";
-  byId("heroModeBadge").textContent = modeLabel;
-  byId("landscapeModeLabel").textContent = modeLabel;
-
-  const isCalibrated = run.calibration.label === "calibrated";
-  const calibBadgeText = isCalibrated
-    ? `보정됨 (calibrated · 오차 ${(run.calibration.errorPp ?? 0).toFixed(2)}pp)`
-    : `미보정 (uncalibrated · 오차 ${(run.calibration.errorPp ?? 0).toFixed(2)}pp)`;
-  const calibClass = isCalibrated ? "badge badge-done" : "badge badge-fail";
-
-  byId("heroCalibrationBadge").textContent = calibBadgeText;
-  byId("heroCalibrationBadge").className = calibClass;
-  byId("sec2CalibBadge").textContent = calibBadgeText;
-  byId("sec2CalibBadge").className = calibClass;
-
-  const isAiNative = run.baseline?.label === "ai-native";
-  const baseText = isAiNative ? "AI-native (기준선 우위)" : "탐색기 (explorer)";
-  const baseClass = isAiNative ? "badge badge-done" : "badge badge-blocked";
-  byId("heroBaselineBadge").textContent = baseText;
-  byId("heroBaselineBadge").className = baseClass;
-  byId("sec5BaselineBadge").textContent = baseText;
-  byId("sec5BaselineBadge").className = baseClass;
-
-  // Screen 1 public metrics
-  byId("pubStoreCount").innerHTML = `${fmtInt(seoulSummary.latestStoreCount)}개 ${srcBadge("public", "OA-15577")}`;
-  byId("pubOpenRate").innerHTML = `${seoulSummary.meanQuarterlyOpenRatePct.toFixed(2)}% ${srcBadge("public", "2021-2024")}`;
-  byId("pubCloseRate").innerHTML = `${seoulSummary.meanQuarterlyCloseRatePct.toFixed(2)}% ${srcBadge("public", "2021-2024")}`;
-
-  // Screen 2: AT-02 Uncalibrated Hiding Rule vs Calibrated Landscape
-  const uncalibPanel = byId("uncalibratedPanel");
-  const calibContainer = byId("calibratedDistributionContainer");
-
-  if (!isCalibrated) {
-    uncalibPanel.classList.remove("hidden");
-    calibContainer.classList.add("hidden");
-
-    const baseD = run.designs[0];
-    byId("uncalibratedTableBody").innerHTML = `
-      <tr>
-        <td>2021~2024 백테스트 개·폐업률 오차</td>
-        <td>허용 임계치 ±5.00 pp</td>
-        <td>${(run.calibration.errorPp ?? 0).toFixed(2)} pp</td>
-        <td>${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)} pp</td>
-        <td>${srcBadge("public", "OA-15577")}</td>
-      </tr>
-      <tr>
-        <td>총 예산 및 최소 현금 유보율</td>
-        <td>${fmtManwon(run.constraints.budgetKrw)} / ${(run.constraints.reserveRatioMin * 100).toFixed(0)}%</td>
-        <td>-</td>
-        <td>-</td>
-        <td>${srcBadge("onsite", "예산제약")}</td>
-      </tr>
-      <tr>
-        <td>기본 보증금 / 월 임대료 / 인테리어</td>
-        <td>${fmtManwon(baseD?.deposit.value ?? 40_000_000)} / ${fmtManwon(baseD?.monthlyRent.value ?? 3_300_000)} / ${fmtManwon(baseD?.fitoutCost.value ?? 48_000_000)}</td>
-        <td>-</td>
-        <td>-</td>
-        <td>${srcBadge("onsite", "중개호가")}</td>
-      </tr>
-    `;
-  } else {
-    uncalibPanel.classList.add("hidden");
-    calibContainer.classList.remove("hidden");
-
-    const totalN = run.results.length;
-    const survivors = run.results.filter(
-      (r) => r.deathMonth === null && r.survivedMonths >= 36 && r.constraintsOk
-    ).length;
-    const freqPct = totalN > 0 ? ((survivors / totalN) * 100).toFixed(1) : "0.0";
-    const nonDomCount = run.results.filter((r) => r.nonDominated).length;
-    const famSet = new Set(
-      run.results
-        .filter((r) => (r.deathMonth !== null || r.survivedMonths < 36) && r.failureFamily)
-        .map((r) => r.failureFamily)
-    );
-    const leaderRes =
-      run.results.find((r) => r.designId === run.leaderDesignId) ?? run.results[0];
-
-    byId("kpiSurvivalFreq").innerHTML =
-      `${fmtInt(survivors)} / ${fmtInt(totalN)} (${freqPct}%) ${srcBadge("computed", "시나리오빈도")}`;
-    byId("kpiSurvivalSub").textContent =
-      `시나리오 빈도(scenario frequency) 기준 · 사망 ${fmtInt(totalN - survivors)}건`;
-    byId("kpiNonDominated").innerHTML =
-      `${fmtInt(nonDomCount)}개 설계안 ${srcBadge("computed", "Pareto")}`;
-    byId("kpiFailureFamilies").innerHTML =
-      `${fmtInt(famSet.size)}개 실패 가족 ${srcBadge("computed", "Rule-key")}`;
-    byId("kpiRejectedSub").innerHTML =
-      `하드 제약 위반 기각(사망 미집계): ${fmtInt(run.rejectedCount ?? 0)}건 ${srcBadge("computed")}`;
-    byId("kpiLeaderId").innerHTML =
-      `${run.leaderDesignId ?? "-"} ${srcBadge("computed", "#1")}`;
-    byId("kpiLeaderPnl").innerHTML =
-      `36개월 생존 (${leaderRes?.survivedMonths ?? 36}M) · 누적손익 ${fmtManwon(leaderRes?.cumPnL ?? 0)} ${srcBadge("computed")}`;
-
-    renderLandscapeCanvas(run);
-    renderSaturationCanvas(run);
-    renderCashflowCanvas(run);
-
-    // Peak-Hour Queue Mini-Sim (P1)
-    byId("peakQueuePanel").innerHTML = `
-      <div>피크 시간 도착 수요: <strong>${peakQueueSim.peakArrivalCupsPerHour.toFixed(1)} 잔/시간</strong> ${srcBadge("computed", "피크계수")}</div>
-      <div>바리스타 처리 용량: <strong>${peakQueueSim.serviceCapacityCupsPerHour.toFixed(1)} 잔/시간</strong> ${srcBadge("computed", "제조시간·인력")}</div>
-      <div>피크 가동률 (Utilization): <strong>${peakQueueSim.utilizationPct.toFixed(1)}%</strong> ${srcBadge("computed")}</div>
-      <div>예상 평균 대기 시간: <strong>${peakQueueSim.avgWaitSec.toFixed(0)}초</strong> · 대기 이탈 손실률: <strong>${peakQueueSim.lostDemandPct.toFixed(1)}%</strong> ${srcBadge("computed")}</div>
-      <div style="color: var(--accent-blue); font-size: 12px;">진단: ${peakQueueSim.bottleneckNote}</div>
-    `;
-  }
-
-  // Screen 3: Single Decision Cliff (AT-07)
   if (run.cliff) {
-    const c = run.cliff;
-    const deltaPct = (c.relativeDelta ?? 0) * 100;
-    byId("cliffHeadline").innerHTML =
-      `${String(c.variable)}: 경계 ${fmtInt(c.boundaryValue)} ${c.unit} (${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%) ${srcBadge("computed", "AT-07")}`;
-    byId("cliffFlipDetail").innerHTML =
-      `경계 전 #1 설계안 <strong>${c.leaderBelow}</strong> → 경계 돌파 시 #1 설계안 <strong>${c.leaderAbove}</strong> 로 교체됨`;
+    text("cliffHeadline", `확인된 반전 구간: ${String(run.cliff.variable)} · 참고 경계 ${fmtInt(run.cliff.boundaryValue)} ${run.cliff.unit}`);
+    text("cliffFlipDetail", `${run.cliff.leaderBelow} ↔ ${run.cliff.leaderAbove}. 제한된 탐색에서 확인한 구간이며 전역 최소 경계·정확한 전환점은 미검증입니다.`);
   } else {
-    byId("cliffHeadline").textContent = "절벽 경계 없음 (전 구간 동일 #1 설계안 유지)";
-    byId("cliffFlipDetail").textContent = "-30% ~ +30% 범위 내에서 #1 설계안이 유지됩니다.";
+    text("cliffHeadline", "현재 탐색에서 확인된 반전 구간 없음");
+    text("cliffFlipDetail", "전체 범위에 역전이 없다는 결론은 아닙니다. 입력을 바꾸면 새 후보 집합의 별도 실행이 됩니다.");
   }
-
-  // Screen 4: Single Next Field Measurement (AT-08)
   if (run.nextMeasurement) {
-    const m = run.nextMeasurement;
-    byId("measureVariable").innerHTML =
-      `대상 변수: ${m.variable} (우선순위 점수 ${(m.priorityScore ?? 1).toFixed(2)}) ${srcBadge("computed", "AT-08")}`;
-    byId("measureAction").innerHTML =
-      `7일 행동 지침: ${m.howToMeasureOnsite} ${srcBadge("onsite", "7일실측")}`;
-    byId("measureReason").innerHTML =
-      `선정 근거: ${m.why}`;
-  }
-
-  // Screen 5: Adversarial Rounds Table (AT-13) & Baseline/Backtest Table (AT-01, AT-09, AT-15)
-  const roundsBody = byId("roundsTableBody");
-  roundsBody.innerHTML = run.rounds
-    .map(
-      (r) => `
-      <tr>
-        <td>Round ${r.round}</td>
-        <td><span class="badge badge-live">${r.changed}</span></td>
-        <td>${fmtInt(r.shocksAdded)}건</td>
-        <td>${fmtInt(r.deaths)}건</td>
-        <td>+${fmtInt(r.newFailureFamilies)}개</td>
-        <td>${fmtInt(r.nonDominatedSurvivors)}개</td>
-        <td>${r.stopReason ?? "계속 진행"} (${(r.elapsedMs ?? 0).toFixed(1)}ms) ${srcBadge("computed")}</td>
-      </tr>
-    `
-    )
-    .join("");
-
-  const b = run.baseline;
-  const yrRows = (run.calibration.yearlyErrors ?? [])
-    .map(
-      (y) => `
-      <tr>
-        <td>백테스트 ${y.year}년 개·폐업 오차</td>
-        <td>개업 ${y.simOpenRatePct.toFixed(1)}% / 폐업 ${y.simCloseRatePct.toFixed(1)}%</td>
-        <td>개업 ${y.refOpenRatePct.toFixed(1)}% / 폐업 ${y.refCloseRatePct.toFixed(1)}%</td>
-        <td>${Math.max(y.openErrorPp, y.closeErrorPp).toFixed(2)} pp ${srcBadge("public", "OA-15577")}</td>
-        <td><span class="badge ${Math.max(y.openErrorPp, y.closeErrorPp) <= 5 ? "badge-done" : "badge-fail"}">${Math.max(y.openErrorPp, y.closeErrorPp) <= 5 ? "PASS" : "FAIL"}</span></td>
-      </tr>
-    `
-    )
-    .join("");
-
-  byId("verificationTableBody").innerHTML = `
-    <tr>
-      <td>AT-09 실패 가족 탐색 수 (동일 예산)</td>
-      <td>Argon: ${fmtInt(b?.argonNewFamilies ?? 0)}개</td>
-      <td>Random: ${fmtInt(b?.randomNewFamilies ?? 0)}개</td>
-      <td>+${fmtInt((b?.argonNewFamilies ?? 0) - (b?.randomNewFamilies ?? 0))}개 ${srcBadge("computed")}</td>
-      <td><span class="badge ${isAiNative ? "badge-done" : "badge-blocked"}">${b?.koLabel ?? "AI-native"}</span></td>
-    </tr>
-    <tr>
-      <td>AT-09 파레토 비지배 설계 수</td>
-      <td>Argon: ${fmtInt(b?.argonNonDominated ?? 0)}개</td>
-      <td>Random: ${fmtInt(b?.randomNonDominated ?? 0)}개</td>
-      <td>+${fmtInt((b?.argonNonDominated ?? 0) - (b?.randomNonDominated ?? 0))}개 ${srcBadge("computed")}</td>
-      <td><span class="badge ${isAiNative ? "badge-done" : "badge-blocked"}">${b?.koLabel ?? "AI-native"}</span></td>
-    </tr>
-    <tr>
-      <td>AT-15 은닉 홀드아웃 (2025Q1~2026Q2)</td>
-      <td>엔진 시뮬레이션</td>
-      <td>서울시 2025~2026Q2 실측</td>
-      <td>${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)} pp ${srcBadge("public", "Holdout")}</td>
-      <td><span class="badge ${(run.calibration.holdoutErrorPp ?? 99) <= 5 ? "badge-done" : "badge-fail"}">${(run.calibration.holdoutErrorPp ?? 99) <= 5 ? "PASS" : "FAIL"}</span></td>
-    </tr>
-    ${yrRows}
-  `;
-}
-
-function collectOnsitePayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    budgetKrw: Number((byId<HTMLInputElement>("inpBudgetKrw")).value),
-    reserveRatioMin: Number((byId<HTMLInputElement>("inpReserveRatio")).value),
-    depositKrw: Number((byId<HTMLInputElement>("inpDepositKrw")).value),
-    monthlyRentKrw: Number((byId<HTMLInputElement>("inpMonthlyRentKrw")).value),
-    fitoutCostKrw: Number((byId<HTMLInputElement>("inpFitoutCostKrw")).value),
-    floorAreaM2: Number((byId<HTMLInputElement>("inpFloorAreaM2")).value),
-    seats: Number((byId<HTMLInputElement>("inpSeats")).value),
-    avgTicketKrw: Number((byId<HTMLInputElement>("inpAvgTicketKrw")).value),
-    cupsPerDayBase: Number((byId<HTMLInputElement>("inpCupsPerDayBase")).value),
-    makeTimeSec: Number((byId<HTMLInputElement>("inpMakeTimeSec")).value),
-    staffFte: Number((byId<HTMLInputElement>("inpStaffFte")).value),
-    cogsRatio: Number((byId<HTMLInputElement>("inpCogsRatio")).value),
-    mode: Number((byId<HTMLSelectElement>("inpMode")).value) === 1000 ? 1000 : 10000,
-    decisionChoice: selectedDecision,
-    ...overrides,
-  };
-}
-
-async function triggerRun(overrides: Record<string, unknown> = {}): Promise<void> {
-  byId("patchAttackAlert").classList.add("hidden");
-  const payload = collectOnsitePayload(overrides);
-  const res = await fetch("/run", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const data = (await res.json()) as ApiRunEnvelope;
-  renderAllScreens(data);
-}
-
-async function runCliffSide(side: "left" | "right"): Promise<void> {
-  if (!currentEnvelope?.run.cliff) {
-    await triggerRun();
-    return;
-  }
-  const cliff = currentEnvelope.run.cliff;
-  const factor = side === "left" ? 0.92 : 1.18;
-  const targetVal = Math.round(cliff.boundaryValue * factor);
-
-  const overrideMap: Record<string, unknown> = {};
-  const v = String(cliff.variable);
-  if (v === "monthlyRent" || v === "rentKRW") {
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = String(targetVal);
-    overrideMap.monthlyRentKrw = targetVal;
-  } else if (v === "avgTicketKrw" || v === "pricePerCupKRW") {
-    (byId<HTMLInputElement>("inpAvgTicketKrw")).value = String(targetVal);
-    overrideMap.avgTicketKrw = targetVal;
-  } else if (v === "makeTimeSec") {
-    (byId<HTMLInputElement>("inpMakeTimeSec")).value = String(targetVal);
-    overrideMap.makeTimeSec = targetVal;
-  } else if (v === "cupsPerDayBase") {
-    (byId<HTMLInputElement>("inpCupsPerDayBase")).value = String(targetVal);
-    overrideMap.cupsPerDayBase = targetVal;
+    text("measureVariable", `다음 측정 제안: ${run.nextMeasurement.variable}`);
+    text("measureAction", run.nextMeasurement.howToMeasureOnsite);
+    text("measureReason", `제안 근거: ${run.nextMeasurement.why} · 현장 측정 미실시`);
   } else {
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = String(
-      side === "left" ? 3_100_000 : 4_200_000
-    );
-    overrideMap.monthlyRentKrw = side === "left" ? 3_100_000 : 4_200_000;
+    text("measureVariable", "반전 구간에 연결된 측정값 미확정");
+    text("measureAction", "임대료·수요·제조시간 등 현재 가정을 현장에서 확인하세요.");
+    text("measureReason", "별도의 측정 완료나 우선순위 검증을 주장하지 않습니다.");
   }
-
-  await triggerRun(overrideMap);
+  rows("roundsTableBody", run.rounds.length ? run.rounds.map((round) => [
+    `계산 기록 ${round.round}`, round.changed, String(round.shocksAdded), String(round.deaths),
+    String(round.newFailureFamilies), String(round.nonDominatedSurvivors), `${round.stopReason || "미확인"} · 실모델 적대 실행 여부 미검증`,
+  ]) : [["적대적 루프 미실행", "-", "-", "-", "-", "-", "이번 서버 실행은 고정 루프를 자동 실행하지 않음"]]);
+  const baseline = run.baseline;
+  rows("verificationTableBody", [
+    ["실패 유형 탐색 수", baseline ? String(baseline.argonNewFamilies) : "미확인", baseline ? String(baseline.randomNewFamilies) : "미확인", "계산된 후보 집합 비교", "AI 개선 효과 미검증"],
+    ["비지배 후보 수", baseline ? String(baseline.argonNonDominated) : "미확인", baseline ? String(baseline.randomNonDominated) : "미확인", "후보 집합에 종속", "독립 성능 검증 아님"],
+    ["2025Q1~2026Q2 집계 비교", diagnostic(run.calibration.holdoutErrorPp), "보관 요약", "집계 휴리스틱 참고", "숨김 홀드아웃 검증 미완료"],
+    ...(run.calibration.yearlyErrors ?? []).map((year) => [String(year.year), `${year.simOpenRatePct} / ${year.simCloseRatePct}`, `${year.refOpenRatePct} / ${year.refCloseRatePct}`, diagnostic(Math.max(year.openErrorPp, year.closeErrorPp)), "집계 참고 · 보정 미검증"]),
+  ]);
+  announce(`${evidence.state} · ${origin}. 요청 ${fmtInt(generation.requestedCandidates)}, 계산 ${fmtInt(generation.calculatedCandidates)}, ID ${fmtInt(generation.uniqueDesignIds)}, 고유 가정 조합 ${fmtInt(generation.uniqueAssumptionSets)}. 현재 결과를 확인한 뒤 인간 결정을 선택하세요.`);
 }
-
-async function triggerForbiddenPatchAttack(): Promise<void> {
-  const res = await fetch("/patches", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      patches: [
-        { op: "replace", path: "/checks", value: 1, by: "StoreDesigner" },
-        { op: "replace", path: "/budgetKrw", value: 999999999, by: "StoreDesigner" },
-        { op: "replace", path: "/reserveRatioMin", value: 0, by: "StoreDesigner" },
-        { op: "replace", path: "/oracle/pnlFormula", value: "hack", by: "StoreDesigner" },
-        { op: "replace", path: "/backtest/referenceRates", value: 0, by: "BankruptcyDesigner" },
-      ],
-    }),
-  });
-  const out = (await res.json()) as {
-    acceptedCount: number;
-    rejectedCount: number;
-    rejectedPatches: { patchIndex: number; path: string; reason: string }[];
-    engineResultHashUnchanged: boolean;
+function inputValue(id: string): string {
+  const value = byId<HTMLInputElement | HTMLSelectElement>(id).value.trim();
+  if (!value) throw new Error("빈 입력을 숫자 0으로 바꿀 수 없습니다. 모든 가정 값을 입력하세요.");
+  if (!Number.isFinite(Number(value))) throw new Error("유효한 숫자 값을 입력하세요.");
+  return value;
+}
+function collectPayload(mode: "preview" | "ai") {
+  return {
+    mode,
+    variantCount: Number(inputValue("inpMode")),
+    seed: Number(inputValue("inpSeed")),
+    inputs: {
+      budgetKrw: inputValue("inpBudgetKrw"), depositKrw: inputValue("inpDepositKrw"),
+      fitoutKrw: inputValue("inpFitoutCostKrw"), rentKrw: inputValue("inpMonthlyRentKrw"),
+      seats: inputValue("inpSeats"), floorAreaM2: inputValue("inpFloorAreaM2"),
+      staffFte: inputValue("inpStaffFte"), ownerHoursPerWeek: inputValue("inpOwnerHoursPerWeek"),
+      avgTicketKrw: inputValue("inpAvgTicketKrw"), cupsPerDayBase: inputValue("inpCupsPerDayBase"),
+      makeTimeSec: inputValue("inpMakeTimeSec"), openDaysPerWeek: inputValue("inpOpenDaysPerWeek"),
+      cogsRatio: inputValue("inpCogsRatio"),
+    },
   };
-  const alertEl = byId("patchAttackAlert");
-  alertEl.classList.remove("hidden");
-  alertEl.innerHTML = `
-    <div style="font-weight: 800; color: #fda4af;">
-      🛡️ [AT-10 판정기(Oracle) 보호 검증 완료] 금지 경로 패치 ${out.rejectedCount}/5건 전량 기각 · 엔진 결과 해시 불변(${out.engineResultHashUnchanged ? "VERIFIED" : "FAIL"})
-    </div>
-    <ul style="margin-left: 18px; font-size: 12px; color: var(--text-secondary);">
-      ${out.rejectedPatches.map((p) => `<li><code>${p.path}</code> → ${p.reason}</li>`).join("")}
-    </ul>
-  `;
 }
-
+async function triggerRun(mode: "preview" | "ai", default10k = false): Promise<void> {
+  if (activeRequest !== null) { announce("현재 요청의 응답을 기다리는 중입니다."); return; }
+  if (default10k) byId<HTMLSelectElement>("inpMode").value = "10000";
+  const modeInput = document.getElementById("inpExecutionMode") as HTMLSelectElement | null;
+  if (modeInput) modeInput.value = mode;
+  invalidate("입력 확인 중 — 이전 결정과 내보내기를 해제했습니다.");
+  let payload: ReturnType<typeof collectPayload>;
+  try { payload = collectPayload(mode); }
+  catch (error) { announce(error instanceof Error ? error.message : "입력을 확인하세요.", true); return; }
+  const submittedRevision = revision;
+  const fingerprint = JSON.stringify(payload);
+  const serial = ++requestSerial;
+  activeRequest = serial;
+  updateControls();
+  text("sbEndState", "실행 중");
+  announce(mode === "ai" ? "명시적으로 요청한 모델 실행 중입니다. 입력을 바꾸면 이 응답은 현재 결과에 적용되지 않습니다." : "서버에서 가정 후보를 계산 중입니다. 모델은 호출하지 않습니다.");
+  try {
+    const response = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: fingerprint });
+    const payloadOut = await response.json().catch(() => null);
+    if (activeRequest !== serial) return;
+    let unchanged = submittedRevision === revision;
+    try { unchanged = unchanged && fingerprint === JSON.stringify(collectPayload(mode)); } catch { unchanged = false; }
+    if (!unchanged) {
+      announce("실행 중 입력이 변경되어 응답을 현재 결과로 사용하지 않았습니다. 변경된 입력으로 다시 실행하세요.", true);
+      text("sbEndState", "입력 변경 · 결과 미적용");
+      return;
+    }
+    if (!response.ok) throw new Error(payloadOut?.error ? String(payloadOut.error) : `HTTP ${response.status}`);
+    if (!payloadOut || typeof payloadOut !== "object" || !["DONE", "FAIL", "BLOCKED"].includes(payloadOut.state)) throw new Error("서버 응답 형식을 확인할 수 없습니다.");
+    const evidence = payloadOut as ServerEnvelope;
+    renderStatusBar(evidence);
+    if (evidence.state !== "DONE" || !evidence.result || evidence.result.status.endState !== "DONE") {
+      announce(`${evidence.state} · ${evidence.reason || evidence.ai?.reason || "완료된 계산 결과 없음"}. 결정과 내보내기를 활성화하지 않았습니다.`, true);
+      return;
+    }
+    resultRevision = submittedRevision;
+    resultFingerprint = fingerprint;
+    renderAllScreens({ run: evidence.result, seoulSummary: marketContext?.seoulSummary ?? null, peakQueueSim: null, evidence });
+  } catch (error) {
+    currentEnvelope = null;
+    resultRevision = null;
+    resultFingerprint = null;
+    resetDecision();
+    text("sbEndState", "요청 실패 / 결과 미확인");
+    announce(`실행 결과를 확인하지 못했습니다: ${error instanceof Error ? error.message : "통신 오류"}. 자동 재실행하지 않습니다.`, true);
+  } finally {
+    if (activeRequest === serial) activeRequest = null;
+    updateControls();
+  }
+}
+function chooseDecision(choice: Decision): void {
+  if (!fresh()) { announce("현재 입력의 완료된 결과를 먼저 실행하세요. 이전 결과에 결정을 붙일 수 없습니다.", true); updateControls(); return; }
+  selectedDecision = choice;
+  decisionAt = new Date().toISOString();
+  for (const [id, value] of [["decHold", "hold"], ["decMeasure", "measure"], ["decProceed", "proceed"]]) byId(id).classList.toggle("active", value === choice);
+  text("selectedDecisionText", `${choice} · 사용자가 현재 실행에 직접 선택 · ${decisionAt}`);
+  updateControls();
+}
+function exportEvidence(): Record<string, unknown> | null {
+  if (!fresh() || selectedDecision === null || !currentEnvelope) {
+    resetDecision();
+    updateControls();
+    announce("입력이 바뀌었거나 인간 결정이 없습니다. 새 결과에 직접 결정을 선택한 뒤 내보내세요.", true);
+    return null;
+  }
+  return { ...currentEnvelope.evidence, humanDecision: { choice: selectedDecision, selectedAt: decisionAt, runId: currentEnvelope.evidence.runId, inputHash: currentEnvelope.evidence.inputHash }, marketContext };
+}
+function download(format: "json" | "csv" | "md"): void {
+  const documentEvidence = exportEvidence();
+  if (!documentEvidence || !currentEnvelope) return;
+  const evidence = currentEnvelope.evidence;
+  let content: string;
+  let mime: string;
+  if (format === "json") {
+    content = JSON.stringify(documentEvidence, null, 2);
+    mime = "application/json";
+  } else if (format === "md") {
+    const run = currentEnvelope.run;
+    const md = (value: unknown, limit = 500) => String(value ?? "미확인")
+      .replace(/[\r\n]+/g, " ").replace(/\|/g, "\\|")
+      .replace(/</g, "&lt;").replace(/>/g, "&gt;").slice(0, limit);
+    const numberText = (value: unknown) => typeof value === "number" && Number.isFinite(value)
+      ? value.toLocaleString("ko-KR") : "미확인";
+    const inputLabels: [string, string][] = [
+      ["variantCount", "요청 후보 수"], ["seed", "Seed"],
+      ["budgetKrw", "예산 (원)"], ["depositKrw", "보증금 (원)"],
+      ["fitoutKrw", "인테리어·장비비 (원)"], ["rentKrw", "월세 (원)"],
+      ["seats", "좌석"], ["floorAreaM2", "면적 (㎡)"],
+      ["staffFte", "직원 FTE"], ["ownerHoursPerWeek", "점주 시간/주"],
+      ["avgTicketKrw", "객단가 (원)"], ["cupsPerDayBase", "일 수요 가정"],
+      ["makeTimeSec", "제조시간 (초)"], ["openDaysPerWeek", "영업일/주"],
+      ["cogsRatio", "원가 비율"],
+    ];
+    const leader = run.results.find((result) => result.designId === run.leaderDesignId && result.constraintsOk);
+    const columns = [
+      ["month", "월"], ["revenue", "매출"], ["cogs", "원가"],
+      ["rent", "월세"], ["labour", "인건비"], ["other", "기타비"],
+      ["cashEnd", "월말 현금"], ["cumPnL", "누적손익"],
+    ] as const;
+    const recordedColumns = columns.filter(([key]) => leader?.months.some((row) => typeof row[key] === "number"));
+    const ledger = leader?.months.length ? [
+      `선두 ID: ${md(leader.designId)} · 서버 원장 ${leader.months.length}행 · 금액 단위: 원`,
+      "",
+      `| ${recordedColumns.map(([, label]) => label).join(" | ")} |`,
+      `| ${recordedColumns.map(() => "---:").join(" | ")} |`,
+      ...leader.months.slice(0, 36).map((row) => `| ${recordedColumns.map(([key]) => numberText(row[key])).join(" | ")} |`),
+    ] : ["실제 선두 후보의 월별 원장이 없어 표를 만들지 않았습니다."];
+    const usage = evidence.ai.tokens.length ? [
+      "| 모델 | 호출 기록 | 입력 토큰 | 출력 토큰 |",
+      "| --- | --- | ---: | ---: |",
+      ...evidence.ai.tokens.map((item) => `| ${md(item.model, 100)} | ${md(item.call, 120)} | ${numberText(item.inputTokens)} | ${numberText(item.outputTokens)} |`),
+    ] : ["모델 사용량 기록 0건. 기본 미리보기는 모델을 호출하지 않습니다."];
+    const cliff = run.cliff ? [
+      `변수: ${md(run.cliff.variable)} · 참고 경계: ${numberText(run.cliff.boundaryValue)} ${md(run.cliff.unit)}`,
+      `확인된 후보: ${md(run.cliff.leaderBelow)} ↔ ${md(run.cliff.leaderAbove)}`,
+      "제한된 탐색에서 확인한 반전 구간입니다. 전역 최소 경계와 정확한 전환점은 미검증입니다.",
+    ] : ["현재 탐색에서 확인된 반전 구간 없음. 전체 범위에 역전이 없음을 입증하지 않습니다."];
+    content = [
+      "# 천 개의 가게 — 가정 기반 계산 보고서", "",
+      `- Run ID: ${md(evidence.runId)}`,
+      `- Input SHA-256: ${md(evidence.inputHash)}`,
+      `- Engine SHA: ${md(evidence.engineSha)}`,
+      `- 종료 상태: ${md(evidence.state)} · ${md(evidence.reason)}`,
+      `- 실행: ${md(evidence.mode)} · ${evidence.replay ? "저장 결과 재생" : "이번 실행"}`,
+      `- 모델 상태: ${md(evidence.ai.status)} · 모델: ${md(evidence.ai.model)}`,
+      "", "## 근거와 한계", "",
+      md(evidence.calibrationNote, 1000),
+      "모든 입력은 명시한 가정입니다. 개별 계산은 실세계 확률·AI 개선 효과·현장 측정 완료를 입증하지 않습니다.",
+      marketContext?.seoulSummary ? md(`${marketContext.seoulSummary.datasetName} · ${marketContext.seoulSummary.asOf} · ${marketContext.seoulSummary.sourceNote}`, 800) : "상권 맥락 미확인.",
+      "", "## 핵심 입력 가정", "", "| 항목 | 서버에 기록된 값 |", "| --- | ---: |",
+      ...inputLabels.map(([key, label]) => `| ${label} | ${numberText(evidence.inputSnapshot[key])} |`),
+      `| 최소 예비비 비율 | ${numberText(run.constraints.reserveRatioMin)} |`,
+      "", "## 실제 모델 사용량", "", ...usage,
+      "", "## 선두 후보 월별 원장 — 개별 계산 예시", "", ...ledger,
+      "", "## 반전 구간의 범위", "", ...cliff,
+      "", "## 다음 측정 제안 — 미실시", "",
+      run.nextMeasurement ? `${md(run.nextMeasurement.variable)}: ${md(run.nextMeasurement.howToMeasureOnsite, 700)}` : "반전 구간에 연결된 측정값 미확정.",
+      ...(run.nextMeasurement ? [md(run.nextMeasurement.why, 500)] : []),
+      "", "## 검사 기록", "", "| 검사 | 상태 | 근거·검사 범위 |", "| --- | --- | --- |",
+      ...run.status.gateLog.map((gate) => `| ${md(gate.gate, 80)} | ${gate.passed === true ? "통과" : gate.passed === false ? "미충족" : "미검증"} | ${md(gate.detail, 320)} |`),
+      "", "## 인간의 결정", "",
+      `- 선택: ${selectedDecision}`,
+      `- 실제 선택 시각: ${md(decisionAt)}`,
+      `- 연결된 실행: ${md(evidence.runId)} / ${md(evidence.inputHash)}`,
+      "", "## 전체 근거 보관", "",
+      `전체 후보·월별 원장·입력·모델 기록은 별도 JSON 버튼으로 thousand-stores-${md(evidence.runId)}.json을 저장하세요. 이 보고서는 전체 JSON의 대체본이 아닙니다.`,
+      "",
+    ].join("\n");
+    mime = "text/markdown";
+  } else {
+    const csv: unknown[][] = [["recordType", "runId", "inputHash", "humanDecision", "designId", "month", "key", "value"]];
+    const append = (kind: string, key: string, value: unknown, designId = "", month: number | string = "") => csv.push([kind, evidence.runId, evidence.inputHash, selectedDecision, designId, month, key, JSON.stringify(value)]);
+    for (const [key, value] of Object.entries(documentEvidence)) if (key !== "result") append("metadata", key, value);
+    for (const [key, value] of Object.entries(currentEnvelope.run)) if (key !== "designs" && key !== "results") append("engine", key, value);
+    for (const design of currentEnvelope.run.designs) append("design", "design", design, design.id);
+    for (const result of currentEnvelope.run.results) {
+      append("candidate", "result", result, result.designId);
+      for (const month of result.months) append("ledger", "month", month, result.designId, month.month);
+    }
+    content = "\uFEFF" + csv.map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    mime = "text/csv";
+  }
+  const url = URL.createObjectURL(new Blob([content], { type: `${mime};charset=utf-8` }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `thousand-stores-${evidence.runId}.${format}`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 function setupEventListeners(): void {
-  byId("btnSubmitRun").addEventListener("click", () => {
-    void triggerRun({ replay: false });
-  });
-
-  byId("btnRunDefault10k").addEventListener("click", () => {
-    (byId<HTMLSelectElement>("inpMode")).value = "10000";
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = "3300000";
-    void triggerRun({ mode: 10000, referenceOffsetPp: 0, replay: false });
-  });
-
-  byId("btnFlipLeft").addEventListener("click", () => {
-    void runCliffSide("left");
-  });
-
-  byId("btnFlipRight").addEventListener("click", () => {
-    void runCliffSide("right");
-  });
-
-  byId("btnCliffMinus").addEventListener("click", () => {
-    void runCliffSide("left");
-  });
-
-  byId("btnCliffPlus").addEventListener("click", () => {
-    void runCliffSide("right");
-  });
-
-  byId("btnDemoUncalibrated").addEventListener("click", () => {
-    void triggerRun({ referenceOffsetPp: 10.0, replay: false });
-  });
-
-  byId("btnDemoForbiddenPatch").addEventListener("click", () => {
-    void triggerForbiddenPatchAttack();
-  });
-
-  // Decision cards (Screen 6)
-  const decisionCards = [byId("decMeasure"), byId("decHold"), byId("decProceed")];
-  const decisionLabels: Record<string, string> = {
-    measure: "7일 현장 실측 우선 수행 (Measure first)",
-    hold: "보류: 측정 전까지 근거 부족 (Hold: insufficient evidence)",
-    proceed: "#1 비지배 생존 설계안 조건으로 협상 진행 (Proceed)",
-  };
-  for (const card of decisionCards) {
-    card.addEventListener("click", () => {
-      for (const c of decisionCards) c.classList.remove("active");
-      card.classList.add("active");
-      const choice = (card.getAttribute("data-choice") ?? "hold") as "proceed" | "hold" | "measure";
-      selectedDecision = choice;
-      byId("selectedDecisionText").textContent = decisionLabels[choice] ?? choice;
-    });
+  byId("btnSubmitRun").addEventListener("click", () => { void triggerRun("preview"); });
+  byId("btnRunDefault10k").addEventListener("click", () => { void triggerRun("preview", true); });
+  document.getElementById("btnRunAi")?.addEventListener("click", () => { void triggerRun("ai"); });
+  for (const id of ["btnFlipLeft", "btnFlipRight", "btnCliffMinus", "btnCliffPlus", "btnDemoForbiddenPatch"]) {
+    const button = document.getElementById(id) as HTMLButtonElement | null;
+    if (button) { button.disabled = true; button.title = "현재 실행과 다른 후보 집합을 동일 후보 역전이나 검증 완료로 시연하지 않습니다."; }
   }
-
-  // Export buttons (Screen 6, AT-12)
-  byId("btnExportCsv").addEventListener("click", () => {
-    const runId = currentEnvelope?.run.runId ?? "default";
-    window.location.href = `/api/export/${encodeURIComponent(runId)}/csv?decision=${encodeURIComponent(selectedDecision)}`;
-  });
-
-  byId("btnExportMd").addEventListener("click", () => {
-    const runId = currentEnvelope?.run.runId ?? "default";
-    window.location.href = `/api/export/${encodeURIComponent(runId)}/report.md?decision=${encodeURIComponent(selectedDecision)}`;
-  });
-
-  byId("btnExportJson").addEventListener("click", () => {
-    if (!currentEnvelope) return;
-    const blob = new Blob([JSON.stringify(currentEnvelope.run, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `thousand-stores-${currentEnvelope.run.runId}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+  byId("btnDemoUncalibrated").addEventListener("click", () => announce("현재 시스템은 현금흐름 보정 미검증입니다. 집계 휴리스틱의 작은 오차로 분포나 숨김 홀드아웃 검증을 통과시키지 않습니다."));
+  for (const id of ["decHold", "decMeasure", "decProceed"]) {
+    const element = byId(id);
+    const choose = () => chooseDecision(element.dataset.choice as Decision);
+    element.addEventListener("click", choose);
+    element.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(); } });
+  }
+  byId("btnExportJson").addEventListener("click", () => download("json"));
+  byId("btnExportCsv").addEventListener("click", () => download("csv"));
+  byId("btnExportMd").addEventListener("click", () => download("md"));
+  for (const element of document.querySelectorAll("#screen1 input, #screen1 select")) {
+    const changed = () => { revision += 1; invalidate("입력이 변경되었습니다. 기존 결정과 결과는 현재 입력에 사용할 수 없습니다. 다시 실행하세요."); };
+    element.addEventListener("input", changed);
+    element.addEventListener("change", changed);
+  }
 }
-
 async function boot(): Promise<void> {
   setupEventListeners();
-  const res = await fetch("/api/default");
-  if (res.ok) {
-    const data = (await res.json()) as ApiRunEnvelope;
-    renderAllScreens(data);
-  }
+  invalidate("실행 전입니다. 입력 가정을 확인한 뒤 미리보기 계산 또는 명시적 AI 실행을 선택하세요.");
+  text("heroModeBadge", "실행 전 · 기본 10,000개 후보 요청");
+  text("sbReplayBadge", "미실행");
+  renderContext();
+  await Promise.allSettled([
+    fetch("/api/context").then(async (response) => {
+      if (!response.ok) throw new Error("context unavailable");
+      marketContext = await response.json() as ApiContext;
+      renderContext();
+    }).catch(() => { marketContext = null; renderContext(); }),
+    fetch("/api/health").then(async (response) => {
+      if (!response.ok) throw new Error("health unavailable");
+      const health = await response.json();
+      text("sbKeyStatus", health.aiConfigured ? "서버 AI 설정 감지 · 실호출 미검증" : "서버 AI 미설정 · 미리보기 가능");
+    }).catch(() => text("sbKeyStatus", "서버 AI 설정 미확인")),
+  ]);
 }
-
-void boot();
+void boot().catch((error) => announce(`화면 초기화 실패: ${error instanceof Error ? error.message : "미확인"}`, true));

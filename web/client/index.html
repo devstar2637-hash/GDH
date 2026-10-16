@@ -3,992 +3,156 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>천 개의 가게 · A Thousand Stores — 임대차 계약 전 10,000개 미래 리허설 엔진</title>
-  <style>
-    :root {
-      --bg-primary: #0b0f17;
-      --bg-card: #121826;
-      --bg-card-alt: #171f32;
-      --bg-input: #0e1420;
-      --border: #26324d;
-      --border-strong: #3b4e75;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent-blue: #38bdf8;
-      --accent-indigo: #818cf8;
-      --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: var(--bg-primary);
-      background-image:
-        radial-gradient(circle at 15% 5%, rgba(56, 189, 248, 0.08) 0%, transparent 35%),
-        radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.08) 0%, transparent 40%),
-        linear-gradient(rgba(38, 50, 77, 0.14) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(38, 50, 77, 0.14) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      line-height: 1.55;
-      padding-bottom: 64px;
-    }
-
-    /* Sticky Observability Status Bar (AT-14) */
-    .status-bar {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(11, 15, 23, 0.94);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-strong);
-      padding: 10px 20px;
-      font-size: 12px;
-    }
-
-    .status-bar-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 18px;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .status-cluster {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 12px;
-    }
-
-    .status-kv {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--text-secondary);
-    }
-
-    .status-kv strong {
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-    }
-
-    .gate-strip {
-      max-width: 1280px;
-      margin: 6px auto 0;
-      padding-top: 6px;
-      border-top: 1px dashed rgba(59, 78, 117, 0.5);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      font-family: var(--font-mono);
-      letter-spacing: 0.01em;
-    }
-
-    .badge-done {
-      background: rgba(16, 185, 129, 0.16);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.45);
-    }
-
-    .badge-fail {
-      background: rgba(244, 63, 94, 0.18);
-      color: #fb7185;
-      border: 1px solid rgba(244, 63, 94, 0.5);
-    }
-
-    .badge-blocked {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.5);
-    }
-
-    .badge-replay {
-      background: rgba(129, 140, 248, 0.16);
-      color: #a5b4fc;
-      border: 1px solid rgba(129, 140, 248, 0.45);
-    }
-
-    .badge-live {
-      background: rgba(56, 189, 248, 0.16);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.45);
-    }
-
-    /* SourceTag Pills (C6, AT-12) */
-    .src-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 10.5px;
-      font-weight: 600;
-      font-family: var(--font-mono);
-      margin-left: 5px;
-      vertical-align: middle;
-    }
-
-    .src-public {
-      background: rgba(56, 189, 248, 0.14);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.35);
-    }
-
-    .src-onsite {
-      background: rgba(16, 185, 129, 0.14);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-
-    .src-computed {
-      background: rgba(129, 140, 248, 0.15);
-      color: #c7d2fe;
-      border: 1px solid rgba(129, 140, 248, 0.35);
-    }
-
-    .src-assumed {
-      background: rgba(245, 158, 11, 0.14);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.35);
-    }
-
-    .src-synthetic {
-      background: rgba(244, 63, 94, 0.14);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.35);
-    }
-
-    /* Main Layout */
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 20px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Hero Header */
-    .hero {
-      background: linear-gradient(135deg, rgba(18, 24, 38, 0.96), rgba(23, 31, 50, 0.92));
-      border: 1px solid var(--border-strong);
-      border-radius: 14px;
-      padding: 22px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-    }
-
-    .hero-top {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .hero-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .hero-subtitle {
-      font-size: 14px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    .philosophy-banner {
-      background: rgba(56, 189, 248, 0.07);
-      border-left: 3px solid var(--accent-blue);
-      padding: 8px 14px;
-      border-radius: 0 8px 8px 0;
-      font-size: 13px;
-      color: #bae6fd;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Demo Scenario Switcher */
-    .demo-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      padding-top: 6px;
-      border-top: 1px solid var(--border);
-    }
-
-    .demo-toolbar-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--accent-blue);
-      margin-right: 4px;
-    }
-
-    button {
-      cursor: pointer;
-      font-family: var(--font-sans);
-      font-size: 13px;
-      font-weight: 600;
-      border-radius: 8px;
-      padding: 8px 14px;
-      border: 1px solid var(--border-strong);
-      background: var(--bg-card-alt);
-      color: var(--text-primary);
-      transition: all 0.15s ease;
-    }
-
-    button:hover {
-      border-color: var(--accent-blue);
-      background: rgba(56, 189, 248, 0.12);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      border-color: #38bdf8;
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #0369a1, #1d4ed8);
-    }
-
-    .btn-warn {
-      background: rgba(245, 158, 11, 0.14);
-      border-color: rgba(245, 158, 11, 0.5);
-      color: #fde68a;
-    }
-
-    .btn-danger {
-      background: rgba(244, 63, 94, 0.14);
-      border-color: rgba(244, 63, 94, 0.5);
-      color: #fecdd3;
-    }
-
-    /* Screen Cards */
-    .screen-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 22px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    }
-
-    .screen-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .screen-step {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent-blue);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .screen-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-    }
-
-    /* Form Grid (Screen 1) */
-    .input-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
-      gap: 12px;
-    }
-
-    .field-box {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .field-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .field-box input,
-    .field-box select {
-      background: #161f33;
-      border: 1px solid var(--border-strong);
-      border-radius: 6px;
-      padding: 7px 10px;
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 13px;
-      width: 100%;
-    }
-
-    /* KPI Summary Grid */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .kpi-card {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 13px 15px;
-    }
-
-    .kpi-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .kpi-val {
-      font-size: 21px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      color: #ffffff;
-    }
-
-    .kpi-sub {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Two-column layout for Canvas charts */
-    .chart-grid {
-      display: grid;
-      grid-template-columns: 1.55fr 1fr;
-      gap: 16px;
-    }
-
-    @media (max-width: 960px) {
-      .chart-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .canvas-panel {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .canvas-title {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    canvas {
-      width: 100%;
-      height: 310px;
-      background: #090d14;
-      border: 1px solid rgba(59, 78, 117, 0.45);
-      border-radius: 8px;
-      display: block;
-    }
-
-    /* Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12.5px;
-    }
-
-    th, td {
-      padding: 9px 11px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-    }
-
-    th {
-      color: var(--text-secondary);
-      font-weight: 600;
-      background: rgba(14, 20, 32, 0.7);
-    }
-
-    td {
-      font-family: var(--font-mono);
-    }
-
-    /* Cliff & Measurement Highlight Cards (Screens 3 & 4) */
-    .split-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    @media (max-width: 900px) {
-      .split-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .callout-box {
-      background: rgba(56, 189, 248, 0.06);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 10px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .callout-amber {
-      background: rgba(245, 158, 11, 0.07);
-      border-color: rgba(245, 158, 11, 0.4);
-    }
-
-    .callout-rose {
-      background: rgba(244, 63, 94, 0.08);
-      border-color: rgba(244, 63, 94, 0.45);
-    }
-
-    /* Decision Buttons (Screen 6) */
-    .decision-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .decision-card {
-      background: var(--bg-input);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .decision-card.active {
-      border-color: var(--accent-blue);
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    .decision-card h4 {
-      font-size: 15px;
-      margin-bottom: 6px;
-      color: #ffffff;
-    }
-
-    .decision-card p {
-      font-size: 12.5px;
-      color: var(--text-secondary);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
+  <title>천 개의 가게 · A Thousand Stores — 36개월 가정 리허설</title>
+  <link rel="stylesheet" href="/rehearsal/styles.css" />
 </head>
 <body>
-  <!-- Always-Visible Status Bar (AT-14) -->
-  <header class="status-bar" id="statusBar" role="region" aria-label="실행 상태 및 검증 게이트">
+  <header class="status-bar" id="statusBar" role="region" aria-label="실행 상태 및 검증 근거">
     <div class="status-bar-inner">
       <div class="status-cluster">
-        <span class="badge badge-done" id="sbEndState">DONE</span>
-        <span class="badge badge-replay" id="sbReplayBadge">재생 (REPLAY)</span>
-        <span class="status-kv">Run ID: <strong id="sbRunId">-</strong></span>
-        <span class="status-kv">Input SHA-256(8): <strong id="sbInputHash">-</strong></span>
-        <span class="status-kv">Engine SHA: <strong id="sbEngineSha">-</strong></span>
-        <span class="status-kv">실행 시간: <strong id="sbComputeMs">-</strong></span>
+        <span class="badge badge-blocked" id="sbEndState">미실행</span>
+        <span class="badge badge-replay hidden" id="sbReplayBadge">재생</span>
+        <span class="status-kv">실행 ID <strong id="sbRunId">미실행</strong></span>
+        <span class="status-kv">입력 해시 <strong id="sbInputHash">미확인</strong></span>
+        <span class="status-kv">엔진 버전 <strong id="sbEngineSha">미확인</strong></span>
+        <span class="status-kv">계산 시간 <strong id="sbComputeMs">미측정</strong></span>
       </div>
       <div class="status-cluster">
-        <span class="status-kv">입력 파일: <strong id="sbInputFiles">-</strong></span>
-        <span class="status-kv">토큰 합계(In/Out): <strong id="sbTokensTotal">-</strong></span>
+        <span class="status-kv">입력 자료 <strong id="sbInputFiles">사용자 가정 · 실행 전</strong></span>
+        <span class="status-kv">모델 토큰 In/Out <strong id="sbTokensTotal">미호출</strong></span>
+        <span class="status-kv">AI 연결 <strong id="sbKeyStatus">확인 중</strong></span>
       </div>
     </div>
-    <div class="gate-strip" id="sbGateLog">
-      <!-- Gate badges populated dynamically -->
-    </div>
+    <div class="gate-strip" id="sbGateLog">아직 검사를 실행하지 않았습니다.</div>
   </header>
 
   <main class="container">
-    <!-- Hero Banner & Demo Controls -->
     <section class="hero">
       <div class="hero-top">
         <div>
-          <h1 class="hero-title">
-            <span>천 개의 가게 · A Thousand Stores</span>
-            <span class="badge badge-live" id="heroModeBadge">500 AI design families x 20 variations</span>
-            <span class="badge badge-done" id="heroCalibrationBadge">보정됨 (calibrated)</span>
-            <span class="badge badge-done" id="heroBaselineBadge">AI-native</span>
-          </h1>
-          <p class="hero-subtitle">
-            임대차 계약서에 서명하기 전, 한 상권·한 예산에서 <strong>10,000개의 36개월 미래(500 AI 설계족 × 20 결정적 변주)</strong>를 먼저 살아봅니다.
-          </p>
+          <h1 class="hero-title">천 개의 가게 · A Thousand Stores</h1>
+          <p class="hero-subtitle">입력한 가정에서 36개월 현금흐름을 계산하고, 결과를 바꾸는 조건과 다음 확인 항목을 살펴보세요.</p>
         </div>
-        <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
-          <div>대상 상권: <strong>서울 성수동 카페거리 (8개 상권 통합 · CS100010)</strong> <span class="src-tag src-public">public: 서울열린데이터광장</span></div>
-          <div>모델 구성: <strong>gemini-4-argon (설계·파산 추론) + gemini-3.8-flash (정규화)</strong></div>
+        <div class="status-cluster">
+          <span class="badge badge-blocked" id="heroModeBadge">미실행</span>
+          <span class="badge badge-blocked" id="heroCalibrationBadge">보정 미검증</span>
+          <span class="badge badge-blocked" id="heroBaselineBadge">AI 우위 미검증</span>
         </div>
       </div>
-
       <div class="philosophy-banner">
-        <span><strong>원칙:</strong> "과거(2021~2024 백테스트 + 2025~2026 은닉 홀드아웃)를 재현하기 전에는 미래를 말하지 않습니다."</span>
-        <span><strong>리허설 고지 (rehearsal, not advice):</strong> 모든 빈도는 실세계 확률이 아닌 <strong>시나리오 빈도(scenario frequency)</strong>이며 모든 숫자는 출처 태그를 포함합니다.</span>
+        <span><strong>가정 리허설:</strong> 결과는 실제 미래의 예측이나 계약·대출 권고가 아닙니다.</span>
+        <span>공개 상권의 개·폐업 집계가 개별 가게의 현금흐름을 검증하지는 않습니다.</span>
       </div>
-
       <div class="demo-toolbar">
-        <span class="demo-toolbar-label">3분 라이브 데모 시나리오:</span>
-        <button class="btn-primary" id="btnRunDefault10k" type="button">① 10,000개 미래 기본 실행 (500×20)</button>
-        <button id="btnFlipLeft" type="button">② 절벽 좌측 (-1 step) 재실행</button>
-        <button id="btnFlipRight" type="button">③ 절벽 우측 (+1 step) 재실행</button>
-        <button class="btn-warn" id="btnDemoUncalibrated" type="button">④ 미보정 실패 상태 시연 (AT-02)</button>
-        <button class="btn-danger" id="btnDemoForbiddenPatch" type="button">⑤ 금지 경로 공격 차단 시연 (AT-10)</button>
+        <span class="demo-toolbar-label">실행과 근거 확인</span>
+        <button class="btn-primary" id="btnRunDefault10k" type="button">10,000개 로컬 리허설 실행 · 모델 미호출</button>
+        <button class="btn-warn" id="btnRunAi" type="button">실제 AI 설계 제안 요청</button>
+        <button id="btnFlipLeft" type="button" disabled>역전 구간 아래 재실행 · 미연결</button>
+        <button id="btnFlipRight" type="button" disabled>역전 구간 위 재실행 · 미연결</button>
+        <button class="btn-warn" id="btnDemoUncalibrated" type="button">보정 미검증 안내</button>
+        <button class="btn-danger" id="btnDemoForbiddenPatch" type="button" disabled>금지 패치 시연 · 미연결</button>
       </div>
+      <p class="muted-note">AI 버튼은 입력 가정을 서버의 모델 API로 전송합니다. 10,000개 모드는 최대 5회 모델 호출로 500개 설계군을 요청하며, 실제 비용·성공 여부는 실행 뒤 확인합니다.</p>
+      <p id="runMessage" role="status" aria-live="polite">입력을 확인한 뒤 실행하세요. 현재 결과·판정·선택은 없습니다.</p>
       <div id="patchAttackAlert" class="callout-box callout-rose hidden"></div>
     </section>
 
-    <!-- SCREEN 1: 현장 입력 및 공공데이터 출처 (Onsite Input & Public Provenance) -->
     <section class="screen-card" id="screen1">
       <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 1 · Input & Provenance (P0)</div>
-          <h2 class="screen-title">1. 상권·예산·매장 조건 입력 및 데이터 출처 태그</h2>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <label for="inpMode" style="font-size: 12.5px; color: var(--text-secondary);">실행 규모(N):</label>
-          <select id="inpMode" style="background: #161f33; color: #fff; border: 1px solid var(--border-strong); padding: 6px 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 12.5px;">
-            <option value="10000" selected>10,000 변형 — 500 AI design families x 20 variations (기본값)</option>
-            <option value="1000">1,000 변형 — 11:30 스파이크 크기</option>
-          </select>
-          <button class="btn-primary" id="btnSubmitRun" type="button">리허설 실행 (Run 36M)</button>
+        <div><div class="screen-step">Screen 1 · Input &amp; Provenance</div><h2 class="screen-title">1. 가정과 실행 방식</h2></div>
+        <div class="row-controls form-toolbar">
+          <label for="inpMode">후보 규모
+            <select id="inpMode"><option value="10000" selected>10,000개 · 기본 규모</option><option value="1000">1,000개 · 스파이크</option></select>
+          </label>
+          <button class="btn-primary" id="btnSubmitRun" type="button">36개월 로컬 리허설 · 모델 미호출</button>
         </div>
       </div>
-
-      <div class="input-grid">
-        <div class="field-box">
-          <div class="field-label">
-            <span>총 창업 예산 (KRW)</span>
-            <span class="src-tag src-onsite">onsite: 사용자예산</span>
-          </div>
-          <input type="number" id="inpBudgetKrw" value="120000000" step="5000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>최소 현금 유보율 (≥10%)</span>
-            <span class="src-tag src-computed">computed: 하드제약</span>
-          </div>
-          <input type="number" id="inpReserveRatio" value="0.10" step="0.01" min="0.10" max="0.50" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>보증금 (36개월 묶인 현금)</span>
-            <span class="src-tag src-onsite">onsite: 중개호가</span>
-          </div>
-          <input type="number" id="inpDepositKrw" value="40000000" step="5000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>월 임대료 (KRW)</span>
-            <span class="src-tag src-onsite">onsite: 중개호가</span>
-          </div>
-          <input type="number" id="inpMonthlyRentKrw" value="3300000" step="100000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>인테리어·장비 초기 투자비</span>
-            <span class="src-tag src-onsite">onsite: 견적서</span>
-          </div>
-          <input type="number" id="inpFitoutCostKrw" value="48000000" step="2000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>전용 면적 (㎡ · 건축물대장)</span>
-            <span class="src-tag src-public">public: 건축물대장</span>
-          </div>
-          <input type="number" id="inpFloorAreaM2" value="46.2" step="1" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>좌석 수 (석)</span>
-            <span class="src-tag src-onsite">onsite: 도면설계</span>
-          </div>
-          <input type="number" id="inpSeats" value="18" step="2" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>평균 객단가 (1잔/주문 KRW)</span>
-            <span class="src-tag src-onsite">onsite: 메뉴설계</span>
-          </div>
-          <input type="number" id="inpAvgTicketKrw" value="5200" step="200" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>일 기본 판매 잔수 (잔/일)</span>
-            <span class="src-tag src-computed">computed: OA-15572</span>
-          </div>
-          <input type="number" id="inpCupsPerDayBase" value="185" step="5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>1잔 평균 제조 시간 (초)</span>
-            <span class="src-tag src-assumed">assumed: ±30%</span>
-          </div>
-          <input type="number" id="inpMakeTimeSec" value="75" step="5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>상근 스태프 인원 (FTE)</span>
-            <span class="src-tag src-onsite">onsite: 운영안</span>
-          </div>
-          <input type="number" id="inpStaffFte" value="1.5" step="0.5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>원재료율 (COGS Ratio)</span>
-            <span class="src-tag src-assumed">assumed: ±30%</span>
-          </div>
-          <input type="number" id="inpCogsRatio" value="0.32" step="0.01" />
-        </div>
+      <p class="muted-note">아래 기본값은 모두 예시 가정입니다. 견적서·건축물대장·실측 자료로 확인됐다는 뜻이 아닙니다. 로컬 탐색과 실제 모델 생성은 별도로 표시합니다.</p>
+      <div class="input-grid section-spaced">
+        <label class="field-box"><span class="field-label">총 창업 예산 (KRW)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpBudgetKrw" value="120000000" min="1000000" max="10000000000" step="5000000" /></label>
+        <label class="field-box"><span class="field-label">최소 현금 유보율 · 서버 고정<span class="src-tag src-computed">rule: 10%</span></span><input type="number" id="inpReserveRatio" value="0.10" readonly aria-readonly="true" /></label>
+        <label class="field-box"><span class="field-label">보증금 · 잠긴 현금 (KRW)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpDepositKrw" value="40000000" min="0" max="10000000000" step="5000000" /></label>
+        <label class="field-box"><span class="field-label">월 임대료 (KRW)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpMonthlyRentKrw" value="3300000" min="0" max="1000000000" step="100000" /></label>
+        <label class="field-box"><span class="field-label">인테리어·장비 초기 투자비 (KRW)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpFitoutCostKrw" value="48000000" min="0" max="10000000000" step="2000000" /></label>
+        <label class="field-box"><span class="field-label">전용 면적 (㎡)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpFloorAreaM2" value="46.2" min="1" max="2000" step="0.1" /></label>
+        <label class="field-box"><span class="field-label">좌석 수<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpSeats" value="18" min="0" max="500" step="1" /></label>
+        <label class="field-box"><span class="field-label">평균 주문액 (KRW)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpAvgTicketKrw" value="5200" min="1500" max="200000" step="100" /></label>
+        <label class="field-box"><span class="field-label">일 기본 판매 잔수<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpCupsPerDayBase" value="185" min="0" max="20000" step="1" /></label>
+        <label class="field-box"><span class="field-label">평균 제조 시간 (초)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpMakeTimeSec" value="75" min="25" max="1800" step="1" /></label>
+        <label class="field-box"><span class="field-label">유급 스태프 (FTE)<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpStaffFte" value="1.5" min="0" max="30" step="0.1" /></label>
+        <label class="field-box"><span class="field-label">원재료율<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpCogsRatio" value="0.32" min="0" max="0.85" step="0.01" /></label>
+        <label class="field-box"><span class="field-label">사업주 주당 근무시간<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpOwnerHoursPerWeek" value="45" min="0" max="100" step="1" /></label>
+        <label class="field-box"><span class="field-label">주당 영업일<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpOpenDaysPerWeek" value="6" min="1" max="7" step="1" /></label>
+        <label class="field-box"><span class="field-label">재현용 seed<span class="src-tag src-assumed">assumed</span></span><input type="number" id="inpSeed" value="20261016" min="0" max="4294967295" step="1" /></label>
       </div>
-
-      <!-- Public Dataset & Maps Grounding Context Bar -->
-      <div class="kpi-grid" style="margin-top: 14px; margin-bottom: 0;">
-        <div class="kpi-card">
-          <div class="kpi-label">공공데이터 기준 점포 수 (2026Q2) <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubStoreCount">245개</div>
-          <div class="kpi-sub">성수동 카페거리 8개 상권 커피-음료(CS100010)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">2021~2024 분기 평균 개업률 <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubOpenRate">4.14%</div>
-          <div class="kpi-sub">16개 보정 분기 시계열 기준 (연간 환산 약 16.5%)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">2021~2024 분기 평균 폐업률 <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubCloseRate">3.31%</div>
-          <div class="kpi-sub">은닉 홀드아웃: 2025Q1~2026Q2 (6개 분기 별도 분리)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Maps Grounding 상권 맥락 (P1 보조 카드) <span class="src-tag src-public">public: 입지컨텍스트</span></div>
-          <div class="kpi-val" style="font-size: 14.5px; margin-top: 4px;">성수역 3번출구·연무장길 도보 6분</div>
-          <div class="kpi-sub">핵심 수치 계산에는 미사용 (공공데이터만 정본으로 사용)</div>
-        </div>
+      <p class="context-note" id="contextSourceNote">공개자료 맥락은 아직 조회하지 않았습니다. 현재 계산 입력은 사용자 가정입니다.</p>
+      <div class="kpi-grid section-spaced">
+        <div class="kpi-card"><div class="kpi-label">참고 점포 집계 · OA-15577</div><div class="kpi-val" id="pubStoreCount">미확인</div><div class="kpi-sub">기본 입력값의 실측 근거가 아닙니다.</div></div>
+        <div class="kpi-card"><div class="kpi-label">참고 개업률 집계</div><div class="kpi-val" id="pubOpenRate">미확인</div><div class="kpi-sub">원자료·기간·집계 범위 확인 필요</div></div>
+        <div class="kpi-card"><div class="kpi-label">참고 폐업률 집계</div><div class="kpi-val" id="pubCloseRate">미확인</div><div class="kpi-sub">개별 점포 예측 검증과 다릅니다.</div></div>
+        <div class="kpi-card"><div class="kpi-label">지도 맥락</div><div class="kpi-val">미연결</div><div class="kpi-sub">Maps API를 호출하지 않았습니다.</div></div>
       </div>
     </section>
 
-    <!-- SCREEN 2: 10,000개 미래 생존 지형도 & 포화 곡선 (Landscape & Saturation Curve) -->
     <section class="screen-card" id="screen2">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 2 · Survival Landscape & Saturation Curve (AT-01, AT-02, AT-05, AT-16)</div>
-          <h2 class="screen-title">2. 36개월 생존 지형도 — <span id="landscapeModeLabel">500 AI design families x 20 variations</span></h2>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span class="badge badge-done" id="sec2CalibBadge">보정됨 (calibrated)</span>
-          <span class="src-tag src-computed">computed: 결정적 36개월 현금흐름 엔진</span>
-        </div>
+      <div class="screen-header"><div><div class="screen-step">Screen 2 · Calculated Results</div><h2 class="screen-title">2. 계산 결과 · <span id="landscapeModeLabel">미실행</span></h2></div><span class="badge badge-blocked" id="sec2CalibBadge">보정 미검증</span></div>
+      <div id="uncalibratedPanel" class="callout-box callout-rose">
+        <h3>보정 미검증 · 분포 차트 비공개</h3>
+        <p>개별 가게의 현금흐름 보정과 숨겨진 검증 사례를 통과한 근거가 없습니다. 분포·확률로 해석하지 말고 입력 가정과 개별 계산을 확인하세요.</p>
+        <div class="table-wrap"><table><thead><tr><th>확인 항목</th><th>입력·가정</th><th>보정 오차</th><th>홀드아웃</th><th>근거</th></tr></thead><tbody id="uncalibratedTableBody"><tr><td colspan="5">미실행</td></tr></tbody></table></div>
       </div>
-
-      <!-- Uncalibrated Warning Panel (AT-02: Shown when calibration fails, hides distributions) -->
-      <div id="uncalibratedPanel" class="callout-box callout-rose hidden">
-        <h3 style="color: #fda4af; font-size: 16px;">[미보정 / UNCALIBRATED] 백테스트 오차가 ±5.0%p 임계치를 초과하여 시나리오 빈도 분포를 숨깁니다 (AT-02)</h3>
-        <p style="font-size: 13px; color: var(--text-secondary);">
-          원칙에 따라 과거 상권 개·폐업률을 ±5.0%p 이내로 재현하지 못한 상태에서는 미래 생존 지형도 분포를 표시하지 않으며, 아래 <strong>가정 점검표(Assumption Inspection Table)</strong>만 제공합니다.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>점검 항목</th>
-              <th>현재 입력/가정값</th>
-              <th>백테스트 최대 오차 (pp)</th>
-              <th>홀드아웃 오차 (pp)</th>
-              <th>출처 태그</th>
-            </tr>
-          </thead>
-          <tbody id="uncalibratedTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- Calibrated Distribution Content (Hidden when AT-02 uncalibrated is active) -->
-      <div id="calibratedDistributionContainer">
+      <div id="calibratedDistributionContainer" class="hidden" hidden aria-hidden="true">
         <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">36개월 완주 시나리오 빈도 (Scenario Frequency) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiSurvivalFreq">-</div>
-            <div class="kpi-sub" id="kpiSurvivalSub">실세계 확률이 아닌 리허설 시나리오 빈도</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">파레토 비지배 생존 설계 (Non-Dominated) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiNonDominated">-</div>
-            <div class="kpi-sub">생존개월 · 36개월 누적 손익 · 최저 현금 기준</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">발견된 고유 실패 가족 (Failure Families) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiFailureFamilies">-</div>
-            <div class="kpi-sub" id="kpiRejectedSub">하드 제약 위반 기각(사망 미집계): 0건</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">#1 최우선 생존 설계안 (Leader Design) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiLeaderId">-</div>
-            <div class="kpi-sub" id="kpiLeaderPnl">36개월 누적 손익 및 보증금 환급 포함</div>
-          </div>
+          <div class="kpi-card"><div class="kpi-label">시나리오 완주 빈도</div><div class="kpi-val" id="kpiSurvivalFreq">미확인</div><div class="kpi-sub" id="kpiSurvivalSub">실세계 확률이 아닙니다.</div></div>
+          <div class="kpi-card"><div class="kpi-label">비지배 설계</div><div class="kpi-val" id="kpiNonDominated">미확인</div></div>
+          <div class="kpi-card"><div class="kpi-label">실패 유형 수</div><div class="kpi-val" id="kpiFailureFamilies">미확인</div><div class="kpi-sub" id="kpiRejectedSub">제약 기각 미집계</div></div>
+          <div class="kpi-card"><div class="kpi-label">선두 설계</div><div class="kpi-val" id="kpiLeaderId">미확인</div><div class="kpi-sub" id="kpiLeaderPnl">손익 미계산</div></div>
         </div>
-
         <div class="chart-grid">
-          <!-- 10,000-Dot Canvas Scatter -->
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>10,000개 변형 생존 지형도 산점도 (X: 생존 개월, Y: 36개월 누적 손익 만원)</span>
-              <span class="src-tag src-computed">500 AI design families x 20 variations</span>
-            </div>
-            <canvas id="landscapeCanvas" width="720" height="310"></canvas>
-            <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--text-secondary);">
-              <span>🟢 <strong>파레토 비지배 생존 (#1 및 후보군)</strong></span>
-              <span>🔵 <strong>36개월 생존 변형</strong></span>
-              <span>🟠 <strong>유보금 3개월 연속 미달 (reserveBreach)</strong></span>
-              <span>🔴 <strong>현금 고갈 사망 (cashBelowZero)</strong></span>
-            </div>
-          </div>
-
-          <!-- Saturation Curve (N = 1,000 / 3,000 / 10,000, AT-16) -->
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>실패 가족 포화 곡선 (N = 1,000 / 3,000 / 10,000 · AT-16)</span>
-              <span class="src-tag src-computed" id="saturationStatusBadge">computed: saturation</span>
-            </div>
-            <canvas id="saturationCanvas" width="460" height="310"></canvas>
-            <div id="saturationSummaryText" style="font-size: 12px; color: var(--text-secondary);">
-              500 AI design families x 20 variations · 표본 규모(N) 증가에 따른 고유 실패 가족 및 비지배 설계 수 추이
-            </div>
-          </div>
+          <div class="canvas-panel"><div class="canvas-title">가정별 결과 분포 · 보정 검증 전 숨김</div><canvas id="landscapeCanvas" width="720" height="310"></canvas></div>
+          <div class="canvas-panel"><div class="canvas-title">탐색 규모 비교 · <span id="saturationStatusBadge">미실행</span></div><canvas id="saturationCanvas" width="460" height="310"></canvas><p id="saturationSummaryText">미실행 · 포화 여부를 확인하지 않았습니다.</p></div>
         </div>
-
-        <!-- 36-Month Cash Flow & Peak-Hour Queue Mini-Sim (P1) -->
-        <div class="chart-grid" style="margin-top: 16px;">
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>#1 생존 설계안 vs 조기 폐업 변형 36개월 현금 잔고 추이 (보증금=묶인 현금, 36개월차 환급 · AT-04)</span>
-              <span class="src-tag src-computed">computed: 월별 P&amp;L</span>
-            </div>
-            <canvas id="cashflowCanvas" width="720" height="240"></canvas>
-          </div>
-
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>피크타임 대기열 미니 시뮬레이션 (Peak-Hour Queue Mini-Sim · P1)</span>
-              <span class="src-tag src-computed">computed: M/M/c 대기열</span>
-            </div>
-            <div id="peakQueuePanel" style="display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; padding-top: 4px;">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-        </div>
+      </div>
+      <div class="chart-grid section-spaced">
+        <div class="canvas-panel"><div class="canvas-title">선두 설계의 개별 현금흐름 계산</div><p class="cashflow-note">입력 가정에 따른 계산 예시입니다. 실제 가게의 미래 예측이나 검증된 분포가 아닙니다.</p><canvas id="cashflowCanvas" width="720" height="240"></canvas></div>
+        <div class="canvas-panel"><div class="canvas-title">피크타임 대기열</div><div id="peakQueuePanel">미실행 · 이 화면에서는 대기열 모형을 실행하지 않습니다.</div></div>
       </div>
     </section>
 
-    <!-- SCREEN 3 & SCREEN 4: 단일 결정 절벽 (AT-07) & 단 하나의 다음 현장 측정 (AT-08) -->
     <div class="split-2">
-      <!-- SCREEN 3: Single Decision Cliff -->
       <section class="screen-card" id="screen3">
-        <div class="screen-header">
-          <div>
-            <div class="screen-step">Screen 3 · Single Decision Cliff (AT-07)</div>
-            <h2 class="screen-title">3. 단 하나의 결정 절벽 (Decision Cliff)</h2>
-          </div>
-          <span class="src-tag src-computed">computed: 11-step 경계 탐색</span>
-        </div>
-
-        <div class="callout-box" id="cliffCard">
-          <div style="font-size: 12px; color: var(--accent-blue); font-weight: 700;">#1 최우선 설계안이 뒤집히는 최소 상대 변화량 가정</div>
-          <div style="font-size: 20px; font-weight: 800; color: #fff;" id="cliffHeadline">-</div>
-          <div style="font-size: 13px; color: var(--text-secondary);" id="cliffFlipDetail">-</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
-            <button id="btnCliffMinus" type="button">경계 -1 Step 재실행 (Before Flip)</button>
-            <button id="btnCliffPlus" type="button">경계 +1 Step 재실행 (After Flip)</button>
-          </div>
-        </div>
+        <div class="screen-header"><div><div class="screen-step">Screen 3 · Sensitivity</div><h2 class="screen-title">3. 선두가 바뀌는 조건</h2></div></div>
+        <div class="callout-box" id="cliffCard"><p class="muted-note">찾은 구간 양끝의 선두를 비교합니다. 전역 최소 경계나 같은 설계 쌍의 역전을 보장하지 않습니다.</p><h3 id="cliffHeadline">미실행</h3><p id="cliffFlipDetail">경계 검증 근거 없음</p><div class="row-controls"><button id="btnCliffMinus" type="button" disabled>아래 끝점 재실행 · 미연결</button><button id="btnCliffPlus" type="button" disabled>위 끝점 재실행 · 미연결</button></div></div>
       </section>
-
-      <!-- SCREEN 4: Single Next Field Measurement -->
       <section class="screen-card" id="screen4">
-        <div class="screen-header">
-          <div>
-            <div class="screen-step">Screen 4 · Next Field Measurement (AT-08)</div>
-            <h2 class="screen-title">4. 계약 전 7일 현장 실측 프로토콜</h2>
-          </div>
-          <span class="src-tag src-computed">computed: (1/|Δ|) × 불확실성 폭</span>
-        </div>
-
-        <div class="callout-box callout-amber" id="measurementCard">
-          <div style="font-size: 12px; color: #fcd34d; font-weight: 700;">결론을 가장 작은 오차로 뒤집는 단 하나의 현장 측정 과제</div>
-          <div style="font-size: 18px; font-weight: 800; color: #fff;" id="measureVariable">-</div>
-          <div style="font-size: 13.5px; color: var(--text-primary); font-weight: 600;" id="measureAction">-</div>
-          <div style="font-size: 12.5px; color: var(--text-secondary);" id="measureReason">-</div>
-        </div>
+        <div class="screen-header"><div><div class="screen-step">Screen 4 · Next Measurement</div><h2 class="screen-title">4. 다음에 확인할 항목</h2></div></div>
+        <div class="callout-box callout-amber" id="measurementCard"><p class="muted-note">계산 결과에서 도출한 확인 제안입니다. 현장 측정을 실행했다는 뜻이 아닙니다.</p><h3 id="measureVariable">미실행</h3><p id="measureAction">아직 확인 항목을 정하지 않았습니다.</p><p id="measureReason">계산을 먼저 실행하세요.</p></div>
       </section>
     </div>
 
-    <!-- SCREEN 5: 적대적 파산 루프 3라운드 & 백테스트/홀드아웃/기준선 검증 (AT-01, AT-09, AT-13, AT-15) -->
     <section class="screen-card" id="screen5">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 5 · Adversarial Rounds & Verification Gates (AT-09, AT-13, AT-15)</div>
-          <h2 class="screen-title">5. 파산 설계자 vs 가게 설계자 적대적 라운드 (최대 3라운드) 및 기준선 검증</h2>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span class="badge badge-done" id="sec5BaselineBadge">AI-native</span>
-          <span class="src-tag src-computed">computed: S/P 엄격 분리 오케스트레이터</span>
-        </div>
-      </div>
-
+      <div class="screen-header"><div><div class="screen-step">Screen 5 · Verification</div><h2 class="screen-title">5. 실패·검증 기록</h2></div><span class="badge badge-blocked" id="sec5BaselineBadge">기준선 비교 미검증</span></div>
       <div class="split-2">
-        <div>
-          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--accent-blue);">
-            적대적 스트레스 테스트 라운드 로그 (runs/&lt;id&gt;/rounds.json · AT-13)
-          </h3>
-          <table>
-            <thead>
-              <tr>
-                <th>라운드</th>
-                <th>변경 축</th>
-                <th>추가 쇼크</th>
-                <th>신규 사망</th>
-                <th>신규 실패가족</th>
-                <th>비지배 생존</th>
-                <th>종료 사유 (stopReason)</th>
-              </tr>
-            </thead>
-            <tbody id="roundsTableBody"></tbody>
-          </table>
-        </div>
-
-        <div>
-          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--accent-blue);">
-            무작위/그리드 기준선 비교 (AT-09) &amp; 연도별 백테스트 오차 (AT-01 · AT-15)
-          </h3>
-          <table>
-            <thead>
-              <tr>
-                <th>검증 구분</th>
-                <th>측정값 / Argon</th>
-                <th>기준값 / Random</th>
-                <th>오차 / 비교</th>
-                <th>판정</th>
-              </tr>
-            </thead>
-            <tbody id="verificationTableBody"></tbody>
-          </table>
-        </div>
+        <div><h3>적대 라운드</h3><p class="muted-note">실행된 기록만 표시합니다. 라운드가 없으면 미실행입니다.</p><div class="table-wrap"><table><thead><tr><th>라운드</th><th>축</th><th>쇼크</th><th>종료</th><th>실패 유형</th><th>비지배</th><th>이유</th></tr></thead><tbody id="roundsTableBody"><tr><td colspan="7">미실행</td></tr></tbody></table></div></div>
+        <div><h3>검사와 남은 근거</h3><p class="muted-note">검사 통과와 실제 업무 성과를 구분합니다.</p><div class="table-wrap"><table><thead><tr><th>검사</th><th>관측</th><th>기준</th><th>차이</th><th>상태</th></tr></thead><tbody id="verificationTableBody"><tr><td colspan="5">미실행</td></tr></tbody></table></div></div>
       </div>
     </section>
 
-    <!-- SCREEN 6: 창업자 의사결정 및 내보내기 (Decision & Export, AT-12) -->
     <section class="screen-card" id="screen6">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 6 · Founder Decision & Export (AT-12)</div>
-          <h2 class="screen-title">6. 창업자 의사결정 기록 및 Google Sheets / Docs 내보내기</h2>
-        </div>
-        <span class="src-tag src-onsite">onsite: 창업자 최종 선택</span>
+      <div class="screen-header"><div><div class="screen-step">Screen 6 · Decision &amp; Export</div><h2 class="screen-title">6. 내 결정 기록과 파일 저장</h2></div></div>
+      <p class="muted-note">현재 입력으로 계산한 결과를 확인한 뒤 직접 선택하세요. 입력을 바꾸면 이전 선택과 내보내기는 초기화됩니다.</p>
+      <div class="decision-grid section-spaced">
+        <div class="decision-card" id="decMeasure" data-choice="measure" role="button" tabindex="0" aria-disabled="true"><h4>확인부터 하기 · Measure</h4><p>추가로 확인할 항목과 이유를 내 결정으로 기록합니다.</p></div>
+        <div class="decision-card" id="decHold" data-choice="hold" role="button" tabindex="0" aria-disabled="true"><h4>보류 · Hold</h4><p>지금 판단하기에 근거가 부족하다는 내 선택을 기록합니다.</p></div>
+        <div class="decision-card" id="decProceed" data-choice="proceed" role="button" tabindex="0" aria-disabled="true"><h4>진행 검토 · Proceed</h4><p>계산의 한계를 확인한 뒤 내 선택과 확인할 조건을 기록합니다.</p></div>
       </div>
-
-      <div class="decision-grid">
-        <div class="decision-card" id="decMeasure" data-choice="measure">
-          <h4>① 7일 현장 실측 우선 수행 (Measure First · 권장)</h4>
-          <p>임대차 계약서 날인 전, Screen 4의 7일 현장 측정 프로토콜을 먼저 수행해 절벽 가정의 실측치를 확보합니다.</p>
-        </div>
-        <div class="decision-card active" id="decHold" data-choice="hold">
-          <h4>② 보류: 측정 전까지 근거 부족 (Hold: Insufficient Evidence)</h4>
-          <p>현재 임대료·수요 가정에서는 절벽 경계가 가까워 측정 전까지 계약을 보류합니다. (완결된 공식 종료 상태)</p>
-        </div>
-        <div class="decision-card" id="decProceed" data-choice="proceed">
-          <h4>③ #1 비지배 생존 설계안 조건으로 협상 진행 (Proceed)</h4>
-          <p>#1 생존 설계안의 좌석·메뉴·인력 구조와 10% 이상 현금 유보 조건을 유지한 채 임대차 조건을 협의합니다.</p>
-        </div>
+      <div class="export-footer">
+        <p>선택된 결정: <strong id="selectedDecisionText">선택 없음</strong></p>
+        <div class="row-controls"><button class="btn-primary" id="btnExportCsv" type="button" disabled>결과 CSV 저장</button><button id="btnExportMd" type="button" disabled>보고서 Markdown 저장</button><button id="btnExportJson" type="button" disabled>실행 JSON 저장</button></div>
       </div>
-
-      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
-        <div style="font-size: 13px; color: var(--text-secondary);">
-          선택된 의사결정: <strong id="selectedDecisionText" style="color: #fff;">보류: 측정 전까지 근거 부족 (Hold: insufficient evidence)</strong>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-          <button class="btn-primary" id="btnExportCsv" type="button">📊 Google Sheets 호환 CSV 내보내기 (.csv)</button>
-          <button id="btnExportMd" type="button">📄 Google Docs 리허설 보고서 내보내기 (.md)</button>
-          <button id="btnExportJson" type="button">🗂️ Canonical RunResult JSON 저장 (.json)</button>
-        </div>
-      </div>
+      <p class="context-note">파일을 내려받습니다. Google Docs·Sheets에 자동 업로드하거나 외부로 발송하지 않습니다.</p>
     </section>
   </main>
-
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/rehearsal/app.js"></script>
 </body>
 </html>

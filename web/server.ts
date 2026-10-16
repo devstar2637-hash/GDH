@@ -10,11 +10,30 @@ import type { Constraints, StoreDesign, Shock, RunResult, TokenUsage } from '../
 import { checkStoreConstraints, runOrchestration, generateStructuredStoreDesigns, expandDesignFamiliesTo10k } from '../engine/index.js';
 import { generateDesigns } from '../loop/index.js';
 import { generateFamilyDesigns } from '../loop/familyBatches.js';
+import { loadSeoulMarketData } from '../data/seoulLoader.js';
 
 const publicDir = fileURLToPath(new URL('./public/', import.meta.url));
+const clientDir = resolve('dist/web/client');
 const runsDir = resolve(process.env.RUNS_DIR || 'runs');
 let busy = false;
 const runs = new Map<string, RunEnvelope>();
+let marketContext: ReturnType<typeof presentationContext> | null = null;
+function presentationContext() {
+  const market = loadSeoulMarketData();
+  return {
+    seoulSummary: {
+      latestStoreCount: market.summaryMetrics.latestStoreCount.value,
+      meanQuarterlyOpenRatePct: market.summaryMetrics.meanQuarterlyOpenRatePct.value,
+      meanQuarterlyCloseRatePct: market.summaryMetrics.meanQuarterlyCloseRatePct.value,
+      datasetName: market.sourceTag.kind === 'public' ? market.sourceTag.dataset : '보관된 상권 요약',
+      asOf: market.sourceTag.kind === 'public' ? market.sourceTag.asOf : '미확인',
+      sourceNote: '보관된 공공자료 요약입니다. 원본 CSV 재집계 및 개별 가게 현금흐름 검증은 미완료입니다.',
+    },
+    inputFiles: market.inputFiles,
+    byteFingerprint: market.manifestHash,
+    rawReconciliationVerified: false,
+  };
+}
 type RunEnvelope = {
   runId: string; state: 'DONE' | 'FAIL' | 'BLOCKED'; reason: string | null;
   inputHash: string; engineSha: string; createdAt: string; replay: boolean;
@@ -177,6 +196,10 @@ export function createServer(adapters: ServerAdapters = {}) {
     try {
       const pathname = new URL(req.url || '/', 'http://localhost').pathname;
       if (req.method === 'GET' && (pathname === '/health' || pathname === '/api/health')) return json(res, 200, { ok: true, busy, aiConfigured: Boolean(process.env.GEMINI_API_KEY), engineSha: engineSha(), calibrationStatus: 'unverified' });
+      if (req.method === 'GET' && pathname === '/api/context') {
+        marketContext ??= presentationContext();
+        return json(res, 200, marketContext);
+      }
       if (req.method === 'POST' && (pathname === '/run' || pathname === '/patches')) {
         if (busy) return json(res, 429, { error: 'Another run is in progress. Please wait.' });
         busy = true;
@@ -198,11 +221,15 @@ export function createServer(adapters: ServerAdapters = {}) {
         if (!run) { try { run = JSON.parse(await readFile(resolve(runsDir, id, 'web-result.json'), 'utf8')); } catch { return json(res, 404, { error: 'Run not found' }); } }
         return json(res, 200, { ...run, replay: true });
       }
-      const assets: Record<string, [string,string]> = { '/': ['index.html','text/html; charset=utf-8'], '/app.js': ['app.js','application/javascript; charset=utf-8'], '/styles.css': ['styles.css','text/css; charset=utf-8'] };
+      if (req.method === 'GET' && pathname === '/rehearsal') {
+        res.writeHead(302, { Location: '/rehearsal/', 'Cache-Control': 'no-store' });
+        return res.end();
+      }
+      const assets: Record<string, [string,string]> = { '/': ['index.html','text/html; charset=utf-8'], '/app.js': ['app.js','application/javascript; charset=utf-8'], '/styles.css': ['styles.css','text/css; charset=utf-8'], '/rehearsal/': ['index.html','text/html; charset=utf-8'], '/rehearsal/app.js': ['app.js','application/javascript; charset=utf-8'], '/rehearsal/styles.css': ['styles.css','text/css; charset=utf-8'] };
       if (req.method === 'GET' && assets[pathname]) {
         const [name, mime] = assets[pathname];
         res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" });
-        return res.end(await readFile(resolve(publicDir, name)));
+        return res.end(await readFile(resolve(pathname.startsWith('/rehearsal/') ? clientDir : publicDir, name)));
       }
       return json(res, 404, { error: 'Not found' });
     } catch (e) { return json(res, e instanceof BadRequest ? e.status : 500, { error: e instanceof BadRequest ? e.message : 'Request failed' }); }

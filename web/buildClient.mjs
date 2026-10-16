@@ -1,6 +1,17 @@
 import { mkdir, copyFile } from 'node:fs/promises';
-await mkdir('web/public', { recursive: true });
-// Dependency-free browser assets are source files; no keys or server modules enter this build.
+import { build } from 'esbuild';
+// Preserve the existing workbench assets. The six-screen client is a separate entry point.
 await mkdir('dist/web/public', { recursive: true });
 for (const file of ['index.html','styles.css','app.js']) await copyFile(`web/public/${file}`, `dist/web/public/${file}`);
-console.log('Browser assets copied; server-only modules excluded.');
+await mkdir('dist/web/client', { recursive: true });
+await build({
+  entryPoints: ['web/client/app.ts'],
+  outfile: 'dist/web/client/app.js',
+  bundle: true,
+  platform: 'browser',
+  format: 'esm',
+  target: ['es2022'],
+  sourcemap: false,
+});
+for (const file of ['index.html','styles.css']) await copyFile(`web/client/${file}`, `dist/web/client/${file}`);
+console.log('Workbench assets preserved; six-screen browser bundle and CSP-compatible stylesheet built.');

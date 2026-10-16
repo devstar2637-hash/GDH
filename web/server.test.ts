@@ -15,6 +15,9 @@ test('web HTTP has real engine result, replay retrieval, no-key terminal state a
  const port=(server.address() as {port:number}).port;const origin=`http://127.0.0.1:${port}`;
  try{
   assert.equal((await fetch(origin+'/health')).status,200);
+  const context:any=await (await fetch(origin+'/api/context')).json();
+  assert.ok(context.seoulSummary.latestStoreCount>0);assert.equal(context.rawReconciliationVerified,false);assert.match(context.seoulSummary.sourceNote,/미완료/);
+  assert.equal((await fetch(origin+'/runs/run-00000000-0000-0000-0000-000000000000')).status,404);
   assert.equal((await fetch(origin+'/package.json')).status,404);
   const invalid=await fetch(origin+'/run',{method:'POST',body:JSON.stringify({inputs:null})});assert.equal(invalid.status,400);
   const tooLarge=await fetch(origin+'/run',{method:'POST',body:JSON.stringify({padding:'x'.repeat(129*1024)})});assert.equal(tooLarge.status,413);
