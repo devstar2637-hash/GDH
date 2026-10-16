@@ -19,9 +19,11 @@ npm run secrets:scan
 ```
 
 Commit the generated web/client source together with the integration changes.
-Deploy this checked source to the existing thousand-stores service using the
-repository's Cloud Run deployment procedure. A GitHub push alone does not
-deploy Cloud Run in this project; there is no configured build trigger.
+Push this checked source to personal rarehotdog/GDH main. The personal Vercel
+project is connected to that repository and serves the static UI and local
+financial-engine function. No original GitHub or hackathon GCP account is needed.
+For optional Cloud Run hosting, use your own project and the root Dockerfile;
+a GitHub push alone does not deploy Cloud Run without a separately configured trigger.
 
 The build compiles Tailwind CSS, bundles the JavaScript, and places a content
 hash in the HTML asset URLs. GET /api/health reports uiBuild and the Cloud Run
@@ -35,7 +37,9 @@ accepting the GitHub version, then restart the preview if necessary.
 
 AI Studio's Vite server proxies /api/summary, /api/default, /api/health, and
 /api/rehearse to ENGINE_BASE_URL. The default points to the deployed GDH
-service. No client credentials are needed for the public rehearsal API.
+Vercel service at https://thousand-stores-personal.vercel.app. No client
+credentials are needed for the public rehearsal API. Connect AI Studio's GitHub
+settings to rarehotdog/rehearsal-store, not the expiring original account.
 
 ## Result provenance
 

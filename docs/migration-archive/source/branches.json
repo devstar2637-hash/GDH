@@ -1,0 +1,87 @@
+[
+  {
+    "name": "codex/fast-track",
+    "commit": {
+      "sha": "ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d",
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/devstar2637-hash/GDH/branches/codex/fast-track/protection"
+  },
+  {
+    "name": "cursor/cli-contract-2c06",
+    "commit": {
+      "sha": "8d5026472d2ec45cdae42f81628181cff085cce6",
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/8d5026472d2ec45cdae42f81628181cff085cce6"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/devstar2637-hash/GDH/branches/cursor/cli-contract-2c06/protection"
+  },
+  {
+    "name": "main",
+    "commit": {
+      "sha": "27c581287d185cb0e5bd2478c64257cad180525a",
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/27c581287d185cb0e5bd2478c64257cad180525a"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/devstar2637-hash/GDH/branches/main/protection"
+  },
+  {
+    "name": "reference/verified-store-mvp",
+    "commit": {
+      "sha": "c7cbd96f6d29eb05b121435b1f94707e7037c409",
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/c7cbd96f6d29eb05b121435b1f94707e7037c409"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/devstar2637-hash/GDH/branches/reference/verified-store-mvp/protection"
+  },
+  {
+    "name": "verify/tests",
+    "commit": {
+      "sha": "bd9704de703d82fffb8a369eda6a38595cf72d17",
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/bd9704de703d82fffb8a369eda6a38595cf72d17"
+    },
+    "protected": false,
+    "protection": {
+      "enabled": false,
+      "required_status_checks": {
+        "enforcement_level": "off",
+        "contexts": [],
+        "checks": []
+      }
+    },
+    "protection_url": "https://api.github.com/repos/devstar2637-hash/GDH/branches/verify/tests/protection"
+  }
+]

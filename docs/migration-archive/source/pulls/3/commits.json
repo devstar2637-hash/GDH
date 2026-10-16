@@ -1,0 +1,84 @@
+[
+  {
+    "sha": "8d5026472d2ec45cdae42f81628181cff085cce6",
+    "node_id": "C_kwDOVLtCM9oAKDhkNTAyNjQ3MmQyZWM0NWNkYWU0MmY4MTYyODE4MWNmZjA4NWNjZTY",
+    "commit": {
+      "author": {
+        "name": "Cursor Agent",
+        "email": "cursoragent@cursor.com",
+        "date": "2026-10-16T03:50:46Z"
+      },
+      "committer": {
+        "name": "Cursor Agent",
+        "email": "cursoragent@cursor.com",
+        "date": "2026-10-16T03:50:46Z"
+      },
+      "message": "A1: restore the engine and satisfy the CLI run contract\n\nThe previous docs commit dropped engine/ and shared/, so the loop could not run.\n`tsx engine/cli.ts run --input --seed --n --out` writes result.json as a RunResult:\ndesigns, every result including constraint rejects, month rows when 50 <= n <= 1000,\nleaderDesignId, cliff.relativeDelta, and a StatusBar payload.\n\nOutlay is deposit + fitoutCost only. The six post-2024 quarter rows moved from\nshared/constants.ts to data/holdoutQuarters.ts so fitting does not read them\nfrom the frozen contract.\n\nCo-authored-by: devstar2637-hash <devstar2637-hash@users.noreply.github.com>",
+      "tree": {
+        "sha": "a951b1586de3a9821daed83e1675e7490c1aa943",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/a951b1586de3a9821daed83e1675e7490c1aa943"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/8d5026472d2ec45cdae42f81628181cff085cce6",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg+qImwGMCy/grKZ50VxRHz3VfWW\nAL3QNbzIy2Nwcn+nQAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5\nAAAAQPpsr0p74y7NWKAUZq6RRdMrQR3SNrZ2LGfUXR1hEK0hPM8d3p+fc4P9kdzgyspHeX\nSJtjo1gf9orkb6EOMARgM=\n-----END SSH SIGNATURE-----",
+        "payload": "tree a951b1586de3a9821daed83e1675e7490c1aa943\nparent 2f9f7044e0da5de61288795bdfefbd478fae125c\nauthor Cursor Agent <cursoragent@cursor.com> 1792122646 +0000\ncommitter Cursor Agent <cursoragent@cursor.com> 1792122646 +0000\n\nA1: restore the engine and satisfy the CLI run contract\n\nThe previous docs commit dropped engine/ and shared/, so the loop could not run.\n`tsx engine/cli.ts run --input --seed --n --out` writes result.json as a RunResult:\ndesigns, every result including constraint rejects, month rows when 50 <= n <= 1000,\nleaderDesignId, cliff.relativeDelta, and a StatusBar payload.\n\nOutlay is deposit + fitoutCost only. The six post-2024 quarter rows moved from\nshared/constants.ts to data/holdoutQuarters.ts so fitting does not read them\nfrom the frozen contract.\n\nCo-authored-by: devstar2637-hash <devstar2637-hash@users.noreply.github.com>\n",
+        "verified_at": "2026-10-16T03:50:51Z"
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/8d5026472d2ec45cdae42f81628181cff085cce6",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/8d5026472d2ec45cdae42f81628181cff085cce6",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/8d5026472d2ec45cdae42f81628181cff085cce6/comments",
+    "author": {
+      "login": "cursoragent",
+      "id": 199161495,
+      "node_id": "U_kgDOC972lw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/199161495?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/cursoragent",
+      "html_url": "https://github.com/cursoragent",
+      "followers_url": "https://api.github.com/users/cursoragent/followers",
+      "following_url": "https://api.github.com/users/cursoragent/following{/other_user}",
+      "gists_url": "https://api.github.com/users/cursoragent/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/cursoragent/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/cursoragent/subscriptions",
+      "organizations_url": "https://api.github.com/users/cursoragent/orgs",
+      "repos_url": "https://api.github.com/users/cursoragent/repos",
+      "events_url": "https://api.github.com/users/cursoragent/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/cursoragent/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "cursoragent",
+      "id": 199161495,
+      "node_id": "U_kgDOC972lw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/199161495?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/cursoragent",
+      "html_url": "https://github.com/cursoragent",
+      "followers_url": "https://api.github.com/users/cursoragent/followers",
+      "following_url": "https://api.github.com/users/cursoragent/following{/other_user}",
+      "gists_url": "https://api.github.com/users/cursoragent/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/cursoragent/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/cursoragent/subscriptions",
+      "organizations_url": "https://api.github.com/users/cursoragent/orgs",
+      "repos_url": "https://api.github.com/users/cursoragent/repos",
+      "events_url": "https://api.github.com/users/cursoragent/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/cursoragent/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "2f9f7044e0da5de61288795bdfefbd478fae125c",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/2f9f7044e0da5de61288795bdfefbd478fae125c",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/2f9f7044e0da5de61288795bdfefbd478fae125c"
+      }
+    ]
+  }
+]

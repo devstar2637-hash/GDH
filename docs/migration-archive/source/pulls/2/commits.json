@@ -1,0 +1,914 @@
+[
+  {
+    "sha": "b89eb1cc231c6e92f380edcc6fea361931026704",
+    "node_id": "C_kwDOVLtCM9oAKGI4OWViMWNjMjMxYzZlOTJmMzgwZWRjYzZmZWEzNjE5MzEwMjY3MDQ",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:40:46Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:40:46Z"
+      },
+      "message": "fix: restore engine, shared contract and datasets removed by docs update",
+      "tree": {
+        "sha": "301bb09756cec93a0aa5ce65766f88201834ae0d",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/301bb09756cec93a0aa5ce65766f88201834ae0d"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/b89eb1cc231c6e92f380edcc6fea361931026704",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/b89eb1cc231c6e92f380edcc6fea361931026704",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/b89eb1cc231c6e92f380edcc6fea361931026704",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/b89eb1cc231c6e92f380edcc6fea361931026704/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "34d2abc67eac5fc7b747325575a026b8e28ee306",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/34d2abc67eac5fc7b747325575a026b8e28ee306",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/34d2abc67eac5fc7b747325575a026b8e28ee306"
+      }
+    ]
+  },
+  {
+    "sha": "039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+    "node_id": "C_kwDOVLtCM9oAKDAzOWFjNGE0YzYxNDRmYmEyODc3MDMxZWI5ZDRjOGU3ZjMzZGE1ZGE",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:39:47Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:40:46Z"
+      },
+      "message": "A1: fail closed on backtest evidence and retain uncalibrated scope",
+      "tree": {
+        "sha": "6820d0e186bca3f749f5fd3710ec249e75b5942f",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/6820d0e186bca3f749f5fd3710ec249e75b5942f"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/039ac4a4c6144fba2877031eb9d4c8e7f33da5da/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b89eb1cc231c6e92f380edcc6fea361931026704",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/b89eb1cc231c6e92f380edcc6fea361931026704",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/b89eb1cc231c6e92f380edcc6fea361931026704"
+      }
+    ]
+  },
+  {
+    "sha": "7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+    "node_id": "C_kwDOVLtCM9oAKDc3MzU1MTJmNDVhNWJjZmNkZjA2YzViMTI1MzY0NDhjMDdlYjZhZmM",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:40:14Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:40:46Z"
+      },
+      "message": "A1: reject invalid numeric inputs and report actual execution evidence",
+      "tree": {
+        "sha": "7fb69fc87f2d28240afa80b7cd6728bca74e549e",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/7fb69fc87f2d28240afa80b7cd6728bca74e549e"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7735512f45a5bcfcdf06c5b12536448c07eb6afc/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/039ac4a4c6144fba2877031eb9d4c8e7f33da5da",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/039ac4a4c6144fba2877031eb9d4c8e7f33da5da"
+      }
+    ]
+  },
+  {
+    "sha": "14eaa76a02946a7fea06d086d860d4016ce7d992",
+    "node_id": "C_kwDOVLtCM9oAKDE0ZWFhNzZhMDI5NDZhN2ZlYTA2ZDA4NmQ4NjBkNDAxNmNlN2Q5OTI",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:48:06Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:48:06Z"
+      },
+      "message": "integration: complete runnable store workbench with bounded Gemini proposals and verified exports",
+      "tree": {
+        "sha": "6692d4862806cc5222b1307fc7e3ebb5de92a317",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/6692d4862806cc5222b1307fc7e3ebb5de92a317"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/14eaa76a02946a7fea06d086d860d4016ce7d992",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/14eaa76a02946a7fea06d086d860d4016ce7d992",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/14eaa76a02946a7fea06d086d860d4016ce7d992",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/14eaa76a02946a7fea06d086d860d4016ce7d992/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7735512f45a5bcfcdf06c5b12536448c07eb6afc",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/7735512f45a5bcfcdf06c5b12536448c07eb6afc"
+      }
+    ]
+  },
+  {
+    "sha": "26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+    "node_id": "C_kwDOVLtCM9oAKDI2ZjU3OWZkMTFhNWVkNTI0NWMzOTgyNzc4Yzg2ZmRkMDI1NWZhN2Q",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:53:22Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T03:53:22Z"
+      },
+      "message": "integration: merge A2 loaders and designers while preserving verified execution evidence",
+      "tree": {
+        "sha": "ba324705d274a1cbe8722be79f09e95ddefb8391",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/ba324705d274a1cbe8722be79f09e95ddefb8391"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/26f579fd11a5ed5245c3982778c86fdd0255fa7d/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "14eaa76a02946a7fea06d086d860d4016ce7d992",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/14eaa76a02946a7fea06d086d860d4016ce7d992",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/14eaa76a02946a7fea06d086d860d4016ce7d992"
+      },
+      {
+        "sha": "d275e190604b0a2f7350be2e7a9097453082c075",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/d275e190604b0a2f7350be2e7a9097453082c075",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/d275e190604b0a2f7350be2e7a9097453082c075"
+      }
+    ]
+  },
+  {
+    "sha": "cfca7659591ce45e56b17dc83bd53baa07e03915",
+    "node_id": "C_kwDOVLtCM9oAKGNmY2E3NjU5NTkxY2U0NWU1NmIxN2RjODNiZDUzYmFhMDdlMDM5MTU",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:15:51Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:15:51Z"
+      },
+      "message": "integration: validate the default ten-thousand candidate workflow",
+      "tree": {
+        "sha": "642bd42338f8a58b7a6cffea1d91a6ad5bfe7e3c",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/642bd42338f8a58b7a6cffea1d91a6ad5bfe7e3c"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/cfca7659591ce45e56b17dc83bd53baa07e03915",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/cfca7659591ce45e56b17dc83bd53baa07e03915",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/cfca7659591ce45e56b17dc83bd53baa07e03915",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/cfca7659591ce45e56b17dc83bd53baa07e03915/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/26f579fd11a5ed5245c3982778c86fdd0255fa7d",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/26f579fd11a5ed5245c3982778c86fdd0255fa7d"
+      }
+    ]
+  },
+  {
+    "sha": "28250fcb9636ec53d33b22d48f3a218dd666a844",
+    "node_id": "C_kwDOVLtCM9oAKDI4MjUwZmNiOTYzNmVjNTNkMzNiMjJkNDhmM2EyMThkZDY2NmE4NDQ",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:16:38Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:16:38Z"
+      },
+      "message": "integration: preserve upstream A3 prototype without replacing verified runtime",
+      "tree": {
+        "sha": "f95417ac86e7f09218cd252a74b5dad9cdbb6647",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/f95417ac86e7f09218cd252a74b5dad9cdbb6647"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/28250fcb9636ec53d33b22d48f3a218dd666a844",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/28250fcb9636ec53d33b22d48f3a218dd666a844",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/28250fcb9636ec53d33b22d48f3a218dd666a844",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/28250fcb9636ec53d33b22d48f3a218dd666a844/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "cfca7659591ce45e56b17dc83bd53baa07e03915",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/cfca7659591ce45e56b17dc83bd53baa07e03915",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/cfca7659591ce45e56b17dc83bd53baa07e03915"
+      },
+      {
+        "sha": "f9e4b9264d0347113aefbbc9185cff77d25d147a",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/f9e4b9264d0347113aefbbc9185cff77d25d147a",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/f9e4b9264d0347113aefbbc9185cff77d25d147a"
+      }
+    ]
+  },
+  {
+    "sha": "62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+    "node_id": "C_kwDOVLtCM9oAKDYyZTVjZDc4Yjk4Yzk1M2Q4ZDAzMzliODc2YmIxMmFkOTZhMzdjNTA",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:36:53Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:37:05Z"
+      },
+      "message": "A3: connect six-screen rehearsal to validated run evidence",
+      "tree": {
+        "sha": "f29be61d7faa7d61c176ce1abd0b1f11ffcc11b8",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/f29be61d7faa7d61c176ce1abd0b1f11ffcc11b8"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/62e5cd78b98c953d8d0339b876bb12ad96a37c50/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "28250fcb9636ec53d33b22d48f3a218dd666a844",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/28250fcb9636ec53d33b22d48f3a218dd666a844",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/28250fcb9636ec53d33b22d48f3a218dd666a844"
+      }
+    ]
+  },
+  {
+    "sha": "7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+    "node_id": "C_kwDOVLtCM9oAKDdjOWI3MGI2M2U0MGU4MmY1OWFjYTNhYTkwN2U5MmI5YWY3OTg5ZmU",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:40:42Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:40:42Z"
+      },
+      "message": "docs: prepare English submission materials and verified demo scope",
+      "tree": {
+        "sha": "94b4cafcba86707dbfbbbf464331cb2b831ef9a3",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/94b4cafcba86707dbfbbbf464331cb2b831ef9a3"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7c9b70b63e40e82f59aca3aa907e92b9af7989fe/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/62e5cd78b98c953d8d0339b876bb12ad96a37c50",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/62e5cd78b98c953d8d0339b876bb12ad96a37c50"
+      }
+    ]
+  },
+  {
+    "sha": "552b5dcde7d01c519029173559664d92a7b6a535",
+    "node_id": "C_kwDOVLtCM9oAKDU1MmI1ZGNkZTdkMDFjNTE5MDI5MTczNTU5NjY0ZDkyYTdiNmE1MzU",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:42:08Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:42:08Z"
+      },
+      "message": "infra: support no-model deployment on macOS Bash",
+      "tree": {
+        "sha": "fc39684cf9fa8b668abb505c01e21361eea89816",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/fc39684cf9fa8b668abb505c01e21361eea89816"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/552b5dcde7d01c519029173559664d92a7b6a535",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/552b5dcde7d01c519029173559664d92a7b6a535",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/552b5dcde7d01c519029173559664d92a7b6a535",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/552b5dcde7d01c519029173559664d92a7b6a535/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/7c9b70b63e40e82f59aca3aa907e92b9af7989fe",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/7c9b70b63e40e82f59aca3aa907e92b9af7989fe"
+      }
+    ]
+  },
+  {
+    "sha": "ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d",
+    "node_id": "C_kwDOVLtCM9oAKGNjYWZkOGEwMmNkOTdkMDRiMmQ2NmFjNGRkYmNhOWVjMDNiYzE5OWQ",
+    "commit": {
+      "author": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:49:58Z"
+      },
+      "committer": {
+        "name": "devstar2637-hash",
+        "email": "343296879+devstar2637-hash@users.noreply.github.com",
+        "date": "2026-10-16T04:49:58Z"
+      },
+      "message": "docs: finalize English packet with verified Cloud and recording evidence",
+      "tree": {
+        "sha": "411d8b90e9d9de089144e358a4ccbc2093a00326",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/trees/411d8b90e9d9de089144e358a4ccbc2093a00326"
+      },
+      "url": "https://api.github.com/repos/devstar2637-hash/GDH/git/commits/ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d",
+    "html_url": "https://github.com/devstar2637-hash/GDH/commit/ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d",
+    "comments_url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/ccafd8a02cd97d04b2d66ac4ddbca9ec03bc199d/comments",
+    "author": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "devstar2637-hash",
+      "id": 343296879,
+      "node_id": "U_kgDOFHZLbw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/343296879?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/devstar2637-hash",
+      "html_url": "https://github.com/devstar2637-hash",
+      "followers_url": "https://api.github.com/users/devstar2637-hash/followers",
+      "following_url": "https://api.github.com/users/devstar2637-hash/following{/other_user}",
+      "gists_url": "https://api.github.com/users/devstar2637-hash/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/devstar2637-hash/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/devstar2637-hash/subscriptions",
+      "organizations_url": "https://api.github.com/users/devstar2637-hash/orgs",
+      "repos_url": "https://api.github.com/users/devstar2637-hash/repos",
+      "events_url": "https://api.github.com/users/devstar2637-hash/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/devstar2637-hash/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "552b5dcde7d01c519029173559664d92a7b6a535",
+        "url": "https://api.github.com/repos/devstar2637-hash/GDH/commits/552b5dcde7d01c519029173559664d92a7b6a535",
+        "html_url": "https://github.com/devstar2637-hash/GDH/commit/552b5dcde7d01c519029173559664d92a7b6a535"
+      }
+    ]
+  }
+]

@@ -4,6 +4,7 @@ node_modules
 dist
 runs
 tests
+docs/migration-archive
 data/seoul/**/*.zip
 data/seoul/2021
 data/seoul/2022

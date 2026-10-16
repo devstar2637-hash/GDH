@@ -3,11 +3,25 @@
 > **One-Liner:** Before you sign the lease, rehearse ten thousand futures of your store (`500 AI design families x 20 variations = 10,000 variants x 36 months`) in an interactive 360° Three.js WebGL 3D workbench and D3.js telemetry lab. Most of them fail. Keep the designs that survive, and the one field measurement that flips the answer.
 
 - **Hackathon:** Google DeepMind AI Hackathon (Seoul, 2026-10-16)
-- **Live Cloud Run Deployment:** `https://thousand-stores-299086406033.asia-northeast3.run.app/` (also accessible via `https://thousand-stores-wva46uzo7a-du.a.run.app/` and `/rehearsal/`)
-- **Repository:** `https://github.com/devstar2637-hash/GDH`
+- **Personal Deployment:** https://thousand-stores-personal.vercel.app/
+- **Personal Repository:** https://github.com/rarehotdog/GDH
+- **AI Studio Source:** https://github.com/rarehotdog/rehearsal-store
 - **Models & Runtime:** `gemini-4-argon` (Store Designer & Bankruptcy Designer JSON-patch loop), `gemini-3.8-flash` (fast leaf schema checks), Three.js WebGL 3D + D3.js 10K telemetry client, Node.js 20 + TypeScript deterministic 36-month cash-flow & spatial queue engine
 
 ---
+
+## Personal Ownership And Recovery
+
+The personal deployment runs the deterministic 36-month engine inside Vercel
+and does not call the hackathon Cloud Run service or original GitHub account.
+The original hackathon repository and GCP account are not required to build or
+run this checkout. The sections below retain the historical submission record;
+the current default design-generation path is offline, not a new model call.
+
+All original branches and commit history are preserved. Original PR metadata,
+reviews and patches are preserved under [migration archive](docs/migration-archive/README.md).
+Historical source URLs in that archive are attribution, not execution dependencies.
+Use [personal hosting](docs/PERSONAL_HOSTING.md) for current setup and deployment.
 
 ## 1. Project Description (5-Sentence Hackathon Submission Summary)
 
@@ -120,13 +134,14 @@ npm run secrets:scan  # Scans bundle, source, and logs for leaked credentials
 
 ---
 
-## 6. Google Cloud Run Deployment
+## 6. Optional Personal Cloud Run Deployment
 
-To deploy directly from the repository root to Google Cloud Run (`asia-northeast3`):
+Vercel is the current personal host. To use Cloud Run instead, deploy this
+complete repository to a Google Cloud project you own (`asia-northeast3`):
 
 ```bash
 gcloud auth login
-gcloud config set project [YOUR_HACKATHON_PROJECT_ID]
+gcloud config set project [YOUR_PERSONAL_PROJECT_ID]
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
 gcloud run deploy thousand-stores --source . --region asia-northeast3 --allow-unauthenticated --port 8080
 ```
