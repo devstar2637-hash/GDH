@@ -8,7 +8,7 @@
     "dev": "tsx web/server.ts",
     "start": "node dist/web/server.js",
     "build": "tsc -p tsconfig.json && node web/buildClient.mjs",
-    "test": "tsx --test engine/engine.test.ts loop/loop.test.ts",
+    "test": "tsx --test engine/engine.test.ts loop/loop.test.ts web/web.test.ts",
     "test:accept": "tsx engine/cli.ts accept",
     "backtest": "tsx engine/cli.ts backtest",
     "bench": "tsx engine/cli.ts bench",
