@@ -205,7 +205,7 @@ export function expandDesignFamiliesTo10k(
 
   for (let f = 0; f < families.length; f++) {
     const base = families[f];
-    const familyId = base.familyId ?? `fam-${String(f + 1).padStart(3, "0")}`;
+    const familyId = `fam-${String(f + 1).padStart(3, "0")}`;
 
     for (let v = 0; v < variationsPerFamily; v++) {
       if (v === 0) {
