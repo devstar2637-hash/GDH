@@ -5,7 +5,7 @@ import {
   type Scene,
   type SceneObject,
   type SimResult,
-} from "./rehearsalCore.ts";
+} from "./rehearsalCore.js";
 
 export interface IsoView {
   s: number;
@@ -14,10 +14,10 @@ export interface IsoView {
   w: number;
   h: number;
   mode?: "3d" | "2d";
-  yaw?: number;
-  pitch?: number;
-  cx?: number;
-  cy?: number;
+  yawRad?: number;
+  pitchRatio?: number;
+  sceneW?: number;
+  sceneH?: number;
 }
 
 export interface InteriorStyle {
@@ -49,120 +49,105 @@ export interface InteriorStyle {
 export const INTERIOR_STYLES: Record<string, InteriorStyle> = {
   coffee: {
     id: "coffee",
-    canvasBgTop: "#f4f1ea",
-    canvasBgBottom: "#eae4d8",
-    floorBase: "#dfd3c3",
-    floorAlt: "#d6c7b2",
-    floorSide: "#b8a68e",
-    floorStroke: "#c5b49e",
-    barZoneFloor: "#cbd5e1",
-    wallLeft: "#f8f6f0",
-    wallRight: "#efeae1",
-    wallTrim: "#d6cfc2",
-    baseboard: "#8c7355",
-    counterFront: "#5c4033",
-    counterSide: "#473025",
-    counterTop: "#f8fafc",
-    showcaseFront: "#8b5a2b",
-    showcaseSide: "#6e4720",
-    showcaseTop: "#f5ebe0",
-    tableTop: "#e6ccb2",
-    tableSide: "#b08968",
-    chairColor: "#475569",
-    rugColor: "rgba(180, 138, 100, 0.14)",
-    accentColor: "#0f766e",
+    canvasBgTop: "#ececeb",
+    canvasBgBottom: "#e4e4e2",
+    floorBase: "#f5f5f4",
+    floorAlt: "#eeeeec",
+    floorSide: "#d4d4d0",
+    floorStroke: "#dcdcd8",
+    barZoneFloor: "#e7e5e4",
+    wallLeft: "#f8f8f7",
+    wallRight: "#eeeeec",
+    wallTrim: "#71717a",
+    baseboard: "#27272a",
+    counterFront: "#27272a",
+    counterSide: "#18181b",
+    counterTop: "#fafaf9",
+    showcaseFront: "#ea580c",
+    showcaseSide: "#c2410c",
+    showcaseTop: "#fff7ed",
+    tableTop: "#f4f4f2",
+    tableSide: "#a1a1aa",
+    chairColor: "#3f3f46",
+    rugColor: "rgba(234, 88, 12, 0.09)",
+    accentColor: "#ea580c",
   },
   bakery: {
     id: "bakery",
-    canvasBgTop: "#f8f3eb",
-    canvasBgBottom: "#efe6d8",
-    floorBase: "#f3ead8",
-    floorAlt: "#e6d7be",
-    floorSide: "#c8b598",
-    floorStroke: "#d5c4a8",
-    barZoneFloor: "#e2d5c1",
-    wallLeft: "#fffbf5",
-    wallRight: "#f5ece0",
-    wallTrim: "#decbb4",
-    baseboard: "#a47551",
-    counterFront: "#9c6644",
-    counterSide: "#7f5539",
-    counterTop: "#fffdf9",
-    showcaseFront: "#b07d52",
-    showcaseSide: "#8d5b34",
-    showcaseTop: "#faedcd",
-    tableTop: "#f5ebe0",
-    tableSide: "#c89f7c",
-    chairColor: "#7f5539",
-    rugColor: "rgba(217, 119, 6, 0.12)",
-    accentColor: "#b45309",
+    canvasBgTop: "#eeece9",
+    canvasBgBottom: "#e5e2dc",
+    floorBase: "#f6f5f2",
+    floorAlt: "#edeae4",
+    floorSide: "#d6d1c7",
+    floorStroke: "#dedad0",
+    barZoneFloor: "#e7e2d8",
+    wallLeft: "#faf9f6",
+    wallRight: "#efece6",
+    wallTrim: "#78716c",
+    baseboard: "#292524",
+    counterFront: "#44403c",
+    counterSide: "#292524",
+    counterTop: "#fafaf9",
+    showcaseFront: "#ea580c",
+    showcaseSide: "#c2410c",
+    showcaseTop: "#ffedd5",
+    tableTop: "#f5f5f4",
+    tableSide: "#a8a29e",
+    chairColor: "#44403c",
+    rugColor: "rgba(234, 88, 12, 0.11)",
+    accentColor: "#ea580c",
   },
   matcha: {
     id: "matcha",
-    canvasBgTop: "#eff3ef",
-    canvasBgBottom: "#e2e9e2",
-    floorBase: "#e5e7eb",
-    floorAlt: "#dce1e6",
-    floorSide: "#9ca3af",
-    floorStroke: "#cbd5e1",
-    barZoneFloor: "#d1fae5",
-    wallLeft: "#f8fafc",
-    wallRight: "#f1f5f9",
-    wallTrim: "#cbd5e1",
-    baseboard: "#334155",
-    counterFront: "#15803d",
-    counterSide: "#166534",
-    counterTop: "#f0fdf4",
-    showcaseFront: "#22c55e",
-    showcaseSide: "#16a34a",
-    showcaseTop: "#dcfce7",
-    tableTop: "#f8fafc",
-    tableSide: "#94a3b8",
-    chairColor: "#15803d",
-    rugColor: "rgba(34, 197, 94, 0.16)",
-    accentColor: "#15803d",
+    canvasBgTop: "#ececeb",
+    canvasBgBottom: "#e2e2e0",
+    floorBase: "#f4f4f3",
+    floorAlt: "#ebebe9",
+    floorSide: "#d1d1cd",
+    floorStroke: "#dadad6",
+    barZoneFloor: "#e5e5e2",
+    wallLeft: "#f8f8f7",
+    wallRight: "#ededeb",
+    wallTrim: "#71717a",
+    baseboard: "#18181b",
+    counterFront: "#27272a",
+    counterSide: "#18181b",
+    counterTop: "#ffffff",
+    showcaseFront: "#f97316",
+    showcaseSide: "#ea580c",
+    showcaseTop: "#fff7ed",
+    tableTop: "#f8f8f7",
+    tableSide: "#a1a1aa",
+    chairColor: "#27272a",
+    rugColor: "rgba(249, 115, 22, 0.10)",
+    accentColor: "#ea580c",
   },
   wine: {
     id: "wine",
-    canvasBgTop: "#f3efe9",
-    canvasBgBottom: "#e5ddd3",
-    floorBase: "#a68a71",
-    floorAlt: "#967a62",
-    floorSide: "#6e5642",
-    floorStroke: "#846952",
-    barZoneFloor: "#78716c",
-    wallLeft: "#ede6dd",
-    wallRight: "#e2d9cc",
-    wallTrim: "#bfb3a3",
-    baseboard: "#432818",
-    counterFront: "#581c2c",
-    counterSide: "#3f131f",
-    counterTop: "#e7e5e4",
-    showcaseFront: "#6f1d1b",
-    showcaseSide: "#432818",
-    showcaseTop: "#ddb892",
-    tableTop: "#b08968",
-    tableSide: "#7f5539",
-    chairColor: "#432818",
-    rugColor: "rgba(153, 27, 27, 0.14)",
-    accentColor: "#881337",
+    canvasBgTop: "#e8e6e3",
+    canvasBgBottom: "#dedbd6",
+    floorBase: "#efedea",
+    floorAlt: "#e5e2dc",
+    floorSide: "#c7c2b8",
+    floorStroke: "#d5d0c6",
+    barZoneFloor: "#dedad2",
+    wallLeft: "#f5f3f0",
+    wallRight: "#eae6e0",
+    wallTrim: "#57534e",
+    baseboard: "#1c1917",
+    counterFront: "#292524",
+    counterSide: "#1c1917",
+    counterTop: "#f5f5f4",
+    showcaseFront: "#c2410c",
+    showcaseSide: "#9a3412",
+    showcaseTop: "#ffedd5",
+    tableTop: "#e7e5e4",
+    tableSide: "#78716c",
+    chairColor: "#292524",
+    rugColor: "rgba(194, 65, 12, 0.12)",
+    accentColor: "#ea580c",
   },
 };
-
-export function rotateIsoPoint(view: IsoView, x: number, y: number): Point2D {
-  const yaw = view.yaw ?? 0;
-  if (Math.abs(yaw) < 1e-6) return { x, y };
-  const cx = view.cx ?? 6;
-  const cy = view.cy ?? 4.5;
-  const dx = x - cx;
-  const dy = y - cy;
-  const cos = Math.cos(yaw);
-  const sin = Math.sin(yaw);
-  return {
-    x: cx + dx * cos - dy * sin,
-    y: cy + dx * sin + dy * cos,
-  };
-}
 
 export function project(
   view: IsoView,
@@ -176,11 +161,23 @@ export function project(
       y: view.oy + y * view.s,
     };
   }
-  const r = rotateIsoPoint(view, x, y);
-  const pitch = view.pitch ?? 0.5;
+  const yaw = view.yawRad || 0;
+  const pitch = view.pitchRatio ?? 0.5;
+  const cx = (view.sceneW ?? 12) * 0.5;
+  const cy = (view.sceneH ?? 9) * 0.5;
+  let rx = x;
+  let ry = y;
+  if (Math.abs(yaw) > 0.0001) {
+    const dx = x - cx;
+    const dy = y - cy;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    rx = cx + dx * cos - dy * sin;
+    ry = cy + dx * sin + dy * cos;
+  }
   return {
-    x: view.ox + (r.x - r.y) * view.s,
-    y: view.oy + (r.x + r.y) * view.s * pitch - z * view.s * 0.68,
+    x: view.ox + (rx - ry) * view.s,
+    y: view.oy + (rx + ry) * view.s * pitch - z * view.s * 0.68,
   };
 }
 
@@ -191,22 +188,29 @@ export function unproject(view: IsoView, px: number, py: number): Point2D {
       y: (py - view.oy) / view.s,
     };
   }
-  const pitch = view.pitch ?? 0.5;
+  const yaw = view.yawRad || 0;
+  const pitch = view.pitchRatio ?? 0.5;
+  const cx = (view.sceneW ?? 12) * 0.5;
+  const cy = (view.sceneH ?? 9) * 0.5;
+
   const a = (px - view.ox) / view.s;
   const b = (py - view.oy) / (view.s * pitch);
   const rx = (a + b) / 2;
   const ry = (b - a) / 2;
-  const yaw = view.yaw ?? 0;
-  if (Math.abs(yaw) < 1e-6) return { x: rx, y: ry };
-  const cx = view.cx ?? 6;
-  const cy = view.cy ?? 4.5;
-  const dx = rx - cx;
-  const dy = ry - cy;
-  const cos = Math.cos(yaw);
-  const sin = Math.sin(yaw);
+
+  if (Math.abs(yaw) > 0.0001) {
+    const dx = rx - cx;
+    const dy = ry - cy;
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    return {
+      x: cx + dx * cos + dy * sin,
+      y: cy - dx * sin + dy * cos,
+    };
+  }
   return {
-    x: cx + dx * cos + dy * sin,
-    y: cy - dx * sin + dy * cos,
+    x: rx,
+    y: ry,
   };
 }
 
@@ -283,26 +287,16 @@ function drawPrism(
   const ct = p(x + w, y + h, z1);
   const dt = p(x, y + h, z1);
 
-  if (Math.abs(v.yaw ?? 0) < 1e-6) {
-    poly(ctx, [b, c, ct, bt], sideFill, stroke, strokeWidth);
-    poly(ctx, [c, d, dt, ct], frontFill, stroke, strokeWidth);
-    poly(ctx, [at, bt, ct, dt], topFill, stroke, strokeWidth);
-    return;
-  }
-
-  const rA = rotateIsoPoint(v, x, y);
-  const rB = rotateIsoPoint(v, x + w, y);
-  const rC = rotateIsoPoint(v, x + w, y + h);
-  const rD = rotateIsoPoint(v, x, y + h);
-  const sideFaces = [
-    { depth: rA.x + rA.y + rB.x + rB.y, pts: [a, b, bt, at], fill: frontFill },
-    { depth: rB.x + rB.y + rC.x + rC.y, pts: [b, c, ct, bt], fill: sideFill },
-    { depth: rC.x + rC.y + rD.x + rD.y, pts: [c, d, dt, ct], fill: frontFill },
-    { depth: rD.x + rD.y + rA.x + rA.y, pts: [d, a, at, dt], fill: sideFill },
-  ].sort((f1, f2) => f1.depth - f2.depth);
-  for (const face of sideFaces) {
-    poly(ctx, face.pts, face.fill, stroke, strokeWidth);
-  }
+  const faces = [
+    { pts: [a, b, bt, at], fill: sideFill, depth: (a.y + b.y) * 0.5 },
+    { pts: [b, c, ct, bt], fill: sideFill, depth: (b.y + c.y) * 0.5 },
+    { pts: [c, d, dt, ct], fill: frontFill, depth: (c.y + d.y) * 0.5 },
+    { pts: [d, a, at, dt], fill: frontFill, depth: (d.y + a.y) * 0.5 },
+  ];
+  faces.sort((f1, f2) => f1.depth - f2.depth);
+  // Draw the two front-most vertical faces so rotated views always render cleanly
+  poly(ctx, faces[2].pts, faces[2].fill, stroke, strokeWidth);
+  poly(ctx, faces[3].pts, faces[3].fill, stroke, strokeWidth);
   poly(ctx, [at, bt, ct, dt], topFill, stroke, strokeWidth);
 }
 
@@ -435,13 +429,13 @@ function draw2DCadFloorplan(
 
   // Dimension rulers on top & left
   ctx.fillStyle = "#475569";
-  ctx.font = "700 10px 'JetBrains Mono', 'Noto Sans KR', sans-serif";
+  ctx.font = "700 10px 'JetBrains Mono', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`가로 ${scene.width.toFixed(1)}m`, tl.x + rw / 2, tl.y - 7);
+  ctx.fillText(`WIDTH ${scene.width.toFixed(1)}m`, tl.x + rw / 2, tl.y - 7);
   ctx.save();
   ctx.translate(tl.x - 9, tl.y + rh / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText(`세로 ${scene.height.toFixed(1)}m`, 0, 0);
+  ctx.fillText(`DEPTH ${scene.height.toFixed(1)}m`, 0, 0);
   ctx.restore();
 
   // A* path with bodyWidth corridor clearance band
@@ -454,8 +448,8 @@ function draw2DCadFloorplan(
     });
     ctx.strokeStyle =
       worldIndex === 1
-        ? "rgba(16, 185, 129, 0.2)"
-        : "rgba(100, 116, 139, 0.18)";
+        ? "rgba(234, 88, 12, 0.22)"
+        : "rgba(82, 82, 91, 0.18)";
     ctx.lineWidth = Math.max(6, bodyWidth * v.s);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -468,7 +462,7 @@ function draw2DCadFloorplan(
       else ctx.moveTo(pp.x, pp.y);
     });
     ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = worldIndex === 1 ? "#059669" : "#475569";
+    ctx.strokeStyle = worldIndex === 1 ? "#ea580c" : "#52525b";
     ctx.lineWidth = 1.8;
     ctx.stroke();
     ctx.setLineDash([]);
@@ -484,26 +478,26 @@ function draw2DCadFloorplan(
 
     ctx.fillStyle =
       o.kind === "desk"
-        ? "#dbeafe"
+        ? "#e7e5e4"
         : o.kind === "display"
-        ? "#fef3c7"
-        : "#f1f5f9";
+        ? "#ffedd5"
+        : "#f5f5f4";
     ctx.strokeStyle = isSel
-      ? "#059669"
+      ? "#ea580c"
       : o.kind === "desk"
-      ? "#2563eb"
+      ? "#27272a"
       : o.kind === "display"
-      ? "#d97706"
-      : "#64748b";
+      ? "#ea580c"
+      : "#71717a";
     ctx.lineWidth = isSel ? 2.5 : 1.4;
     ctx.fillRect(otl.x, otl.y, ow, oh);
     ctx.strokeRect(otl.x, otl.y, ow, oh);
 
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "700 9.5px 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif";
+    ctx.fillStyle = "#18181b";
+    ctx.font = "700 9.5px 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(o.koLabel || o.label, otl.x + ow / 2, otl.y + oh / 2 - 1);
-    ctx.fillStyle = "#475569";
+    ctx.fillText(o.label || o.koLabel, otl.x + ow / 2, otl.y + oh / 2 - 1);
+    ctx.fillStyle = "#52525b";
     ctx.font = "600 8.5px 'JetBrains Mono', sans-serif";
     ctx.fillText(
       `${o.w.toFixed(1)}×${o.h.toFixed(1)}m`,
@@ -514,24 +508,24 @@ function draw2DCadFloorplan(
 
   // Entrance & Exit CAD markers
   for (const [key, label, col] of [
-    ["entrance", "입구 (IN)", "#059669"],
-    ["exit", "출구 (OUT)", "#475569"],
+    ["entrance", "ENTRANCE (IN)", "#ea580c"],
+    ["exit", "EXIT (OUT)", "#27272a"],
   ] as const) {
     const pt = p(scene[key].x, scene[key].y);
     ctx.fillStyle = col;
     ctx.beginPath();
-    ctx.roundRect(pt.x - 28, pt.y - 9, 56, 18, 4);
+    ctx.roundRect(pt.x - 36, pt.y - 9, 72, 18, 4);
     ctx.fill();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "700 9.5px 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif";
+    ctx.font = "700 9px 'JetBrains Mono', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(label, pt.x, pt.y + 3.5);
   }
 
   // Staff dots positioned at top-right corner of bars so they don't overlap text
-  drawBaristaStaff(ctx, v, 5.45, 0.45, "#2563eb");
+  drawBaristaStaff(ctx, v, 5.45, 0.45, "#27272a");
   for (let i = 0; i < pickupStaffCount; i++) {
-    drawBaristaStaff(ctx, v, 9.55 - i * 0.42, 0.45, "#059669");
+    drawBaristaStaff(ctx, v, 9.55 - i * 0.42, 0.45, "#ea580c");
   }
 
   // Customers
@@ -543,10 +537,10 @@ function draw2DCadFloorplan(
     const pp = p(person.x, person.y);
     ctx.fillStyle =
       person.state === "queue"
-        ? "#d97706"
+        ? "#ea580c"
         : person.state === "service"
-        ? "#7c3aed"
-        : "#2563eb";
+        ? "#f97316"
+        : "#27272a";
     ctx.beginPath();
     ctx.arc(pp.x, pp.y, 4.2, 0, Math.PI * 2);
     ctx.fill();
@@ -809,8 +803,8 @@ function drawArchitecturalRoom(
   drawPottedPlant(ctx, v, 0.55, 8.2);
 
   for (const [key, label, matColor] of [
-    ["entrance", "입구 (IN)", "#0f766e"],
-    ["exit", "출구 (OUT)", "#475569"],
+    ["entrance", "ENTRANCE (IN)", "#ea580c"],
+    ["exit", "EXIT (OUT)", "#3f3f46"],
   ] as const) {
     const pt = scene[key];
     poly(
@@ -821,14 +815,14 @@ function drawArchitecturalRoom(
         p(pt.x + 0.65, pt.y + 0.35),
         p(pt.x - 0.65, pt.y + 0.35),
       ],
-      "rgba(15, 23, 42, 0.12)",
+      "rgba(24, 24, 27, 0.12)",
       matColor,
       1.3
     );
     const lp = p(pt.x, pt.y + 0.45);
-    ctx.fillStyle = "#1e293b";
+    ctx.fillStyle = "#18181b";
     ctx.font =
-      "700 10.5px 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, sans-serif";
+      "700 10px 'JetBrains Mono', 'Plus Jakarta Sans', -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(label, lp.x, lp.y + 11);
   }
@@ -858,7 +852,7 @@ function drawDetailedFurniture(
       { x: c.x + 3, y: c.y + 5 },
       { x: d.x, y: d.y + 4 },
     ],
-    "rgba(15, 23, 42, 0.14)"
+    "rgba(24, 24, 27, 0.14)"
   );
 
   if (o.movable && (isSelected || isHovered)) {
@@ -870,8 +864,8 @@ function drawDetailedFurniture(
         p(o.x + o.w + 0.08, o.y + o.h + 0.08),
         p(o.x - 0.08, o.y + o.h + 0.08),
       ],
-      isSelected ? "rgba(16, 185, 129, 0.16)" : "rgba(59, 130, 246, 0.12)",
-      isSelected ? "#059669" : "#2563eb",
+      isSelected ? "rgba(234, 88, 12, 0.18)" : "rgba(249, 115, 22, 0.12)",
+      isSelected ? "#ea580c" : "#f97316",
       isSelected ? 2.4 : 1.6
     );
   }
@@ -1299,6 +1293,9 @@ export interface DrawWorldOptions {
   pickupStaffCount?: number;
   presetId?: string;
   viewMode?: "3d" | "2d";
+  yawRad?: number;
+  pitchRatio?: number;
+  zoomScale?: number;
 }
 
 export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
@@ -1321,6 +1318,9 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     pickupStaffCount = 2,
     presetId = "both",
     viewMode = "3d",
+    yawRad = 0,
+    pitchRatio = 0.5,
+    zoomScale = 1,
   } = opts;
 
   const style = INTERIOR_STYLES[categoryId] || INTERIOR_STYLES.coffee;
@@ -1348,7 +1348,8 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
   ctx.fillRect(0, 0, w, h);
 
   if (viewMode === "2d") {
-    const s2 = Math.min((w - 80) / scene.width, (h - 76) / scene.height);
+    const s2 =
+      Math.min((w - 80) / scene.width, (h - 76) / scene.height) * zoomScale;
     const v2: IsoView = {
       s: s2,
       ox: (w - scene.width * s2) / 2,
@@ -1356,6 +1357,8 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
       w,
       h,
       mode: "2d",
+      sceneW: scene.width,
+      sceneH: scene.height,
     };
     draw2DCadFloorplan(
       ctx,
@@ -1371,17 +1374,22 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     return v2;
   }
 
-  const s = Math.min(
+  const baseS = Math.min(
     (w - 56) / (scene.width + scene.height),
     (h - 90) / ((scene.width + scene.height) * 0.5)
   );
+  const s = baseS * zoomScale;
   const v: IsoView = {
     s,
     ox: (w - (scene.width + scene.height) * s) / 2 + scene.height * s,
-    oy: (h - (scene.width + scene.height) * s * 0.5) / 2 + 28,
+    oy: (h - (scene.width + scene.height) * s * pitchRatio) / 2 + 28,
     w,
     h,
     mode: "3d",
+    yawRad,
+    pitchRatio,
+    sceneW: scene.width,
+    sceneH: scene.height,
   };
 
   const p = (x: number, y: number, z = 0) => project(v, x, y, z);
@@ -1409,8 +1417,8 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     });
     ctx.strokeStyle =
       worldIndex === 1
-        ? "rgba(16, 185, 129, 0.24)"
-        : "rgba(100, 116, 139, 0.18)";
+        ? "rgba(234, 88, 12, 0.24)"
+        : "rgba(82, 82, 91, 0.18)";
     ctx.lineWidth = Math.max(5, bodyWidth * v.s * 0.65);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -1423,7 +1431,7 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
       else ctx.moveTo(pp.x, pp.y);
     });
     ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = worldIndex === 1 ? "#059669" : "#64748b";
+    ctx.strokeStyle = worldIndex === 1 ? "#ea580c" : "#52525b";
     ctx.lineWidth = 1.6;
     ctx.stroke();
     ctx.setLineDash([]);
@@ -1454,12 +1462,12 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
       );
       const alpha = Math.min(0.46, 0.14 + intensity * 0.32);
       if (isHot) {
-        grad.addColorStop(0, `rgba(239, 68, 68, ${alpha})`);
-        grad.addColorStop(0.55, `rgba(245, 158, 11, ${alpha * 0.6})`);
-        grad.addColorStop(1, "rgba(245, 158, 11, 0)");
+        grad.addColorStop(0, `rgba(234, 88, 12, ${alpha})`);
+        grad.addColorStop(0.55, `rgba(249, 115, 22, ${alpha * 0.6})`);
+        grad.addColorStop(1, "rgba(249, 115, 22, 0)");
       } else {
-        grad.addColorStop(0, `rgba(16, 185, 129, ${alpha * 0.85})`);
-        grad.addColorStop(1, "rgba(16, 185, 129, 0)");
+        grad.addColorStop(0, `rgba(251, 146, 60, ${alpha * 0.7})`);
+        grad.addColorStop(1, "rgba(251, 146, 60, 0)");
       }
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -1519,10 +1527,10 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     const pp = p(person.x, person.y);
     const coatColor =
       person.state === "queue"
-        ? "#d97706"
+        ? "#ea580c"
         : person.state === "service"
-        ? "#7c3aed"
-        : "#2563eb";
+        ? "#f97316"
+        : "#27272a";
 
     ctx.beginPath();
     ctx.ellipse(pp.x, pp.y + 1, 4.2, 2.0, 0, 0, Math.PI * 2);
@@ -1539,7 +1547,7 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     ctx.arc(pp.x, pp.y - 11.2, 3.0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#1e293b";
+    ctx.fillStyle = "#18181b";
     ctx.beginPath();
     ctx.arc(pp.x, pp.y - 12.0, 2.8, Math.PI, 0);
     ctx.fill();
@@ -1555,12 +1563,12 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
         p(playerPos.x + r, playerPos.y + r),
         p(playerPos.x - r, playerPos.y + r),
       ],
-      "rgba(16, 185, 129, 0.25)",
-      "#059669",
+      "rgba(234, 88, 12, 0.25)",
+      "#ea580c",
       2
     );
     const here = p(playerPos.x, playerPos.y, 0.5);
-    ctx.fillStyle = "#059669";
+    ctx.fillStyle = "#ea580c";
     ctx.beginPath();
     ctx.arc(here.x, here.y, 6.8, 0, Math.PI * 2);
     ctx.fill();
@@ -1569,10 +1577,10 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     ctx.stroke();
 
     ctx.font =
-      "700 11px 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, sans-serif";
-    ctx.fillStyle = "#064e3b";
+      "700 11px 'JetBrains Mono', 'Plus Jakarta Sans', -apple-system, sans-serif";
+    ctx.fillStyle = "#9a3412";
     ctx.textAlign = "center";
-    ctx.fillText(`나 (${bodyWidth.toFixed(2)}m)`, here.x, here.y - 12);
+    ctx.fillText(`YOU (${bodyWidth.toFixed(2)}m)`, here.x, here.y - 12);
   }
 
   for (const key of ["order", "pickup"] as const) {
@@ -1581,18 +1589,18 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     ).length;
     if (count > 0) {
       const q = p(scene[key].x, scene[key].y + 0.55, 0.25);
-      const text = `${key === "order" ? "주문" : "픽업"} 대기 ${count}명`;
+      const text = `${key === "order" ? "POS" : "PICKUP"} QUEUE: ${count}`;
       ctx.font =
-        "700 10.5px 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, sans-serif";
+        "700 10px 'JetBrains Mono', 'Plus Jakarta Sans', -apple-system, sans-serif";
       const tw = ctx.measureText(text).width + 14;
-      ctx.fillStyle = "#fffbeb";
-      ctx.strokeStyle = "#f59e0b";
+      ctx.fillStyle = "#fff7ed";
+      ctx.strokeStyle = "#ea580c";
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.roundRect(q.x - tw / 2, q.y - 10, tw, 19, 6);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#b45309";
+      ctx.fillStyle = "#9a3412";
       ctx.textAlign = "center";
       ctx.fillText(text, q.x, q.y + 3.5);
     }
@@ -1600,26 +1608,26 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
 
   // Active Scenario Status Pill on Bottom-Left of Canvas
   const scnLabelMap: Record<string, string> = {
-    both: "시나리오 01 · 평일/주말 표준 (분당 4.0명)",
-    rainy: "시나리오 02 · 🌧️ 폭우 피크 실내 몰림 (분당 6.5명)",
-    layout: "시나리오 03 · ⚠️ 직원 1명 결근 독박 (픽업 1명)",
-    influencer: "시나리오 04 · 📸 인플루언서 오픈런 (분당 7.5명·픽업 3명)",
-    staff: "시나리오 05 · 👥 기존 도면 유지 + 픽업 인력 충원",
-    stroller: "시나리오 06 · 👶 유모차·단체 진입 (통과폭 1.20m)",
-    custom: "사용자 직접 편집 도면 시나리오",
+    both: "SCN-01 · Standard Peak (4.0/min)",
+    rainy: "SCN-02 · Rainy Surge (6.5/min)",
+    layout: "SCN-03 · Solo Barista (1 Staff)",
+    influencer: "SCN-04 · Viral Drop (7.5/min · 3 Staff)",
+    staff: "SCN-05 · Baseline + Extra Staff",
+    stroller: "SCN-06 · Stroller / Group (1.20m Width)",
+    custom: "CUSTOM · User Edited Floorplan",
   };
   const scnText = scnLabelMap[presetId] || scnLabelMap.custom;
   ctx.textAlign = "left";
-  ctx.fillStyle = "#334155";
+  ctx.fillStyle = "#3f3f46";
   ctx.font =
-    "700 10.5px 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, sans-serif";
+    "700 10px 'JetBrains Mono', 'Plus Jakarta Sans', -apple-system, sans-serif";
   ctx.fillText(scnText, 14, h - 12);
 
   ctx.textAlign = "right";
   ctx.font =
-    "600 10.5px 'JetBrains Mono', 'Noto Sans KR', -apple-system, sans-serif";
+    "600 10px 'JetBrains Mono', -apple-system, sans-serif";
   ctx.fillText(
-    `픽업 직원 ${pickupStaffCount}명 · 완료 ${f.completed || 0}명 · 대기 ${f.queue || 0}명`,
+    `STAFF ${pickupStaffCount} · DONE ${f.completed || 0} · QUEUE ${f.queue || 0}`,
     w - 14,
     h - 12
   );
@@ -1631,10 +1639,10 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     ctx.strokeRect(0, h / 2 - 24, w, 48);
     ctx.fillStyle = "#991b1b";
     ctx.font =
-      "700 12px 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, sans-serif";
+      "700 11.5px 'JetBrains Mono', 'Plus Jakarta Sans', -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `동선 막힘 (요구 통과폭 ${bodyWidth.toFixed(2)}m) — 입구 진열대 병목으로 진입 불가`,
+      `ROUTE BLOCKED (Clearance ${bodyWidth.toFixed(2)}m) — Entrance Display Choke`,
       w / 2,
       h / 2 + 4
     );

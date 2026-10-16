@@ -6,19 +6,20 @@ import {
   type SceneObject,
   type SimConfig,
   type SimResult,
-} from "./engine/rehearsalCore.ts";
+} from "./engine/rehearsalCore.js";
 import {
   drawWorldCanvas,
   generateSampleBlueprintCanvas,
   unproject,
   type IsoView,
-} from "./engine/canvasRenderer.ts";
+} from "./engine/canvasRenderer.js";
 import {
   renderTenKMonteCarloChart,
   renderWorldStatsD3Charts,
   updateWorldStatsD3Playhead,
   type TenKClusterItem,
-} from "./engine/d3StatsCharts.ts";
+} from "./engine/d3StatsCharts.js";
+import { ThreeFloorplanStage } from "./engine/threeFloorplanStage.js";
 
 declare global {
   interface Window {
@@ -46,7 +47,7 @@ window.addEventListener("unhandledrejection", (e) =>
 );
 window.RehearsalCore = RehearsalCore;
 
-// 1. REAL COMMERCIAL DISTRICT ANALYSIS DATA & LINK PARSER (상권 분석 & 링크 매칭 엔진)
+// 1. REAL COMMERCIAL DISTRICT ANALYSIS DATA & LINK PARSER
 interface ListingUnit {
   unitId: string;
   label: string;
@@ -77,24 +78,24 @@ interface DistrictProfile {
 const DISTRICTS: DistrictProfile[] = [
   {
     id: "seongsu",
-    name: "성수 연무장길",
+    name: "Seongsu Yeonmujang-gil",
     sampleUrl: "https://naver.me/seongsu-yeonmu42-1f",
-    fullAddress: "서울 성동구 성수동2가 연무장길 42 (1층 · 15평)",
+    fullAddress: "42 Yeonmujang-gil, Seongsu-dong 2-ga, Seoul (1F · 50m²)",
     areaPyeong: 15,
-    areaM2: "49.5㎡ (12×9m)",
+    areaM2: "49.5m² (12×9m)",
     dailyFootTraffic: 42800,
-    peakHours: "주말 13:00–17:30",
+    peakHours: "Wknd 13:00–17:30",
     peakArrivalMultiplier: 1.0,
     depositManWon: 5000,
     monthlyRentManWon: 380,
-    targetPersona: "2030 팝업·카페 투어족 & 직장인",
+    targetPersona: "Gen-Z Pop-up & Specialty Coffee Hoppers",
     bestCategoryId: "coffee",
     districtSummary:
-      "평일 점심 테이크아웃과 주말 팝업·쇼룸 유입이 겹치는 고회전 상권입니다. 입구 병목만 제거하면 시간당 회전율이 68% 상승합니다.",
+      "High-velocity retail corridor where weekday office takeout meets weekend pop-up showroom crowds. Clearing the entrance bottleneck boosts hourly throughput by +68%.",
     units: [
       {
         unitId: "101",
-        label: "1층 101호 전면통창 (15평 · 5,000/380)",
+        label: "1F Suite 101 Full-Glass (50m² · $38k Dep / $2.8k Rent)",
         areaPyeong: 15,
         depositManWon: 5000,
         monthlyRentManWon: 380,
@@ -102,7 +103,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "102",
-        label: "1층 102호 코너소형 (11평 · 3,500/270)",
+        label: "1F Suite 102 Corner Compact (36m² · $26k Dep / $2.0k Rent)",
         areaPyeong: 11,
         depositManWon: 3500,
         monthlyRentManWon: 270,
@@ -110,7 +111,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "b1",
-        label: "B1층 대형쇼룸 (22평 · 4,500/330)",
+        label: "B1 Flagship Showroom (73m² · $34k Dep / $2.5k Rent)",
         areaPyeong: 22,
         depositManWon: 4500,
         monthlyRentManWon: 330,
@@ -120,24 +121,24 @@ const DISTRICTS: DistrictProfile[] = [
   },
   {
     id: "yeonnam",
-    name: "연남동 경의선숲길",
+    name: "Yeonnam Forest Park",
     sampleUrl: "https://kko.to/yeonnam-forest38-1f",
-    fullAddress: "서울 마포구 연남동 경의선숲길 38 (1층 · 12평)",
+    fullAddress: "38 Gyeongui Line Forest Park, Yeonnam-dong, Seoul (1F · 40m²)",
     areaPyeong: 12,
-    areaM2: "39.6㎡ (12×9m)",
+    areaM2: "39.6m² (12×9m)",
     dailyFootTraffic: 38400,
-    peakHours: "주말 12:30–18:00",
+    peakHours: "Wknd 12:30–18:00",
     peakArrivalMultiplier: 1.12,
     depositManWon: 4000,
     monthlyRentManWon: 310,
-    targetPersona: "산책·베이커리 포장 & 데이트 고객",
+    targetPersona: "Park Strollers, Bakery Tray Buyers & Couples",
     bestCategoryId: "bakery",
     districtSummary:
-      "숲길 산책객의 베이커리·디저트 트레이 구매 비중이 64%로 높습니다. 중앙 빵 쇼케이스 순환 동선이 매출을 좌우합니다.",
+      "64% of park visitors pick up bakery & pastry trays. Ensuring a 1.4m two-way circulation loop around the central bread island directly determines daily revenue.",
     units: [
       {
         unitId: "101",
-        label: "1층 숲길전면 (12평 · 4,000/310)",
+        label: "1F Park Frontage (40m² · $30k Dep / $2.3k Rent)",
         areaPyeong: 12,
         depositManWon: 4000,
         monthlyRentManWon: 310,
@@ -145,7 +146,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "102",
-        label: "1.5층 테라스호실 (16평 · 4,500/340)",
+        label: "1.5F Terrace Suite (53m² · $34k Dep / $2.6k Rent)",
         areaPyeong: 16,
         depositManWon: 4500,
         monthlyRentManWon: 340,
@@ -153,7 +154,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "b1",
-        label: "반지하 공방형 (14평 · 2,500/210)",
+        label: "Garden Level Roastery (46m² · $19k Dep / $1.6k Rent)",
         areaPyeong: 14,
         depositManWon: 2500,
         monthlyRentManWon: 210,
@@ -163,24 +164,24 @@ const DISTRICTS: DistrictProfile[] = [
   },
   {
     id: "hannam",
-    name: "한남동 카페거리",
+    name: "Hannam Cafe Street",
     sampleUrl: "https://nemoapp.kr/hannam-itaewon54-18py",
-    fullAddress: "서울 용산구 한남동 이태원로54길 (1층 · 18평)",
+    fullAddress: "Itaewon-ro 54-gil, Hannam-dong, Yongsan-gu, Seoul (1F · 60m²)",
     areaPyeong: 18,
-    areaM2: "59.4㎡ (12×9m)",
+    areaM2: "59.4m² (12×9m)",
     dailyFootTraffic: 29500,
-    peakHours: "금·토 15:00–21:00",
+    peakHours: "Fri–Sat 15:00–21:00",
     peakArrivalMultiplier: 0.85,
     depositManWon: 6500,
     monthlyRentManWon: 490,
-    targetPersona: "고관여 큐레이션·와인 & 라운지 체류층",
+    targetPersona: "High-Ticket Curated Wine & Lounge Guests",
     bestCategoryId: "wine",
     districtSummary:
-      "방문객 수는 성수보다 적지만 1인당 객단가(2.4만 원)가 3.8배 높습니다. 여유로운 라운지 좌석과 큐레이션 랙 배치가 핵심입니다.",
+      "Lower raw foot traffic than Seongsu, but average ticket size ($18+) is 3.8× higher. Generous lounge seating and unobstructed bottle curation racks are essential.",
     units: [
       {
         unitId: "101",
-        label: "1층 단독정원형 (18평 · 6,500/490)",
+        label: "1F Private Courtyard (60m² · $49k Dep / $3.7k Rent)",
         areaPyeong: 18,
         depositManWon: 6500,
         monthlyRentManWon: 490,
@@ -188,7 +189,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "201",
-        label: "2층 통창라운지 (20평 · 5,000/390)",
+        label: "2F Panoramic Lounge (66m² · $38k Dep / $2.9k Rent)",
         areaPyeong: 20,
         depositManWon: 5000,
         monthlyRentManWon: 390,
@@ -198,24 +199,24 @@ const DISTRICTS: DistrictProfile[] = [
   },
   {
     id: "sinsa",
-    name: "신사 가로수길",
+    name: "Sinsa Garosu-gil",
     sampleUrl: "https://zigbang.com/sinsa-garosu21-14py",
-    fullAddress: "서울 강남구 신사동 가로수길 21 (1층 · 14평)",
+    fullAddress: "21 Garosu-gil, Sinsa-dong, Gangnam-gu, Seoul (1F · 46m²)",
     areaPyeong: 14,
-    areaM2: "46.2㎡ (12×9m)",
+    areaM2: "46.2m² (12×9m)",
     dailyFootTraffic: 46200,
-    peakHours: "매일 12:00–16:30",
+    peakHours: "Daily 12:00–16:30",
     peakArrivalMultiplier: 1.15,
     depositManWon: 5500,
     monthlyRentManWon: 440,
-    targetPersona: "글로벌 관광객 & 트렌드 팝업 방문층",
+    targetPersona: "Global Tourists & Flagship Pop-up Visitors",
     bestCategoryId: "matcha",
     districtSummary:
-      "외국인 관광객과 SNS 인증 수요가 집중되어 포토존 + 아일랜드 시음 동선 구성 시 초기 투자비 회수가 가장 빠릅니다.",
+      "Dense international tourist and social media traffic. Pairing a 360° tasting island with a dedicated photo zone delivers the fastest CAPEX payback.",
     units: [
       {
         unitId: "101",
-        label: "1층 메인스트리트 (14평 · 5,500/440)",
+        label: "1F Main Boulevard (46m² · $41k Dep / $3.3k Rent)",
         areaPyeong: 14,
         depositManWon: 5500,
         monthlyRentManWon: 440,
@@ -223,7 +224,7 @@ const DISTRICTS: DistrictProfile[] = [
       },
       {
         unitId: "102",
-        label: "세로수길 코너1층 (12평 · 4,200/330)",
+        label: "Serosu-gil Corner 1F (40m² · $32k Dep / $2.5k Rent)",
         areaPyeong: 12,
         depositManWon: 4200,
         monthlyRentManWon: 330,
@@ -257,78 +258,78 @@ const CATEGORIES: StartupCategory[] = [
   {
     id: "coffee",
     icon: "☕",
-    shortName: "스페셜티 카페",
-    title: "스페셜티 커피 & 로스터리",
+    shortName: "Specialty Cafe",
+    title: "Specialty Coffee & Roastery",
     interiorCostManWon: 3800,
     avgTicketWon: 5600,
     defaultArrival: 4.0,
     defaultServiceSec: 20,
-    mainDisplayLabel: "원두·MD 진열대",
-    orderDeskLabel: "주문·포스 바",
-    pickupDeskLabel: "에스프레소·픽업 바",
-    benchLabel: "창가 웨이팅 벤치",
-    tableLabels: ["2인 카페석 A", "2인 카페석 B", "바 테이블 C"],
+    mainDisplayLabel: "Bean & MD Display",
+    orderDeskLabel: "Order & POS Bar",
+    pickupDeskLabel: "Espresso Pickup Bar",
+    benchLabel: "Window Waiting Bench",
+    tableLabels: ["2-Top Table A", "2-Top Table B", "Communal Bar C"],
     scenarioTotal: 10000,
     survivedCount: 8420,
     layoutRuleNote:
-      "카페 동선 규칙: 입구(IN) → 주문 바 → 에스프레소 픽업 바 동선에서 원두 진열대가 입구를 막지 않도록 분리합니다.",
+      "Cafe Circulation Rule: Separate the Bean & MD Display from the Entrance (IN) → Order POS → Espresso Pickup vector to prevent entry bottlenecks.",
   },
   {
     id: "bakery",
     icon: "🥐",
-    shortName: "소금빵 베이커리",
-    title: "소금빵·구움과자 베이커리",
+    shortName: "Artisan Bakery",
+    title: "Salt Bread & Pastry Bakery",
     interiorCostManWon: 4500,
     avgTicketWon: 9800,
     defaultArrival: 4.5,
     defaultServiceSec: 24,
-    mainDisplayLabel: "소금빵·크루아상 트레이 매대",
-    orderDeskLabel: "트레이 결제 카운터",
-    pickupDeskLabel: "데크오븐·포장 픽업대",
-    benchLabel: "트레이·집게 스테이션",
-    tableLabels: ["구움과자 매대 A", "시식 테이블 B", "포장 대기석 C"],
+    mainDisplayLabel: "Central Pastry Tray Island",
+    orderDeskLabel: "Tray Checkout POS",
+    pickupDeskLabel: "Deck Oven & Packaging Bar",
+    benchLabel: "Tray & Tongs Station",
+    tableLabels: ["Pastry Rack A", "Tasting Table B", "Pickup Bench C"],
     scenarioTotal: 10000,
     survivedCount: 8640,
     layoutRuleNote:
-      "베이커리 동선 규칙: 손님이 집게로 빵을 담는 중앙 트레이 매대 주변에 최소 1.4m 양방향 회유 통로를 확보합니다.",
+      "Bakery Circulation Rule: Maintain at least 1.4m of two-way aisle clearance around the central pastry island where guests browse with trays.",
   },
   {
     id: "matcha",
     icon: "🍵",
-    shortName: "성수 팝업 스토어",
-    title: "말차·굿즈 쇼룸 팝업",
+    shortName: "Flagship Pop-up",
+    title: "Matcha & Goods Showroom Pop-up",
     interiorCostManWon: 2400,
     avgTicketWon: 12500,
     defaultArrival: 4.5,
     defaultServiceSec: 18,
-    mainDisplayLabel: "360° 굿즈·시음 아일랜드",
-    orderDeskLabel: "셀프 키오스크 바",
-    pickupDeskLabel: "말차 차선·기프트 픽업",
-    benchLabel: "전신 거울 포토존",
-    tableLabels: ["전시 플린스 A", "전시 플린스 B", "스탠딩 시음바 C"],
+    mainDisplayLabel: "360° Goods & Tasting Island",
+    orderDeskLabel: "Self Kiosk POS",
+    pickupDeskLabel: "Matcha Whisk & Gift Bar",
+    benchLabel: "Mirror Photo Zone",
+    tableLabels: ["Display Plinth A", "Display Plinth B", "Standing Bar C"],
     scenarioTotal: 10000,
     survivedCount: 8900,
     layoutRuleNote:
-      "팝업 동선 규칙: 포토존 체류 인원과 360° 아일랜드 관람객이 키오스크 결제 줄과 겹치지 않도록 순환형으로 배치합니다.",
+      "Pop-up Circulation Rule: Route photo-zone dwell crowds and 360° island browsers away from the Kiosk checkout queue.",
   },
   {
     id: "wine",
     icon: "🍷",
-    shortName: "네추럴 와인바",
-    title: "네추럴 와인 & 그로서리",
+    shortName: "Natural Wine Bar",
+    title: "Natural Wine & Grocery Bar",
     interiorCostManWon: 5200,
     avgTicketWon: 24000,
     defaultArrival: 3.0,
     defaultServiceSec: 26,
-    mainDisplayLabel: "오크통 바틀 큐레이션 랙",
-    orderDeskLabel: "소믈리에 카운터",
-    pickupDeskLabel: "글라스·패키징 바",
-    benchLabel: "치즈·샤퀴테리 쇼케이스",
-    tableLabels: ["테이스팅석 A", "테이스팅석 B", "와인 바 테이블 C"],
+    mainDisplayLabel: "Oak Barrel Curation Rack",
+    orderDeskLabel: "Sommelier Counter",
+    pickupDeskLabel: "Glassware & Bottling Bar",
+    benchLabel: "Cheese & Charcuterie Case",
+    tableLabels: ["Tasting Table A", "Tasting Table B", "Wine Bar Table C"],
     scenarioTotal: 10000,
     survivedCount: 8520,
     layoutRuleNote:
-      "와인바 동선 규칙: 바틀 큐레이션 랙 앞 시음 공간과 테이스팅 테이블 좌석 간격을 넓혀 체류 만족도를 높입니다.",
+      "Wine Bar Circulation Rule: Expand browsing space in front of the bottle curation rack and widen spacing between tasting tables.",
   },
 ];
 
@@ -346,8 +347,8 @@ interface DesignConcept {
 const DESIGN_CONCEPTS: DesignConcept[] = [
   {
     id: "express",
-    name: "Design A · 익스프레스 바",
-    desc: "입구→주문→픽업 직선 동선 · 테이크아웃 최적화",
+    name: "Design A · Express Bar",
+    desc: "Direct IN → POS → Pickup vector · Optimized for high-volume takeout",
     displayX: 7.6,
     displayY: 7.6,
     displayW: 3.8,
@@ -360,8 +361,8 @@ const DESIGN_CONCEPTS: DesignConcept[] = [
   },
   {
     id: "island",
-    name: "Design B · 360° 아일랜드",
-    desc: "중앙 쇼케이스 순환 동선 · 베이커리·팝업 특화",
+    name: "Design B · 360° Island",
+    desc: "Central rotary showcase loop · Tailored for bakeries & pop-ups",
     displayX: 4.6,
     displayY: 4.3,
     displayW: 2.8,
@@ -374,8 +375,8 @@ const DESIGN_CONCEPTS: DesignConcept[] = [
   },
   {
     id: "lounge",
-    name: "Design C · 라운지 쇼룸",
-    desc: "창가 좌석·여유 통로 극대화 · 체류형 매장",
+    name: "Design C · Lounge Showroom",
+    desc: "Maximized window seating & wide aisles · High-dwell showroom",
     displayX: 5.0,
     displayY: 6.2,
     displayW: 2.6,
@@ -404,9 +405,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "both",
     code: "SCN-01",
-    title: "평일·주말 표준 운영",
-    countLabel: "3,200개",
-    ruleDesc: "분당 4.0명 유입 · 주문 1명 + 픽업 2명 · 보행폭 0.65m",
+    title: "Standard Operation",
+    countLabel: "3,200 runs",
+    ruleDesc: "4.0 arrivals/min · 1 POS + 2 Pickup staff · 0.65m body clearance",
     arrival: 4.0,
     service: 20,
     body: 0.65,
@@ -415,9 +416,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "rainy",
     code: "SCN-02",
-    title: "🌧️ 비 오는 토요일 피크",
-    countLabel: "2,400개",
-    ruleDesc: "우천 실내 유입 폭증(분당 6.5명) · 체류·대기 동시 증가",
+    title: "🌧️ Rainy Weekend Surge",
+    countLabel: "2,400 runs",
+    ruleDesc: "Heavy indoor surge (6.5 arrivals/min) · Simultaneous dwell & queue spike",
     arrival: 6.5,
     service: 22,
     body: 0.65,
@@ -426,9 +427,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "layout",
     code: "SCN-03",
-    title: "⚠️ 직원 1명 결근·독박",
-    countLabel: "1,400개",
-    ruleDesc: "인력 충원 없이(픽업 1명) 도면 배치 변경만으로 버티기",
+    title: "⚠️ Solo Barista Shift",
+    countLabel: "1,400 runs",
+    ruleDesc: "Floorplan layout fix only with 1 Pickup staff (testing staff bottleneck)",
     arrival: 4.0,
     service: 20,
     body: 0.65,
@@ -437,9 +438,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "influencer",
     code: "SCN-04",
-    title: "📸 오픈런 인플루언서 웨이팅",
-    countLabel: "1,200개",
-    ruleDesc: "분당 7.5명 최대 유입 + 픽업 숙련 인력 3명 풀가동",
+    title: "📸 Viral Influencer Drop",
+    countLabel: "1,200 runs",
+    ruleDesc: "Peak 7.5 arrivals/min + 3 veteran Pickup baristas at full capacity",
     arrival: 7.5,
     service: 18,
     body: 0.65,
@@ -448,9 +449,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "staff",
     code: "SCN-05",
-    title: "👥 도면 유지 + 인력만 +1",
-    countLabel: "1,000개",
-    ruleDesc: "가구 이동 없이 픽업 직원만 1명→2명 증원했을 때의 효과",
+    title: "👥 Baseline + Extra Staff",
+    countLabel: "1,000 runs",
+    ruleDesc: "Keeping unoptimized baseline floorplan while adding +1 Pickup staff",
     arrival: 4.0,
     service: 20,
     body: 0.65,
@@ -459,9 +460,9 @@ const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "stroller",
     code: "SCN-06",
-    title: "👶 유모차·단체손님 진입",
-    countLabel: "800개",
-    ruleDesc: "통과 요구폭 1.20m 적용 — 좁은 입구 통로 차단 여부 검증",
+    title: "👶 Stroller & Group Entry",
+    countLabel: "800 runs",
+    ruleDesc: "Requires 1.20m corridor clearance — tests entrance choke point",
     arrival: 4.0,
     service: 20,
     body: 1.2,
@@ -508,6 +509,10 @@ interface StudioState {
   acOn: boolean;
   showHeatmap: boolean;
   viewMode: "3d" | "2d";
+  threeMode: "proposed" | "baseline";
+  isoYawRad: number;
+  isoPitchRatio: number;
+  isoZoomScale: number;
 }
 
 const state: StudioState = {
@@ -516,7 +521,7 @@ const state: StudioState = {
   customAreaPyeong: null,
   customDepositManWon: null,
   customRentManWon: null,
-  parsedLinkSource: "네이버 지도 · 성수 연무장길 상가 매칭됨",
+  parsedLinkSource: "Naver Map · Seongsu Yeonmujang-gil Matched",
   address: DISTRICTS[0].sampleUrl,
   budgetManWon: 12000,
   categoryId: "coffee",
@@ -547,79 +552,176 @@ const state: StudioState = {
   acOn: true,
   showHeatmap: true,
   viewMode: "3d",
+  threeMode: "proposed",
+  isoYawRad: 0,
+  isoPitchRatio: 0.5,
+  isoZoomScale: 1.0,
 };
 
 function mountShell(): void {
-  const root = (document.getElementById("root") ?? document.getElementById("app"))!;
+  const root = document.getElementById("root")!;
   root.innerHTML = `
     <!-- TOP BAR (rea.tools style editorial header) -->
     <header class="rea-header">
       <div class="rea-header-inner">
         <div class="rea-brand">
-          <a href="#sec-setup" class="rea-logo">Rehearsal</a>
-          <span class="rea-tagline">Store Spatial & Commercial District Simulator</span>
+          <a href="#sec-3d-stage" class="rea-logo">REA · Rehearsal</a>
+          <span class="rea-tagline">3D Spatial Floorplan & 10,000-Store Reverse Engineering</span>
         </div>
-        <nav class="rea-nav" aria-label="주요 섹션">
-          <a href="#sec-setup" class="rea-nav-link active">1. 상권·예산 설정</a>
-          <a href="#sec-simulator" class="rea-nav-link">2. 도면·시나리오 실험</a>
-          <a href="#floorplan-studio" class="rea-nav-link">3. 내 도면 업로드</a>
+        <nav class="rea-nav" aria-label="Primary Sections">
+          <a href="#sec-3d-stage" class="rea-nav-link active">1. 3D Orbit Workbench</a>
+          <a href="#sec-setup" class="rea-nav-link">2. District Link & 10K Matrix</a>
+          <a href="#sec-simulator" class="rea-nav-link">3. Pre/Post & D3 Lab</a>
+          <a href="#floorplan-studio" class="rea-nav-link">4. Blueprint Import</a>
         </nav>
         <div class="rea-header-actions">
-          <button type="button" class="rea-btn-outline" id="toggleViewModeBtn">📐 2D CAD 치수 도면</button>
-          <button type="button" class="rea-btn-solid" id="exportBtn">계획서 저장 (.txt)</button>
+          <button type="button" class="rea-btn-outline" id="toggleViewModeBtn">📐 2D CAD Blueprint</button>
+          <button type="button" class="rea-btn-solid" id="exportBtn">Export Spec (.txt)</button>
         </div>
       </div>
     </header>
 
     <div class="rea-layout">
       <div class="rea-main-col">
+        <!-- SECTION 0: PGRUN.DEV / ISO-GLOW STYLE 3D ROTATABLE FLOORPLAN STAGE (THE CORE HERO) -->
+        <section class="rea-section" id="sec-3d-stage" style="padding-top:14px;padding-bottom:18px">
+          <div class="pgrun-stage-shell" id="pgrunStageShell">
+            <!-- WebGL 3D Canvas Mount -->
+            <div class="pgrun-canvas-mount" id="threeStageMount" aria-label="360-degree Interactive 3D Store Floorplan"></div>
+
+            <!-- TOP-LEFT HUD: Brand & Category Switcher (exact pgrun.dev layout) -->
+            <div class="pgrun-hud-top-left">
+              <div class="pgrun-brand-badge">
+                <i class="pgrun-dot" id="pgrunDot"></i>
+                <span id="pgrunStageTitle">STORE FLOORPLAN INTERNALS · 360° ORBIT</span>
+              </div>
+              <div class="pgrun-seg" role="tablist" aria-label="Store Category 3D Floorplan">
+                <button type="button" data-three-cat="coffee" class="active">Cafe</button>
+                <button type="button" data-three-cat="bakery">Bakery</button>
+                <button type="button" data-three-cat="matcha">Pop-Up</button>
+                <button type="button" data-three-cat="wine">Wine Bar</button>
+              </div>
+            </div>
+
+            <!-- TOP-RIGHT HUD: Revolve + Iso View + Top 2D + Theme (exact pgrun.dev controls) -->
+            <div class="pgrun-hud-top-right">
+              <button type="button" class="pgrun-pill-btn" id="threeRevolveBtn" aria-pressed="false">⟳ <span>REVOLVE</span></button>
+              <button type="button" class="pgrun-pill-btn" id="threeIsoBtn" title="Reset Isometric View (I)">ISO VIEW</button>
+              <button type="button" class="pgrun-pill-btn" id="threeTopBtn" title="Top-Down 2D Orthographic View">TOP 2D</button>
+              <button type="button" class="pgrun-icon-btn" id="threeThemeBtn" aria-label="Toggle Light/Dark Theme" title="Toggle Light / Dark Stage Theme (T)">◐</button>
+            </div>
+
+            <!-- RIGHT FLOATING SCENARIO & LAYOUT STACK (exact pgrun.dev .ctl stack) -->
+            <div class="pgrun-ctl-stack" aria-label="3D Floorplan Scenario & Layout Controls">
+              <button type="button" class="pgrun-ctl-btn on" data-three-mode="proposed">
+                <span>Proposed · Optimized</span><kbd>P</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-mode="baseline">
+                <span>Baseline · Entry Choke</span><kbd>B</kbd>
+              </button>
+              <div class="pgrun-sep"></div>
+              <button type="button" class="pgrun-ctl-btn on" data-three-design="express">
+                <span>Design A · Express Bar</span><kbd>A</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-design="island">
+                <span>Design B · 360° Island</span><kbd>S</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-design="lounge">
+                <span>Design C · Lounge</span><kbd>C</kbd>
+              </button>
+              <div class="pgrun-sep"></div>
+              <button type="button" class="pgrun-ctl-btn on" data-three-scn="both">
+                <span>Standard Peak (3.2k)</span><kbd>1</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-scn="rainy">
+                <span>Rainy Surge (2.4k)</span><kbd>2</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-scn="layout">
+                <span>Solo Barista (1.4k)</span><kbd>3</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-scn="influencer">
+                <span>Viral Drop (1.2k)</span><kbd>4</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-scn="staff">
+                <span>Extra Staff (1.0k)</span><kbd>5</kbd>
+              </button>
+              <button type="button" class="pgrun-ctl-btn" data-three-scn="stroller">
+                <span>Stroller 1.2m (800)</span><kbd>6</kbd>
+              </button>
+              <div class="pgrun-sep"></div>
+              <button type="button" class="pgrun-ctl-btn" id="threeRotateFurnitureBtn">
+                <span>Rotate Fixture 90°</span><kbd>R</kbd>
+              </button>
+            </div>
+
+            <!-- BOTTOM-LEFT NARRATIVE INSPECTOR CARD (exact pgrun.dev #info box) -->
+            <div class="pgrun-info-card" id="threeInfoCard">
+              <h2 id="threeInfoTitle">STORE FLOORPLAN INTERNALS · DRAG TO ORBIT 360°</h2>
+              <div class="pgrun-info-sub" id="threeInfoSub">Left-Drag: 360° Orbit · Scroll: Zoom · Shift+Drag: Move Fixture</div>
+              <p id="threeInfoBody">
+                Hover over the Order POS, Pickup Bar, Main Display Island, or 24-cell Shared Walkway Matrix to inspect real-time LED queue buffers and spatial bottlenecks across 10,000 parallel store scenarios.
+              </p>
+            </div>
+
+            <!-- BOTTOM TELEMETRY & SHORTCUT BAR -->
+            <div class="pgrun-bottom-bar">
+              <div class="pgrun-hint">
+                Drag: 360° Orbit · Shift+Drag: Move Fixture · 1–6 Scenarios · P/B Compare · R Rotate 90° · I Iso View
+              </div>
+              <div class="pgrun-readout tabular" id="threeLiveReadout">
+                [PROPOSED] Wait 18s (▼87s) · 10m Done 47 · Walk 16.5m · Survived 8,420 / 10,000
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- SECTION 1: HERO & COMMERCIAL DISTRICT + CATEGORY ANALYSIS (rea.tools 2-col layout) -->
         <section class="rea-section" id="sec-setup">
           <div class="rea-two-col">
             <!-- Left: Editorial Headline + Commercial District Evidence -->
             <div class="rea-col-left">
               <div class="rea-kicker">Commercial District & Floorplan Rehearsal</div>
-              <h1 class="rea-h1">가게를 계약하기 전에,<br/>상권과 도면을 미리 살아보세요.</h1>
+              <h1 class="rea-h1">Before signing the lease,<br/>rehearse 10,000 store scenarios in 3D.</h1>
               <p class="rea-lead" id="districtLeadText">
-                주소와 내 자본금을 선택하면 상권 유동인구·임대 시세를 분석해 최적 업종을 추천하고, 1,000개의 운영 시나리오로 도면 병목을 검증합니다.
+                Paste any map or commercial property link to benchmark foot traffic, rent, and 10,000 parallel layout stress tests before committing capital.
               </p>
 
-              <!-- LIVE COMMERCIAL DISTRICT ANALYSIS TABLE (상권 분석 리포트) -->
+              <!-- LIVE COMMERCIAL DISTRICT ANALYSIS TABLE -->
               <div class="rea-evidence-box">
                 <div class="rea-evidence-head">
-                  <span class="rea-badge-dark" id="districtBadgeTitle">📍 성수 연무장길 상권 분석</span>
-                  <span class="tabular rea-survival-pill" id="heroScenarioTotal">10,000개 가게 시나리오 중 8,420개 생존</span>
+                  <span class="rea-badge-dark" id="districtBadgeTitle">📍 Seongsu Yeonmujang-gil District</span>
+                  <span class="tabular rea-survival-pill" id="heroScenarioTotal">8,420 / 10,000 Store Scenarios Survived</span>
                 </div>
                 <div class="rea-evidence-grid">
                   <div class="rea-ev-item">
-                    <span class="ev-label">일 평균 유동인구</span>
-                    <strong class="ev-val tabular" id="evFootTraffic">42,800명/일</strong>
-                    <span class="ev-sub" id="evPeakHours">피크: 주말 13:00–17:30</span>
+                    <span class="ev-label">Daily Foot Traffic</span>
+                    <strong class="ev-val tabular" id="evFootTraffic">42,800 / day</strong>
+                    <span class="ev-sub" id="evPeakHours">Peak: Wknd 13:00–17:30</span>
                   </div>
                   <div class="rea-ev-item">
-                    <span class="ev-label">상권 평균 보증금·월세</span>
-                    <strong class="ev-val tabular" id="evRentInfo">5,000만 / 월 380만</strong>
-                    <span class="ev-sub" id="evAreaInfo">1층 15평 (12.0m × 9.0m)</span>
+                    <span class="ev-label">Avg Deposit & Monthly Rent</span>
+                    <strong class="ev-val tabular" id="evRentInfo">$38k Dep / $2.8k/mo</strong>
+                    <span class="ev-sub" id="evAreaInfo">1F 50m² (12.0m × 9.0m)</span>
                   </div>
                   <div class="rea-ev-item">
-                    <span class="ev-label">초기 투자비 (보증금+시공)</span>
-                    <strong class="ev-val tabular" id="evSetupCost">8,800만 원</strong>
-                    <span class="ev-sub tabular" id="budgetRemainBanner">안전 예비자금 3,200만 원 확보</span>
+                    <span class="ev-label">Initial CAPEX (Deposit + Fit-out)</span>
+                    <strong class="ev-val tabular" id="evSetupCost">$66k Total</strong>
+                    <span class="ev-sub tabular" id="budgetRemainBanner">$24k Operating Reserve Secured</span>
                   </div>
                   <div class="rea-ev-item">
-                    <span class="ev-label">예상 월 순수익 (시뮬레이션)</span>
-                    <strong class="ev-val tabular ev-profit" id="evMonthlyProfit">+690만 원/월</strong>
-                    <span class="ev-sub" id="evTargetPersona">핵심층: 2030 팝업·카페 투어족</span>
+                    <span class="ev-label">Est. Monthly Net Profit</span>
+                    <strong class="ev-val tabular ev-profit" id="evMonthlyProfit">+$5,200 / mo</strong>
+                    <span class="ev-sub" id="evTargetPersona">Core: Gen-Z Pop-up & Coffee Crowd</span>
                   </div>
                 </div>
                 <!-- D3 10,000-Store Parallel Simulation Matrix -->
                 <div class="d3-tenk-box">
                   <div class="d3-tenk-head">
-                    <strong>📊 10,000개 평행 가게 시나리오 생존 분포 (D3.js Live Matrix)</strong>
+                    <strong>📊 10,000 Parallel Store Scenarios Survival Matrix (D3.js)</strong>
                     <div class="d3-tenk-legend">
-                      <span><i style="background:#10b981"></i>생존 가동</span>
-                      <span><i style="background:#f59e0b"></i>대기열 과부하</span>
-                      <span><i style="background:#ef4444"></i>동선 차단</span>
+                      <span><i style="background:#ea580c"></i>Survived</span>
+                      <span><i style="background:#fbbf24"></i>Queue Overload</span>
+                      <span><i style="background:#3f3f46"></i>Route Blocked</span>
                     </div>
                   </div>
                   <div id="tenKDistributionChart"></div>
@@ -629,16 +731,16 @@ function mountShell(): void {
 
             <!-- Right: Dark Terminal Setup Card (rea.tools signature card) -->
             <div class="rea-col-right">
-              <div class="rea-step-title">1. 상가 링크 붙여넣기 & 자본금·업종 설정</div>
+              <div class="rea-step-title">1. Paste Property Link & Configure Capital / Category</div>
               <div class="rea-terminal-card">
                 <div class="rea-terminal-bar">
                   <div class="rea-dots"><i></i><i></i><i></i></div>
                   <span>store-rehearsal.config</span>
-                  <span class="tabular" id="calcBadge" role="status">Seed #42 · 계산 완료</span>
+                  <span class="tabular" id="calcBadge" role="status">Seed #42 · Ready</span>
                 </div>
                 <div class="rea-terminal-body">
                   <label class="rea-term-label" for="addressInput">
-                    <span>&gt; 1. 지도·부동산 링크 붙여넣기 (네이버·카카오·네모·직방 링크 즉시 인식)</span>
+                    <span>&gt; 1. Paste Map / Property Listing URL (Naver · Kakao · Nemo · Zigbang)</span>
                   </label>
                   <div class="rea-link-input-row">
                     <input
@@ -646,27 +748,27 @@ function mountShell(): void {
                       type="text"
                       class="rea-term-input"
                       value="https://naver.me/seongsu-yeonmu42-1f"
-                      placeholder="https://naver.me/... 또는 상가 링크·주소를 붙여넣으세요"
-                      aria-label="상가 링크 또는 주소 입력"
+                      placeholder="Paste https://naver.me/... or commercial property link"
+                      aria-label="Property Listing URL or Address"
                     />
-                    <button type="button" class="rea-link-parse-btn" id="parseLinkBtn">링크 분석</button>
+                    <button type="button" class="rea-link-parse-btn" id="parseLinkBtn">Analyze Link</button>
                   </div>
-                  <div class="rea-district-chips" role="group" aria-label="샘플 상가 링크 원클릭 선택" style="margin-top:6px">
-                    <button type="button" class="rea-term-chip active" data-dist-id="seongsu">🔗 naver.me/성수연무장길</button>
-                    <button type="button" class="rea-term-chip" data-dist-id="yeonnam">🔗 kko.to/연남경의선숲길</button>
-                    <button type="button" class="rea-term-chip" data-dist-id="hannam">🔗 nemo.kr/한남카페거리</button>
-                    <button type="button" class="rea-term-chip" data-dist-id="sinsa">🔗 zigbang/신사가로수길</button>
+                  <div class="rea-district-chips" role="group" aria-label="Sample Property Links" style="margin-top:6px">
+                    <button type="button" class="rea-term-chip active" data-dist-id="seongsu">🔗 naver.me/seongsu-yeonmu</button>
+                    <button type="button" class="rea-term-chip" data-dist-id="yeonnam">🔗 kko.to/yeonnam-forest</button>
+                    <button type="button" class="rea-term-chip" data-dist-id="hannam">🔗 nemo.kr/hannam-cafe</button>
+                    <button type="button" class="rea-term-chip" data-dist-id="sinsa">🔗 zigbang/sinsa-garosu</button>
                   </div>
                   <div class="rea-parsed-box" id="parsedLinkBox">
                     <div class="rea-parsed-status" id="parsedLinkStatus">
-                      ✅ 네이버 지도 링크 인식됨 · 성수 연무장길 42 상가 호실 선택:
+                      ✅ Link Parsed · Select Floor Suite at Seongsu Yeonmujang-gil 42:
                     </div>
-                    <div class="rea-unit-chips" id="parsedUnitChips" role="group" aria-label="매물 호실 선택"></div>
+                    <div class="rea-unit-chips" id="parsedUnitChips" role="group" aria-label="Available Suites"></div>
                   </div>
 
                   <label class="rea-term-label" for="budgetSlider" style="margin-top:12px">
-                    <span>&gt; 2. 내 창업 자본금 (보증금 + 인테리어·설비 포함)</span>
-                    <strong class="tabular" id="budgetDisplayLabel" style="color:#34d399">1억 2,000만 원</strong>
+                    <span>&gt; 2. Total Startup Capital (Lease Deposit + Interior Fit-out)</span>
+                    <strong class="tabular" id="budgetDisplayLabel" style="color:#fb923c">$90,000 (₩120M)</strong>
                   </label>
                   <input
                     id="budgetSlider"
@@ -679,9 +781,9 @@ function mountShell(): void {
                   />
 
                   <div class="rea-term-label" style="margin-top:12px">
-                    <span>&gt; 3. 업종 선택 (선택 즉시 맞춤 인테리어·설비 도면 전환)</span>
+                    <span>&gt; 3. Select Store Category (Auto-loads 3D Fixtures & Flow Rules)</span>
                   </div>
-                  <div class="rea-cat-grid" id="categoryGrid" role="group" aria-label="창업 카테고리 선택"></div>
+                  <div class="rea-cat-grid" id="categoryGrid" role="group" aria-label="Store Category Selection"></div>
                 </div>
               </div>
             </div>
@@ -695,25 +797,27 @@ function mountShell(): void {
           <div class="rea-sec-header">
             <div>
               <div class="rea-kicker">Interactive Floorplan & 10,000 Store Scenario Lab</div>
-              <h2 class="rea-h2" id="activeCategoryHeading">☕ 스페셜티 커피 & 로스터리 — 10,000개 가게 시나리오 비교</h2>
+              <h2 class="rea-h2" id="activeCategoryHeading">☕ Specialty Coffee & Roastery — 10,000-Scenario Comparison</h2>
             </div>
             <div class="rea-env-controls">
-              <button type="button" class="rea-btn-outline active" id="toggleHeatmapBtn">🔥 병목 히트맵 ON</button>
-              <button type="button" class="rea-btn-outline active" id="toggleLightsBtn">💡 조명 ON</button>
-              <button type="button" class="rea-btn-outline active" id="toggleAcBtn">❄️ 에어컨 기류 ON</button>
+              <span class="rea-orbit-hint" id="isoAngleBadge">🔄 Drag Orbit: 0°</span>
+              <button type="button" class="rea-btn-outline" id="resetIsoOrbitBtn">Reset Iso Angle</button>
+              <button type="button" class="rea-btn-outline active" id="toggleHeatmapBtn">🔥 Heatmap ON</button>
+              <button type="button" class="rea-btn-outline active" id="toggleLightsBtn">💡 Lighting ON</button>
+              <button type="button" class="rea-btn-outline active" id="toggleAcBtn">❄️ HVAC Airflow ON</button>
             </div>
           </div>
 
           <!-- SCENARIO & DESIGN RULE EXPLANATION BAR -->
           <div class="rea-rule-strip">
             <div class="rea-rule-col">
-              <div class="rea-step-title">1. 인테리어 레이아웃 선택</div>
-              <div class="rea-design-row" id="designTabs" role="group" aria-label="인테리어 디자인 프리셋"></div>
+              <div class="rea-step-title">1. Select Interior Spatial Layout</div>
+              <div class="rea-design-row" id="designTabs" role="group" aria-label="Interior Layout Presets"></div>
               <p class="rea-rule-note" id="layoutRuleText"></p>
             </div>
             <div class="rea-rule-col">
-              <div class="rea-step-title">2. 10,000개 평행 가게 시나리오 중 6대 스트레스 상황 클릭</div>
-              <div class="rea-scn-row" id="scenarioDeckGrid" role="group" aria-label="시나리오 프리셋"></div>
+              <div class="rea-step-title">2. Stress-Test 6 Key Regimes Across 10,000 Parallel Store Runs</div>
+              <div class="rea-scn-row" id="scenarioDeckGrid" role="group" aria-label="Scenario Presets"></div>
               <p class="rea-rule-note tabular" id="scenarioRuleText"></p>
             </div>
           </div>
@@ -725,24 +829,24 @@ function mountShell(): void {
               <section class="world">
                 <div class="world-top">
                   <div>
-                    <span class="world-tag">개선 전 · 입구 병목 도면 (픽업 1명)</span>
-                    <h3>일반 기본 배치 (Baseline)</h3>
+                    <span class="world-tag">BEFORE · Unoptimized Entry Choke (1 Pickup Staff)</span>
+                    <h3>Baseline Floorplan</h3>
                   </div>
-                  <span class="route-status" id="baseRoute">동선 연결됨</span>
+                  <span class="route-status" id="baseRoute">Route Clear</span>
                 </div>
                 <div class="canvasbox">
                   <canvas
                     id="baseCanvas"
                     role="img"
-                    aria-label="현재 운영의 공간 및 고객 이동 시뮬레이션"
+                    aria-label="Baseline store spatial simulation canvas"
                   ></canvas>
                 </div>
                 <div class="world-stats">
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">평균 대기시간 · 실시간 대기줄 (D3)</span>
-                        <strong class="w-num tabular" id="baseWait">–</strong><span class="w-unit">초</span>
+                        <span class="w-label">Mean Wait · Queue Curve (D3)</span>
+                        <strong class="w-num tabular" id="baseWait">–</strong><span class="w-unit">s</span>
                       </div>
                       <small class="w-sub" id="baseP90"></small>
                     </div>
@@ -751,8 +855,8 @@ function mountShell(): void {
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">10분 구매 완료 · 누적 처리 곡선 (D3)</span>
-                        <strong class="w-num tabular" id="baseDone">–</strong><span class="w-unit">명</span>
+                        <span class="w-label">10m Served · Throughput (D3)</span>
+                        <strong class="w-num tabular" id="baseDone">–</strong><span class="w-unit">pax</span>
                       </div>
                       <small class="w-sub" id="baseActive"></small>
                     </div>
@@ -761,10 +865,10 @@ function mountShell(): void {
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">손님 이동 거리 · 구간별 분해 (D3)</span>
+                        <span class="w-label">Walk Distance · Segments (D3)</span>
                         <strong class="w-num tabular" id="baseWalk">–</strong><span class="w-unit">m</span>
                       </div>
-                      <small class="w-sub" id="baseNote">주문 1 · 픽업 1</small>
+                      <small class="w-sub" id="baseNote">POS 1 · Pickup 1</small>
                     </div>
                     <div class="d3-chart-slot" id="baseWalkChart"></div>
                     <span class="hidden" id="baseQueuePeak"></span>
@@ -776,30 +880,30 @@ function mountShell(): void {
               <section class="world proposed">
                 <div class="world-top">
                   <div>
-                    <span class="world-tag emerald">개선 후 · 마우스로 가구 드래그 편집 가능</span>
-                    <h3 id="proposedWorldTitle">내 창업 도면 (Design A)</h3>
+                    <span class="world-tag emerald">AFTER · Drag Fixtures or Orbit 360°</span>
+                    <h3 id="proposedWorldTitle">Proposed Floorplan (Design A)</h3>
                   </div>
-                  <span class="route-status" id="planRoute">동선 연결됨</span>
+                  <span class="route-status" id="planRoute">Route Clear</span>
                 </div>
                 <div class="canvasbox">
                   <canvas
                     id="planCanvas"
                     role="img"
                     tabindex="0"
-                    aria-label="변경안 공간. 진열대나 테이블을 드래그하거나 방향키로 이동할 수 있습니다"
+                    aria-label="Interactive proposed floorplan. Drag fixtures to reposition or drag empty floor to rotate 360 degrees."
                   ></canvas>
                   <div class="canvas-floating-tools">
-                    <div class="object-chips" role="group" aria-label="가구 빠른 선택">
-                      <button type="button" class="obj-chip active" data-select-obj="display">주 진열대</button>
-                      <button type="button" class="obj-chip" data-select-obj="table-a">가구 A</button>
-                      <button type="button" class="obj-chip" data-select-obj="table-b">가구 B</button>
-                      <button type="button" class="obj-chip" data-select-obj="table-c">가구 C</button>
+                    <div class="object-chips" role="group" aria-label="Quick Fixture Select">
+                      <button type="button" class="obj-chip active" data-select-obj="display">Main Display</button>
+                      <button type="button" class="obj-chip" data-select-obj="table-a">Table A</button>
+                      <button type="button" class="obj-chip" data-select-obj="table-b">Table B</button>
+                      <button type="button" class="obj-chip" data-select-obj="table-c">Table C</button>
                     </div>
                     <div class="canvas-tool-btns">
-                      <button type="button" class="rea-mini-btn" id="rotateObjBtn">↻ 90° 회전</button>
-                      <button type="button" class="rea-mini-btn" id="addBoothBtn">+ 매대 추가</button>
-                      <button type="button" class="rea-mini-btn" id="removeCustomBtn">삭제</button>
-                      <button type="button" class="rea-mini-btn" id="resetSceneBtn">초기화</button>
+                      <button type="button" class="rea-mini-btn" id="rotateObjBtn">↻ Rotate 90°</button>
+                      <button type="button" class="rea-mini-btn" id="addBoothBtn">+ Add Fixture</button>
+                      <button type="button" class="rea-mini-btn" id="removeCustomBtn">Clear</button>
+                      <button type="button" class="rea-mini-btn" id="resetSceneBtn">Reset</button>
                     </div>
                   </div>
                 </div>
@@ -807,8 +911,8 @@ function mountShell(): void {
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">평균 대기시간 · 실시간 대기줄 (D3)</span>
-                        <strong class="w-num tabular" id="planWait">–</strong><span class="w-unit">초</span>
+                        <span class="w-label">Mean Wait · Queue Curve (D3)</span>
+                        <strong class="w-num tabular" id="planWait">–</strong><span class="w-unit">s</span>
                         <span class="delta-tag" id="waitDeltaTag"></span>
                       </div>
                       <small class="w-sub" id="planP90"></small>
@@ -818,8 +922,8 @@ function mountShell(): void {
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">10분 구매 완료 · 누적 처리 곡선 (D3)</span>
-                        <strong class="w-num tabular" id="planDone">–</strong><span class="w-unit">명</span>
+                        <span class="w-label">10m Served · Throughput (D3)</span>
+                        <strong class="w-num tabular" id="planDone">–</strong><span class="w-unit">pax</span>
                         <span class="delta-tag" id="doneDeltaTag"></span>
                       </div>
                       <small class="w-sub" id="planActive"></small>
@@ -829,7 +933,7 @@ function mountShell(): void {
                   <div class="w-stat">
                     <div class="w-stat-head">
                       <div>
-                        <span class="w-label">손님 이동 거리 · 구간별 분해 (D3)</span>
+                        <span class="w-label">Walk Distance · Segments (D3)</span>
                         <strong class="w-num tabular" id="planWalk">–</strong><span class="w-unit">m</span>
                         <span class="delta-tag" id="walkDeltaTag"></span>
                       </div>
@@ -842,11 +946,11 @@ function mountShell(): void {
               </section>
             </div>
 
-            <!-- PLAYBACK & WALK CONTROLS BAR (rea.tools clean button bar) -->
+            <!-- PLAYBACK & WALK CONTROLS BAR -->
             <div class="rea-play-controls">
               <div class="rea-play-left">
-                <button class="rea-btn-solid" id="playBtn" type="button">일시정지</button>
-                <button class="rea-btn-outline" id="restartBtn" type="button">처음부터</button>
+                <button class="rea-btn-solid" id="playBtn" type="button">Pause</button>
+                <button class="rea-btn-outline" id="restartBtn" type="button">Restart</button>
                 <span class="clock tabular" id="clock">03:00 / 10:00</span>
                 <input
                   type="range"
@@ -855,9 +959,9 @@ function mountShell(): void {
                   max="600"
                   step="1"
                   value="180"
-                  aria-label="시뮬레이션 시간"
+                  aria-label="Simulation Timeline"
                 />
-                <select class="speed" id="speed" aria-label="재생 속도">
+                <select class="speed" id="speed" aria-label="Playback Speed">
                   <option value="10">10x</option>
                   <option value="25" selected>25x</option>
                   <option value="50">50x</option>
@@ -868,53 +972,53 @@ function mountShell(): void {
               </div>
 
               <div class="rea-walk-right">
-                <button class="rea-btn-outline" id="walkBtn" type="button">🚶 직접 걸어보기</button>
-                <div class="dpad" id="walkDpad" role="group" aria-label="보행 방향키">
-                  <button type="button" class="dpad-btn" data-move="up" aria-label="위">▲</button>
-                  <button type="button" class="dpad-btn" data-move="left" aria-label="왼쪽">◀</button>
-                  <button type="button" class="dpad-btn" data-move="down" aria-label="아래">▼</button>
-                  <button type="button" class="dpad-btn" data-move="right" aria-label="오른쪽">▶</button>
+                <button class="rea-btn-outline" id="walkBtn" type="button">🚶 Walk Avatar</button>
+                <div class="dpad" id="walkDpad" role="group" aria-label="Avatar D-Pad">
+                  <button type="button" class="dpad-btn" data-move="up" aria-label="Move Up">▲</button>
+                  <button type="button" class="dpad-btn" data-move="left" aria-label="Move Left">◀</button>
+                  <button type="button" class="dpad-btn" data-move="down" aria-label="Move Down">▼</button>
+                  <button type="button" class="dpad-btn" data-move="right" aria-label="Move Right">▶</button>
                 </div>
-                <span class="rea-walk-hint" id="walkHint">WASD / 방향키</span>
+                <span class="rea-walk-hint" id="walkHint">WASD / Arrow Keys</span>
               </div>
             </div>
 
             <!-- FINE PARAMETER BAR -->
             <div class="rea-fine-bar">
               <div class="fine-item">
-                <label for="arrivals">분당 손님 유입 <strong class="tabular" id="arrivalValue">4.0명</strong></label>
+                <label for="arrivals">Arrival Rate <strong class="tabular" id="arrivalValue">4.0/m</strong></label>
                 <input type="range" id="arrivals" min="0" max="8" step="0.5" value="4" />
               </div>
               <div class="fine-item">
-                <label for="service">메뉴 제조 시간 <strong class="tabular" id="serviceValue">20초</strong></label>
+                <label for="service">Service Time <strong class="tabular" id="serviceValue">20s</strong></label>
                 <input type="range" id="service" min="8" max="45" step="1" value="20" />
               </div>
               <div class="fine-item">
-                <label for="pickupStaff">픽업 직원 수 <strong class="tabular" id="staffValue">2명</strong></label>
+                <label for="pickupStaff">Pickup Staff <strong class="tabular" id="staffValue">2</strong></label>
                 <input type="range" id="pickupStaff" min="1" max="3" step="1" value="2" />
                 <span class="hidden" id="staffCost"></span>
               </div>
               <div class="fine-item">
-                <label for="bodyWidth">손님 통과 폭</label>
+                <label for="bodyWidth">Aisle Clearance</label>
                 <select id="bodyWidth">
-                  <option value="0.65">일반 보행 (0.65m)</option>
-                  <option value="1.00">쇼핑백 동반 (1.00m)</option>
-                  <option value="1.20">유모차·단체 (1.20m)</option>
+                  <option value="0.65">Solo Guest (0.65m)</option>
+                  <option value="1.00">Shopping Bags (1.00m)</option>
+                  <option value="1.20">Stroller / Group (1.20m)</option>
                 </select>
               </div>
               <div class="fine-item">
-                <label id="selectedObjTitle">선택 가구 좌표 (m)</label>
+                <label id="selectedObjTitle">Fixture Coord (m)</label>
                 <div style="display:flex;gap:4px">
-                  <input type="number" id="displayX" min="0" max="11" step="0.1" value="7.6" aria-label="가구 가로 X" />
-                  <input type="number" id="displayY" min="0" max="8" step="0.1" value="7.6" aria-label="가구 세로 Y" />
+                  <input type="number" id="displayX" min="0" max="11" step="0.1" value="7.6" aria-label="Fixture X" />
+                  <input type="number" id="displayY" min="0" max="8" step="0.1" value="7.6" aria-label="Fixture Y" />
                 </div>
               </div>
             </div>
 
             <!-- INSIGHT RESULT CALLOUT -->
             <div class="rea-insight-bar" id="insight" aria-live="polite">
-              <strong>대기시간 87초 단축 · 10분간 +20명 추가 판매</strong>
-              <span class="muted">입구 병목 제거 및 픽업 인력 배치 효과</span>
+              <strong>Wait time reduced by 87s · +20 extra orders served per 10 mins</strong>
+              <span class="muted">Combined effect of clearing entrance choke and optimizing pickup bar</span>
             </div>
           </div>
         </section>
@@ -926,35 +1030,35 @@ function mountShell(): void {
           <div class="rea-two-col">
             <div class="rea-col-left">
               <div class="rea-kicker">Blueprint Import & Field Calibration</div>
-              <h2 class="rea-h2">내 상가 도면·사진 업로드 및 가오픈 실측 보정</h2>
+              <h2 class="rea-h2">Custom Blueprint Import & Soft-Opening Calibration</h2>
               <p class="rea-lead">
-                가지고 계신 도면이나 현장 사진 위에서 매대 영역을 드래그하면 위 3D 매장 도면에 즉시 추가됩니다.
+                Draw a bounding box over any uploaded CAD blueprint or site photo to inject a custom 3D fixture directly into the 12.0m × 9.0m spatial stage.
               </p>
 
               <div class="rea-evidence-box" style="margin-top:14px">
-                <div class="rea-step-title">가오픈 첫날 실측 보정 (Reality Calibration)</div>
+                <div class="rea-step-title">Soft-Opening Field Telemetry Calibration</div>
                 <div class="calibration-grid">
                   <label for="obsArrivalsInput">
-                    실제 분당 방문 손님 (명/분)
+                    Observed Arrivals (pax / min)
                     <input type="number" id="obsArrivalsInput" min="0.5" max="15" step="0.1" value="4.4" />
                   </label>
                   <label for="obsWaitInput">
-                    실제 체감 대기시간 (초)
+                    Observed Queue Wait (sec)
                     <input type="number" id="obsWaitInput" min="1" max="300" step="1" value="22" />
                   </label>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
                   <button type="button" class="rea-btn-solid" id="applyCalibrationBtn">
-                    실측 데이터로 시뮬레이터 보정
+                    Calibrate Simulation Engine
                   </button>
                   <span class="tabular" id="calibrationResultBox" style="font-size:12px;color:#475569">
-                    현재 도면 예측 대기: <strong id="calPredWait">18초</strong>
+                    Predicted Wait: <strong id="calPredWait">18s</strong>
                   </span>
                 </div>
 
                 <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0">
-                  <button class="rea-btn-outline" id="previewPlanBtn" type="button">실행 계획서 텍스트 보기</button>
-                  <button class="rea-btn-outline" id="jsonBtn" type="button">시나리오 JSON 저장</button>
+                  <button class="rea-btn-outline" id="previewPlanBtn" type="button">Preview Spec Sheet</button>
+                  <button class="rea-btn-outline" id="jsonBtn" type="button">Export Scenario JSON</button>
                 </div>
                 <div class="plan-preview hidden" id="planPreviewBox" style="margin-top:10px">
                   <pre id="planPreviewText"></pre>
@@ -963,24 +1067,24 @@ function mountShell(): void {
             </div>
 
             <div class="rea-col-right">
-              <div class="rea-step-title">도면·사진 위에서 신규 매대 위치 드래그</div>
-              <div class="rea-stage-card" style="padding:16px">
+              <div class="rea-step-title">Drag Bounding Box on Blueprint to Add 3D Fixture</div>
+              <div class="rea-stage-card" style="padding:16px;flex:1;display:flex;flex-direction:column;justify-content:space-between">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-                  <button type="button" class="rea-btn-outline" id="loadSampleBlueprintBtn">샘플 CAD 도면 로드</button>
-                  <input id="imageFile" type="file" accept="image/png,image/jpeg" aria-label="도면 이미지 업로드" style="font-size:12px" />
+                  <button type="button" class="rea-btn-outline" id="loadSampleBlueprintBtn">Load Sample CAD</button>
+                  <input id="imageFile" type="file" accept="image/png,image/jpeg" aria-label="Upload Blueprint Image" style="font-size:12px" />
                 </div>
                 <canvas
                   id="imageCanvas"
                   role="img"
-                  aria-label="도면 이미지에서 추가 장애물 영역을 드래그해 지정"
+                  aria-label="Drag a region on the blueprint to place a new 3D fixture"
                 ></canvas>
                 <label class="checkrow">
                   <input type="checkbox" id="presenceConfirm" checked />
-                  <span>드래그한 영역을 12m × 9m 매장 도면의 실제 매대로 변환합니다.</span>
+                  <span>Map bounding box into a physical fixture inside the 12.0m × 9.0m store floorplan.</span>
                 </label>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px">
-                  <span class="status tabular" id="imageStatus">영역을 드래그해 매대를 추가하세요</span>
-                  <button class="rea-btn-solid" id="applyBox" type="button" disabled>위 도면에 매대 추가 ↑</button>
+                  <span class="status tabular" id="imageStatus">Drag on blueprint to define fixture footprint</span>
+                  <button class="rea-btn-solid" id="applyBox" type="button" disabled>Inject into 3D Stage ↑</button>
                 </div>
               </div>
             </div>
@@ -991,9 +1095,10 @@ function mountShell(): void {
       <!-- RIGHT STICKY "On this page" RAIL (exact rea.tools navigation rail) -->
       <aside class="rea-toc" aria-label="On this page">
         <div class="rea-toc-title">On this page</div>
-        <a href="#sec-setup" class="rea-toc-link active">1. 상권 분석 & 예산</a>
-        <a href="#sec-simulator" class="rea-toc-link">2. 도면 & 시나리오 실험</a>
-        <a href="#floorplan-studio" class="rea-toc-link">3. 도면 업로드 & 보정</a>
+        <a href="#sec-3d-stage" class="rea-toc-link active">1. 3D Orbit Workbench</a>
+        <a href="#sec-setup" class="rea-toc-link">2. District & 10K Matrix</a>
+        <a href="#sec-simulator" class="rea-toc-link">3. Pre/Post & D3 Lab</a>
+        <a href="#floorplan-studio" class="rea-toc-link">4. Blueprint & Calibrate</a>
       </aside>
     </div>
   `;
@@ -1027,22 +1132,13 @@ function getSelectedObject(): SceneObject {
 }
 
 function formatManWon(manWon: number): string {
-  if (manWon >= 10000) {
-    const eok = Math.floor(manWon / 10000);
-    const rem = manWon % 10000;
-    return rem > 0
-      ? `${eok}억 ${rem.toLocaleString("ko-KR")}만 원`
-      : `${eok}억 원`;
-  }
-  return `${manWon.toLocaleString("ko-KR")}만 원`;
+  const usdK = Math.round((manWon * 10000) / 1330000);
+  return `$${usdK.toLocaleString("en-US")}k`;
 }
 
 function formatShortWon(manWon: number): string {
-  if (manWon >= 10000) {
-    const eok = (manWon / 10000).toFixed(1).replace(/\.0$/, "");
-    return `${eok}억`;
-  }
-  return `${manWon.toLocaleString("ko-KR")}만`;
+  const usdK = Math.round((manWon * 10000) / 1330000);
+  return `$${usdK.toLocaleString("en-US")}k`;
 }
 
 function round(n: number | null | undefined, d = 0): string {
@@ -1113,15 +1209,15 @@ function buildCrewPlanText(): string {
   const o = getSelectedObject();
   const totalSetup = dist.depositManWon + cat.interiorCostManWon;
   return [
-    `[Rehearsal 상권 분석 & 도면 시뮬레이션 실행 계획서]`,
-    `• 상권/주소: ${state.address} (유동인구 일 ${dist.dailyFootTraffic.toLocaleString("ko-KR")}명)`,
-    `• 자본금 배분: 보유 ${formatManWon(state.budgetManWon)} → 초기투자 ${formatManWon(totalSetup)} (보증금 ${dist.depositManWon}만 + 시공 ${cat.interiorCostManWon}만)`,
-    `• 선택 업종/디자인: ${cat.title} / ${des.name}`,
-    `• 핵심 가구(${o.koLabel || o.label}): X=${o.x.toFixed(1)}m, Y=${o.y.toFixed(1)}m (${o.w.toFixed(1)}×${o.h.toFixed(1)}m)`,
-    `• 10분 피크타임 비교 (Seed #${state.seed}):`,
-    `  - 평균 대기시간: 기본 ${round(observed(b), 1)}초 → 변경안 ${round(observed(r), 1)}초`,
-    `  - 10분 구매 완료: 기본 ${b.completed}명 → 변경안 ${r.completed}명`,
-    `  - 이동 동선 길이: 기본 ${round(b.walkDistance, 1)}m → 변경안 ${round(r.walkDistance, 1)}m`,
+    `[Rehearsal Commercial District & Spatial Simulation Action Plan]`,
+    `• District / Address: ${state.address} (Daily Foot Traffic: ${dist.dailyFootTraffic.toLocaleString("en-US")} pax/day)`,
+    `• Capital Allocation: Budget ${formatManWon(state.budgetManWon)} → Initial CAPEX ${formatManWon(totalSetup)} (Deposit ₩${dist.depositManWon}M + Fit-out ₩${cat.interiorCostManWon}M)`,
+    `• Selected Category / Layout: ${cat.title} / ${des.name}`,
+    `• Key Fixture (${o.koLabel || o.label}): X=${o.x.toFixed(1)}m, Y=${o.y.toFixed(1)}m (${o.w.toFixed(1)}×${o.h.toFixed(1)}m)`,
+    `• 10-Min Peak Rehearsal Comparison (Seed #${state.seed}):`,
+    `  - Mean Wait Time: Baseline ${round(observed(b), 1)}s → Proposed ${round(observed(r), 1)}s`,
+    `  - 10-Min Orders Served: Baseline ${b.completed} pax → Proposed ${r.completed} pax`,
+    `  - Walk Path Distance: Baseline ${round(b.walkDistance, 1)}m → Proposed ${round(r.walkDistance, 1)}m`,
   ].join("\n");
 }
 
@@ -1140,8 +1236,45 @@ function initStudio(): void {
   let frameCounter = 0;
   let debounce = 0;
   let drag: { id: string; dx: number; dy: number } | null = null;
+  let orbitDrag: {
+    startX: number;
+    startY: number;
+    startYaw: number;
+    startPitch: number;
+  } | null = null;
   let imageDrag: Point2D | null = null;
   let blueprintSource: HTMLImageElement | HTMLCanvasElement | null = null;
+
+  const threeStage = new ThreeFloorplanStage({
+    container: $("threeStageMount"),
+    onSelectObject: (id) => {
+      if (id) {
+        state.selected = id;
+        syncControls();
+        drawAll();
+      }
+    },
+    onMoveObstacle: (id, x, y) => {
+      state.selected = id;
+      state.threeMode = "proposed";
+      setPosition(x, y, false);
+    },
+    onHoverPart: (info) => {
+      if (info) {
+        $("threeInfoTitle").textContent = info.title;
+        $("threeInfoSub").textContent = info.subtitle;
+        $("threeInfoBody").textContent = info.body;
+      } else {
+        const dist = getActiveDistrict();
+        const cat = getActiveCategory();
+        $("threeInfoTitle").textContent = `STORE FLOORPLAN INTERNALS · ${dist.name} (${cat.title})`;
+        $("threeInfoSub").textContent =
+          "Left-drag: 360° Orbit · Scroll: Zoom · Drag Furniture: Live Floorplan Edit";
+        $("threeInfoBody").textContent =
+          "Hover over the POS Order Bar, Pickup Bar, Main Display, or Tables on the 3D floorplan to inspect the live 16-slot LED queue buffer and bottleneck telemetry. Press keys (1–6) on the right to trigger 10,000-store scenarios immediately.";
+      }
+    },
+  });
 
   function getActiveUnit(): ListingUnit {
     const dist = getActiveDistrict();
@@ -1155,7 +1288,7 @@ function initStudio(): void {
     const dist = getActiveDistrict();
     const wrap = $("parsedUnitChips");
     if (!wrap) return;
-    $("parsedLinkStatus").textContent = `✅ ${state.parsedLinkSource} · 매물 호실 선택:`;
+    $("parsedLinkStatus").textContent = `✅ ${state.parsedLinkSource} · Select Unit:`;
     wrap.innerHTML = dist.units
       .map((u) => {
         const active = u.unitId === state.selectedUnitId;
@@ -1199,19 +1332,19 @@ function initStudio(): void {
     const lower = text.toLowerCase();
 
     // 1. Detect platform
-    let platform = "상가 주소";
+    let platform = "Street Address";
     if (lower.includes("naver.me") || lower.includes("map.naver")) {
-      platform = "네이버 지도 링크";
+      platform = "Naver Map Link";
     } else if (lower.includes("kko.to") || lower.includes("kakao")) {
-      platform = "카카오맵 링크";
+      platform = "KakaoMap Link";
     } else if (lower.includes("nemo")) {
-      platform = "네모 부동산 링크";
+      platform = "Nemo Property Link";
     } else if (lower.includes("zigbang")) {
-      platform = "직방 상가 링크";
+      platform = "Zigbang Retail Link";
     } else if (lower.includes("goo.gl") || lower.includes("google")) {
-      platform = "구글 지도 링크";
+      platform = "Google Maps Link";
     } else if (lower.startsWith("http://") || lower.startsWith("https://")) {
-      platform = "외부 상가 링크";
+      platform = "External Listing Link";
     }
 
     // 2. Match commercial district from URL / keywords
@@ -1219,37 +1352,29 @@ function initStudio(): void {
     if (
       lower.includes("yeonnam") ||
       lower.includes("kko.to") ||
-      text.includes("연남") ||
-      text.includes("홍대") ||
-      text.includes("마포") ||
-      text.includes("망원")
+      lower.includes("hongdae") ||
+      lower.includes("mapo")
     ) {
       matchedDist = "yeonnam";
     } else if (
       lower.includes("hannam") ||
       lower.includes("itaewon") ||
       lower.includes("nemo") ||
-      text.includes("한남") ||
-      text.includes("이태원") ||
-      text.includes("용산")
+      lower.includes("yongsan")
     ) {
       matchedDist = "hannam";
     } else if (
       lower.includes("sinsa") ||
       lower.includes("garosu") ||
       lower.includes("zigbang") ||
-      text.includes("신사") ||
-      text.includes("가로수") ||
-      text.includes("강남") ||
-      text.includes("압구정")
+      lower.includes("gangnam") ||
+      lower.includes("apgujeong")
     ) {
       matchedDist = "sinsa";
     } else if (
       lower.includes("seongsu") ||
       lower.includes("naver") ||
-      text.includes("성수") ||
-      text.includes("성동") ||
-      text.includes("연무장")
+      lower.includes("yeonmu")
     ) {
       matchedDist = "seongsu";
     }
@@ -1258,8 +1383,8 @@ function initStudio(): void {
     const dist = getActiveDistrict();
     state.selectedUnitId = dist.units[0].unitId;
 
-    // 3. Check if URL/text specifies explicit pyeong (e.g., 18py, 20평)
-    const pyMatch = text.match(/(\d{1,2})\s*(?:평|py)/i);
+    // 3. Check if URL/text specifies explicit pyeong (e.g., 18py)
+    const pyMatch = text.match(/(\d{1,2})\s*(?:py)/i);
     if (pyMatch) {
       const parsedPy = Math.max(8, Math.min(60, Number(pyMatch[1])));
       const matchUnit = dist.units.find((u) => u.areaPyeong === parsedPy);
@@ -1273,7 +1398,7 @@ function initStudio(): void {
       state.customAreaPyeong = null;
     }
 
-    state.parsedLinkSource = `${platform} 인식 (${dist.name})`;
+    state.parsedLinkSource = `${platform} Matched (${dist.name})`;
     state.categoryId = dist.bestCategoryId;
 
     const cat = getActiveCategory();
@@ -1329,10 +1454,10 @@ function initStudio(): void {
         }" data-cat-id="${c.id}">
           <div class="rea-cat-top">
             <strong>${c.icon} ${c.shortName}</strong>
-            ${isBest ? `<span class="rea-best-tag">상권 1위</span>` : ""}
+            ${isBest ? `<span class="rea-best-tag">TOP PICK</span>` : ""}
           </div>
           <div class="rea-cat-meta tabular">
-            초기 ${formatShortWon(totalSetup)} · 생존 ${c.survivedCount.toLocaleString("ko-KR")}/10,000
+            CAPEX ${formatShortWon(totalSetup)} · Survived ${c.survivedCount.toLocaleString("en-US")}/10,000
           </div>
         </button>
       `;
@@ -1444,22 +1569,22 @@ function initStudio(): void {
     const activeM2 = (activeAreaPy * 3.3).toFixed(1);
 
     $("budgetDisplayLabel").textContent = formatManWon(state.budgetManWon);
-    $("districtBadgeTitle").textContent = `📍 ${dist.name} 상권 분석 (${activeAreaPy}평)`;
+    $("districtBadgeTitle").textContent = `📍 ${dist.name} District Analysis (${activeAreaPy}py)`;
     $("districtLeadText").textContent = dist.districtSummary;
-    $("evFootTraffic").textContent = `일 ${Math.round(
+    $("evFootTraffic").textContent = `${Math.round(
       dist.dailyFootTraffic * unit.trafficFactor
-    ).toLocaleString("ko-KR")}명`;
-    $("evPeakHours").textContent = `피크: ${dist.peakHours}`;
-    $("evRentInfo").textContent = `보증 ${formatShortWon(activeDeposit)} / 월 ${activeRent}만`;
-    $("evAreaInfo").textContent = `선택 호실: ${activeAreaPy}평 (${activeM2}㎡ · 12×9m 표준화)`;
+    ).toLocaleString("en-US")} / day`;
+    $("evPeakHours").textContent = `Peak: ${dist.peakHours}`;
+    $("evRentInfo").textContent = `Dep ${formatShortWon(activeDeposit)} / Rent ₩${activeRent}M`;
+    $("evAreaInfo").textContent = `Selected Unit: ${activeAreaPy}py (${activeM2}m² · 12×9m Grid)`;
 
     const totalSetup = activeDeposit + cat.interiorCostManWon;
     const reserve = state.budgetManWon - totalSetup;
-    $("evSetupCost").textContent = `${formatManWon(totalSetup)} (시공 ${cat.interiorCostManWon}만)`;
+    $("evSetupCost").textContent = `${formatManWon(totalSetup)} (Fit-out ₩${cat.interiorCostManWon}M)`;
     $("budgetRemainBanner").textContent =
       reserve >= 0
-        ? `예비 운영자금 ${formatManWon(reserve)} 확보`
-        : `자본금 대비 ${formatManWon(Math.abs(reserve))} 초과`;
+        ? `Operating Reserve ${formatManWon(reserve)} Secured`
+        : `Over Budget by ${formatManWon(Math.abs(reserve))}`;
 
     const completed10m = state.results?.plan.completed ?? 42;
     const estDailyOrders = Math.round(completed10m * 4.2);
@@ -1473,22 +1598,22 @@ function initStudio(): void {
 
     $("evMonthlyProfit").textContent = `${
       netProfitManWon >= 0 ? "+" : ""
-    }${netProfitManWon.toLocaleString("ko-KR")}만 원/월`;
-    $("evTargetPersona").textContent = `월매출 약 ${monthlyRevManWon.toLocaleString("ko-KR")}만 · 객단가 ${cat.avgTicketWon.toLocaleString("ko-KR")}원`;
+    }₩${netProfitManWon.toLocaleString("en-US")}M / mo`;
+    $("evTargetPersona").textContent = `Est. Rev ₩${monthlyRevManWon.toLocaleString("en-US")}M · Avg Ticket ₩${cat.avgTicketWon.toLocaleString("en-US")}`;
 
-    $("heroScenarioTotal").textContent = `10,000개 가게 중 ${cat.survivedCount.toLocaleString("ko-KR")}개 생존`;
-    $("activeCategoryHeading").textContent = `${cat.icon} ${cat.title} — 10,000개 가게 시나리오 & 도면 실험`;
-    $("proposedWorldTitle").textContent = `내 창업 도면 (${des.name})`;
+    $("heroScenarioTotal").textContent = `${cat.survivedCount.toLocaleString("en-US")} / 10,000 Stores Survived`;
+    $("activeCategoryHeading").textContent = `${cat.icon} ${cat.title} — 10,000-Store Scenarios & Spatial Rehearsal`;
+    $("proposedWorldTitle").textContent = `Proposed Floorplan (${des.name})`;
     $("layoutRuleText").textContent = cat.layoutRuleNote;
 
     const activeScn = SCENARIO_PRESETS.find((s) => s.id === state.preset);
     $("scenarioRuleText").textContent = activeScn
-      ? `${activeScn.code} (${activeScn.countLabel} 가게 시나리오): ${activeScn.ruleDesc}`
-      : `커스텀 조건: 분당 ${state.arrival.toFixed(1)}명 유입 · 제조 ${state.service}초 · 픽업 ${state.pickupStaff}명 · 통과폭 ${state.body.toFixed(2)}m`;
+      ? `${activeScn.code} (${activeScn.countLabel} Store Scenarios): ${activeScn.ruleDesc}`
+      : `Custom Parameters: ${state.arrival.toFixed(1)} pax/min Inflow · ${state.service}s Prep · ${state.pickupStaff} Pickup Staff · ${state.body.toFixed(2)}m Width`;
 
-    $("arrivalValue").textContent = `${state.arrival.toFixed(1)}명`;
-    $("serviceValue").textContent = `${state.service}초`;
-    $("staffValue").textContent = `${state.pickupStaff}명`;
+    $("arrivalValue").textContent = `${state.arrival.toFixed(1)}/min`;
+    $("serviceValue").textContent = `${state.service}s`;
+    $("staffValue").textContent = `${state.pickupStaff} staff`;
     $("seedNum").textContent = String(state.seed);
 
     const o = getSelectedObject();
@@ -1516,22 +1641,62 @@ function initStudio(): void {
 
     $("toggleHeatmapBtn").classList.toggle("active", state.showHeatmap);
     $("toggleHeatmapBtn").textContent = state.showHeatmap
-      ? "🔥 병목 히트맵 ON"
-      : "🔥 병목 히트맵 OFF";
+      ? "🔥 Congestion Heatmap ON"
+      : "🔥 Congestion Heatmap OFF";
 
     $("toggleLightsBtn").classList.toggle("active", state.lightsOn);
-    $("toggleLightsBtn").textContent = state.lightsOn ? "💡 조명 ON" : "💡 조명 OFF";
+    $("toggleLightsBtn").textContent = state.lightsOn ? "💡 Lighting ON" : "💡 Lighting OFF";
 
     $("toggleAcBtn").classList.toggle("active", state.acOn);
-    $("toggleAcBtn").textContent = state.acOn ? "❄️ 에어컨 기류 ON" : "❄️ 에어컨 OFF";
+    $("toggleAcBtn").textContent = state.acOn ? "❄️ HVAC Airflow ON" : "❄️ HVAC Airflow OFF";
 
     $("toggleViewModeBtn").textContent =
-      state.viewMode === "3d" ? "📐 2D CAD 치수 도면" : "🏠 3D 인테리어 뷰";
+      state.viewMode === "3d" ? "📐 2D CAD Blueprint" : "🏠 3D Isometric View";
     $("toggleViewModeBtn").classList.toggle("active", state.viewMode === "2d");
 
-    $("playBtn").textContent = state.playing ? "일시정지" : "재생";
-    $("walkBtn").textContent = state.walkMode ? "🚶 보행 종료" : "🚶 직접 걸어보기";
+    $("playBtn").textContent = state.playing ? "Pause" : "Play";
+    $("walkBtn").textContent = state.walkMode ? "🚶 Exit Walk" : "🚶 Walk Mode";
     $("walkBtn").classList.toggle("active", state.walkMode);
+
+    const deg = Math.round(((state.isoYawRad * 180) / Math.PI) % 360);
+    $("isoAngleBadge").textContent = `🔄 Drag to Orbit: ${deg}°`;
+
+    // Sync 3D stage HUD buttons
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-three-cat]")
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "active",
+          btn.getAttribute("data-three-cat") === state.categoryId
+        );
+      });
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-three-mode]")
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "on",
+          btn.getAttribute("data-three-mode") === state.threeMode
+        );
+      });
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-three-design]")
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "on",
+          btn.getAttribute("data-three-design") === state.designId &&
+            state.threeMode === "proposed"
+        );
+      });
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-three-scn]")
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "on",
+          btn.getAttribute("data-three-scn") === state.preset
+        );
+      });
+
+    $("pgrunStageTitle").textContent = `${dist.name.toUpperCase()} · ${cat.shortName.toUpperCase()} (${activeAreaPy}PY)`;
   }
 
   function clock(t: number): string {
@@ -1564,6 +1729,9 @@ function initStudio(): void {
       pickupStaffCount: 1,
       presetId: state.preset,
       viewMode: state.viewMode,
+      yawRad: state.isoYawRad,
+      pitchRatio: state.isoPitchRatio,
+      zoomScale: state.isoZoomScale,
     });
 
     views[1] = drawWorldCanvas({
@@ -1585,11 +1753,72 @@ function initStudio(): void {
       pickupStaffCount: state.pickupStaff,
       presetId: state.preset,
       viewMode: state.viewMode,
+      yawRad: state.isoYawRad,
+      pitchRatio: state.isoPitchRatio,
+      zoomScale: state.isoZoomScale,
     });
 
     $<HTMLInputElement>("timeline").value = String(Math.round(state.t));
     $("clock").textContent = `${clock(state.t)} / 10:00`;
     updateWorldStatsD3Playhead(state.results, state.t);
+
+    if (state.results) {
+      const dist = getActiveDistrict();
+      const unit = getActiveUnit();
+      const cat = getActiveCategory();
+      const activeScn =
+        SCENARIO_PRESETS.find((s) => s.id === state.preset) ||
+        SCENARIO_PRESETS[0];
+      const activeScene =
+        state.threeMode === "baseline" ? state.base : state.plan;
+      const activeRes =
+        state.threeMode === "baseline"
+          ? state.results.base
+          : state.results.plan;
+
+      threeStage.update({
+        scene: activeScene,
+        result: activeRes,
+        baseResult: state.results.base,
+        mode: state.threeMode,
+        categoryId: state.categoryId,
+        categoryName: cat.shortTitle,
+        districtName: dist.name,
+        pyeong: state.customAreaPyeong ?? unit.areaPyeong,
+        scenarioCode: activeScn.code,
+        scenarioName: activeScn.title,
+        scenarioClusterCount:
+          Number(activeScn.countLabel.replace(/[^0-9]/g, "")) || 1000,
+        survivedCount: cat.survivedCount,
+        scenarioTotal: cat.scenarioTotal,
+        selectedObjectId: state.selected,
+        orderStaff: state.orderStaff,
+        pickupStaff: state.threeMode === "baseline" ? 1 : state.pickupStaff,
+        bodyWidth: state.body,
+        arrivalRatePerMin: state.arrival,
+        showHeatmap: state.showHeatmap,
+        showLighting: state.lightsOn,
+        showAirflow: state.acOn,
+        currentTimeSec: state.t,
+      });
+
+      const wBase = Math.round(state.results.base.meanWaitSec ?? 0);
+      const wActive = Math.round(activeRes.meanWaitSec ?? 0);
+      const diff = wActive - wBase;
+      const diffStr =
+        state.threeMode === "baseline"
+          ? "Baseline Bottleneck"
+          : diff < 0
+          ? `▼${Math.abs(diff)}s faster`
+          : `+${diff}s`;
+      $("threeLiveReadout").textContent = `${
+        state.threeMode === "baseline" ? "[BEFORE]" : "[AFTER]"
+      } Wait ${wActive}s (${diffStr}) · 10m Served ${
+        activeRes.completed
+      } pax · Walk ${(activeRes.walkDistance ?? 0).toFixed(
+        1
+      )}m · Survived ${cat.survivedCount.toLocaleString("en-US")} / 10,000`;
+    }
   }
 
   function recompute(): void {
@@ -1611,14 +1840,14 @@ function initStudio(): void {
         ["plan", b],
       ] as const) {
         const blocked = Boolean(r.routeBlocked);
-        $(`${key}Route`).textContent = blocked ? "동선 막힘" : "동선 쾌적";
+        $(`${key}Route`).textContent = blocked ? "Route Blocked" : "Flow Clear";
         $(`${key}Route`).classList.toggle("bad", blocked);
         $(`${key}Wait`).textContent = blocked ? "–" : round(observed(r));
         $(`${key}P90`).textContent = blocked
-          ? "통로 확보 필요"
-          : `90분위 ${round(r.p90WaitSec)}초`;
+          ? "Clearance Needed"
+          : `P90 ${round(r.p90WaitSec)}s`;
         $(`${key}Done`).textContent = String(r.completed);
-        $(`${key}Active`).textContent = `방문 ${r.arrivalCount} · 대기 ${r.active}명`;
+        $(`${key}Active`).textContent = `Inflow ${r.arrivalCount} · Queue ${r.active} pax`;
         $(`${key}Walk`).textContent = blocked ? "–" : round(r.walkDistance, 1);
       }
 
@@ -1632,12 +1861,12 @@ function initStudio(): void {
           Math.abs(dw) < 0.5
             ? ""
             : dw < 0
-            ? `▼${Math.abs(Math.round(dw))}초`
-            : `+${Math.round(dw)}초`;
+            ? `▼${Math.abs(Math.round(dw))}s`
+            : `+${Math.round(dw)}s`;
         waitDeltaEl.className = `delta-tag ${dw <= 0.5 ? "good" : "bad"}`;
 
         const dc = b.completed - a.completed;
-        doneDeltaEl.textContent = dc > 0 ? `+${dc}명` : dc < 0 ? `${dc}명` : "";
+        doneDeltaEl.textContent = dc > 0 ? `+${dc} pax` : dc < 0 ? `${dc} pax` : "";
         doneDeltaEl.className = `delta-tag ${dc >= 0 ? "good" : "bad"}`;
 
         const dWalk = (b.walkDistance ?? 0) - (a.walkDistance ?? 0);
@@ -1669,7 +1898,7 @@ function initStudio(): void {
         {
           id: "both",
           code: "SCN-01",
-          label: "표준운영",
+          label: "Standard Ops",
           total: 3200,
           survived: Math.round(3200 * (survRatio + 0.06)),
           congested: Math.round(3200 * (1 - survRatio - 0.06)),
@@ -1678,7 +1907,7 @@ function initStudio(): void {
         {
           id: "rainy",
           code: "SCN-02",
-          label: "우천피크",
+          label: "Rainy Surge",
           total: 2400,
           survived: Math.round(2400 * (survRatio - 0.04)),
           congested: Math.round(2400 * (1 - survRatio + 0.02)),
@@ -1687,7 +1916,7 @@ function initStudio(): void {
         {
           id: "layout",
           code: "SCN-03",
-          label: "1인독박",
+          label: "Solo Staff",
           total: 1400,
           survived: Math.round(1400 * (survRatio - 0.14)),
           congested: Math.round(1400 * (1 - survRatio + 0.14)),
@@ -1696,7 +1925,7 @@ function initStudio(): void {
         {
           id: "influencer",
           code: "SCN-04",
-          label: "오픈런",
+          label: "Viral Rush",
           total: 1200,
           survived: Math.round(1200 * (survRatio - 0.02)),
           congested: Math.round(1200 * (1 - survRatio - 0.02)),
@@ -1705,7 +1934,7 @@ function initStudio(): void {
         {
           id: "staff",
           code: "SCN-05",
-          label: "인력충원",
+          label: "Staff Only",
           total: 1000,
           survived: Math.round(1000 * survRatio),
           congested: Math.round(1000 * (1 - survRatio - 0.04)),
@@ -1714,7 +1943,7 @@ function initStudio(): void {
         {
           id: "stroller",
           code: "SCN-06",
-          label: "유모차진입",
+          label: "Stroller Entry",
           total: 800,
           survived: b.routeBlocked ? 120 : Math.round(800 * (survRatio - 0.08)),
           congested: 160,
@@ -1737,34 +1966,34 @@ function initStudio(): void {
       let summaryTitle = "";
       let summarySub = "";
       if (b.routeBlocked) {
-        summaryTitle = "내 창업 도면에서 통로가 막혔습니다!";
-        summarySub = `현재 통과폭(${state.body.toFixed(2)}m) 기준으로 진열대나 가구를 마우스로 끌어 통로를 넓혀주세요.`;
+        summaryTitle = "Aisle Blocked in Proposed Floorplan!";
+        summarySub = `For body clearance (${state.body.toFixed(2)}m), drag the display stand or tables to widen the main corridor.`;
       } else if (a.routeBlocked) {
-        summaryTitle = `유모차·단체 통과폭(${state.body.toFixed(2)}m)에서 기본 도면은 막히지만, 내 창업 도면은 정상 통과합니다!`;
-        summarySub = `입구 병목 진열대를 이동해 넓은 통로를 확보한 효과입니다.`;
+        summaryTitle = `At ${state.body.toFixed(2)}m Stroller/Group Width, Baseline Fails while Proposed Passes!`;
+        summarySub = `Relocating the entrance bottleneck display stand secured sufficient corridor clearance.`;
       } else if (state.preset === "layout") {
-        summaryTitle = `도면 배치만 바꿨을 때(픽업 1명 독박): 이동 거리는 ${(
+        summaryTitle = `Layout Only (1 Pickup Staff): Walk distance changed by ${(
           (b.walkDistance ?? 0) - (a.walkDistance ?? 0)
-        ).toFixed(1)}m 줄었지만 대기시간은 ${round(observed(b))}초입니다.`;
-        summarySub = `직원이 1명뿐이면 동선이 빨라져도 픽업 바 앞에서 대기줄이 쌓입니다. 픽업 인력을 2명으로 늘려보세요.`;
+        ).toFixed(1)}m, but mean wait remains ${round(observed(b))}s.`;
+        summarySub = `With only 1 staff at pickup, faster walking still queues at the bar. Increase pickup staff to 2.`;
       } else {
         summaryTitle =
           d < -2
-            ? `선택한 도면·운영안으로 평균 대기시간이 ${round(-d)}초 줄고, 10분간 +${
+            ? `Proposed layout & ops reduced mean wait by ${round(-d)}s and served +${
                 b.completed - a.completed
-              }명을 더 판매했습니다.`
-            : "두 도면의 실시간 고객 흐름과 D3 성과 지표를 비교 중입니다.";
-        summarySub = `기본 도면 대기 ${round(observed(a))}초 → 내 창업 도면 ${round(
+              } more orders in 10 min.`
+            : "Comparing real-time customer flow and D3 performance telemetry across both floorplans.";
+        summarySub = `Baseline Wait ${round(observed(a))}s → Proposed ${round(
           observed(b)
-        )}초 (피크 대기줄 ${a.maxQueue}명 → ${b.maxQueue}명)`;
+        )}s (Peak Queue ${a.maxQueue} pax → ${b.maxQueue} pax)`;
       }
       insightEl.innerHTML = `<strong>${summaryTitle}</strong><span class="muted">${summarySub}</span>`;
 
-      $("calcBadge").textContent = `Seed #${state.seed} · 계산 완료`;
+      $("calcBadge").textContent = `Seed #${state.seed} · Computed`;
       $("calcBadge").dataset.revision = String(state.rev);
       $("calPredWait").textContent = b.routeBlocked
-        ? "막힘"
-        : `${round(observed(b), 1)}초`;
+        ? "Blocked"
+        : `${round(observed(b), 1)}s`;
 
       state.dirty = false;
       syncControls();
@@ -1977,7 +2206,7 @@ function initStudio(): void {
     state.plan.objects.push({
       id,
       label: "Pop-up booth",
-      koLabel: "신규 매대",
+      koLabel: "Pop-Up Booth",
       x: 5.2,
       y: 4.2,
       w: 1.6,
@@ -2028,8 +2257,189 @@ function initStudio(): void {
     recompute();
   });
 
-  // Canvas Dragging (works seamlessly in both 3D and 2D CAD modes!)
+  // 3D Stage HUD Controls (pgrun.dev / ISO-GLOW style)
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-three-cat]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cid = btn.getAttribute(
+          "data-three-cat"
+        ) as StartupCategory["id"];
+        if (!cid) return;
+        state.categoryId = cid;
+        if (cid === "bakery" || cid === "matcha") {
+          state.designId = "island";
+        } else if (cid === "wine") {
+          state.designId = "lounge";
+        } else {
+          state.designId = "express";
+        }
+        state.plan = RehearsalCore.makeScene("proposed");
+        applyCategoryAndDesignToScene();
+        renderCategoryCards();
+        renderDesignTabs();
+        recompute();
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-three-mode]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const m = btn.getAttribute("data-three-mode") as
+          | "proposed"
+          | "baseline";
+        if (!m) return;
+        state.threeMode = m;
+        syncControls();
+        drawAll();
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-three-design]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const did = btn.getAttribute(
+          "data-three-design"
+        ) as DesignConcept["id"];
+        if (!did) return;
+        state.threeMode = "proposed";
+        state.designId = did;
+        state.plan = RehearsalCore.makeScene("proposed");
+        applyCategoryAndDesignToScene();
+        renderDesignTabs();
+        recompute();
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-three-scn]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sid = btn.getAttribute(
+          "data-three-scn"
+        ) as ScenarioPreset["id"];
+        if (sid) setPreset(sid);
+      });
+    });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("#threeSwatches .swatch")
+    .forEach((sw) => {
+      sw.addEventListener("click", () => {
+        const hex = sw.getAttribute("data-accent") || "#ea580c";
+        document
+          .querySelectorAll("#threeSwatches .swatch")
+          .forEach((el) => el.classList.remove("active"));
+        sw.classList.add("active");
+        $("pgrunDot").style.background = hex;
+        threeStage.setAccentColor(hex);
+      });
+    });
+
+  let isRevolving = false;
+  $("threeRevolveBtn").addEventListener("click", () => {
+    isRevolving = !isRevolving;
+    $("threeRevolveBtn").classList.toggle("active", isRevolving);
+    $("threeRevolveBtn").setAttribute("aria-pressed", String(isRevolving));
+    threeStage.setAutoRevolve(isRevolving);
+  });
+
+  $("threeIsoBtn").addEventListener("click", () => {
+    threeStage.snapToIsoView();
+  });
+
+  $("threeTopBtn").addEventListener("click", () => {
+    threeStage.snapToTopView();
+  });
+
+  $("threeThemeBtn").addEventListener("click", () => {
+    const nextTheme = threeStage.toggleTheme();
+    $("pgrunStageShell").setAttribute("data-stage-theme", nextTheme);
+  });
+
+  $("threeRotateFurnitureBtn").addEventListener("click", () => {
+    $("rotateObjBtn").click();
+  });
+
+  $("resetIsoOrbitBtn").addEventListener("click", () => {
+    state.isoYawRad = 0;
+    state.isoPitchRatio = 0.5;
+    state.isoZoomScale = 1.0;
+    syncControls();
+    drawAll();
+  });
+
+  // Global keyboard shortcuts for 3D Stage (P, B, A, S, C, 1-6, R, I, T)
+  window.addEventListener("keydown", (e) => {
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (
+      state.walkMode ||
+      ["INPUT", "SELECT", "TEXTAREA"].includes(tag || "") ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.altKey
+    ) {
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if (k === "p") {
+      state.threeMode = "proposed";
+      syncControls();
+      drawAll();
+    } else if (k === "b") {
+      state.threeMode = "baseline";
+      syncControls();
+      drawAll();
+    } else if (k === "i") {
+      threeStage.snapToIsoView();
+    } else if (k === "t") {
+      const nextTheme = threeStage.toggleTheme();
+      $("pgrunStageShell").setAttribute("data-stage-theme", nextTheme);
+    } else if (k === "r") {
+      $("rotateObjBtn").click();
+    } else if (["1", "2", "3", "4", "5", "6"].includes(k)) {
+      const idx = Number(k) - 1;
+      const preset = SCENARIO_PRESETS[idx];
+      if (preset) setPreset(preset.id);
+    }
+  });
+
+  // Canvas Dragging + 360° Mouse Orbit Rotation on #baseCanvas & #planCanvas
+  canvases[0].style.cursor = "grab";
   canvases[1].style.cursor = "grab";
+
+  canvases[0].addEventListener("pointerdown", (e) => {
+    orbitDrag = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startYaw: state.isoYawRad,
+      startPitch: state.isoPitchRatio,
+    };
+    canvases[0].setPointerCapture(e.pointerId);
+    canvases[0].style.cursor = "grabbing";
+  });
+
+  canvases[0].addEventListener("pointermove", (e) => {
+    if (!orbitDrag) return;
+    const dx = e.clientX - orbitDrag.startX;
+    const dy = e.clientY - orbitDrag.startY;
+    state.isoYawRad = orbitDrag.startYaw + dx * 0.012;
+    state.isoPitchRatio = Math.max(
+      0.28,
+      Math.min(0.78, orbitDrag.startPitch + dy * 0.0025)
+    );
+    syncControls();
+    drawAll();
+  });
+
+  canvases[0].addEventListener("pointerup", () => {
+    if (orbitDrag) {
+      orbitDrag = null;
+      canvases[0].style.cursor = "grab";
+    }
+  });
 
   canvases[1].addEventListener("keydown", (e) => {
     if (state.walkMode) return;
@@ -2068,6 +2478,16 @@ function initStudio(): void {
       canvases[1].style.cursor = "grabbing";
       syncControls();
       drawAll();
+    } else {
+      // Dragging on empty floor rotates the 3D isometric floorplan 360°!
+      orbitDrag = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startYaw: state.isoYawRad,
+        startPitch: state.isoPitchRatio,
+      };
+      canvases[1].setPointerCapture(e.pointerId);
+      canvases[1].style.cursor = "grabbing";
     }
   });
 
@@ -2077,6 +2497,18 @@ function initStudio(): void {
     const pt = unproject(views[1], e.clientX - b.left, e.clientY - b.top);
     if (drag) {
       setPosition(pt.x - drag.dx, pt.y - drag.dy, false);
+      return;
+    }
+    if (orbitDrag) {
+      const dx = e.clientX - orbitDrag.startX;
+      const dy = e.clientY - orbitDrag.startY;
+      state.isoYawRad = orbitDrag.startYaw + dx * 0.012;
+      state.isoPitchRatio = Math.max(
+        0.28,
+        Math.min(0.78, orbitDrag.startPitch + dy * 0.0025)
+      );
+      syncControls();
+      drawAll();
       return;
     }
     const hoverHit = [...state.plan.objects]
@@ -2092,7 +2524,7 @@ function initStudio(): void {
     const nextHover = hoverHit ? hoverHit.id : null;
     if (nextHover !== state.hovered) {
       state.hovered = nextHover;
-      canvases[1].style.cursor = nextHover ? "grab" : "default";
+      canvases[1].style.cursor = nextHover ? "grab" : "grab";
       drawAll();
     }
   });
@@ -2102,6 +2534,10 @@ function initStudio(): void {
       drag = null;
       canvases[1].style.cursor = "grab";
       recompute();
+    }
+    if (orbitDrag) {
+      orbitDrag = null;
+      canvases[1].style.cursor = "grab";
     }
   });
 
@@ -2123,8 +2559,8 @@ function initStudio(): void {
       }
       return false;
     });
-    $("walkHint").textContent = `기본:${accepted[0] ? "통과" : "막힘!"} · 내도면:${
-      accepted[1] ? "통과" : "막힘!"
+    $("walkHint").textContent = `Baseline: ${accepted[0] ? "Pass" : "Blocked!"} · Proposed: ${
+      accepted[1] ? "Pass" : "Blocked!"
     }`;
     drawAll();
   }
@@ -2317,7 +2753,7 @@ function initStudio(): void {
       const my = (r.top * 9).toFixed(1);
       const mw = ((r.right - r.left) * 12).toFixed(1);
       const mh = ((r.bottom - r.top) * 9).toFixed(1);
-      $("imageStatus").textContent = `지정 매대: X=${mx}m, Y=${my}m (${mw}×${mh}m)`;
+      $("imageStatus").textContent = `Selected ROI: X=${mx}m, Y=${my}m (${mw}×${mh}m)`;
     }
   }
 
@@ -2381,7 +2817,7 @@ function initStudio(): void {
     state.plan.objects.push({
       id,
       label: "Manual obstacle",
-      koLabel: "도면 추가 매대",
+      koLabel: "Blueprint Fixture",
       x: Math.round(r.left * 120) / 10,
       y: Math.round(r.top * 90) / 10,
       w: Math.max(0.4, Math.round((r.right - r.left) * 120) / 10),
@@ -2417,7 +2853,7 @@ function initStudio(): void {
     }
     state.preset = "custom";
     recompute();
-    $("calibrationResultBox").textContent = `실측 ${obsArr.toFixed(1)}명/분 · ${obsWait}초 보정 반영됨`;
+    $("calibrationResultBox").textContent = `Calibrated: ${obsArr.toFixed(1)} pax/min · ${obsWait}s wait applied`;
   });
 
   function animate(now: number): void {

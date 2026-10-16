@@ -1,25 +1,26 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rehearsal — 만 개의 가게 · Ten Thousand Stores (500 AI design families x 20 variations)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <title>A Thousand Stores · Store Design Rehearsal & Spatial Stress-Testing Studio (500 AI design families x 20 variations)</title>
+  <meta name="description" content="Live a day inside your store before you build it. Interactive 3D & 2.5D spatial floorplan simulator and 10,000-scenario Monte Carlo rehearsal studio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
 :root {
-  --bg-page: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-terminal: #181e29;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --border-light: #e2e8f0;
-  --border-mid: #cbd5e1;
-  --accent-dark: #181e29;
-  --accent-blue: #2563eb;
-  --accent-emerald: #059669;
+  --bg-page: #f4f4f2;
+  --bg-subtle: #ebebe8;
+  --bg-terminal: #18181b;
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --border-light: #dcdcd8;
+  --border-mid: #c7c7c2;
+  --accent-dark: #18181b;
+  --accent-blue: #ea580c;
+  --accent-emerald: #ea580c;
   --accent-red: #dc2626;
 }
 
@@ -164,9 +165,9 @@ button:disabled {
 }
 
 .rea-btn-outline.active {
-  background: #eff6ff;
-  border-color: var(--accent-blue);
-  color: #1d4ed8;
+  background: #fff7ed;
+  border-color: #ea580c;
+  color: #c2410c;
 }
 
 /* 2. Main Layout with Right Sticky TOC Rail (rea.tools layout) */
@@ -212,8 +213,8 @@ button:disabled {
 .rea-toc-link:hover {
   color: var(--text-primary);
   font-weight: 700;
-  border-left-color: var(--accent-blue);
-  background: #f1f5f9;
+  border-left-color: #ea580c;
+  background: rgba(234, 88, 12, 0.08);
 }
 
 /* 3. Sections & 2-Column Editorial Setup */
@@ -230,9 +231,15 @@ button:disabled {
 
 .rea-two-col {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  gap: 32px;
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: stretch;
+}
+
+.rea-col-left,
+.rea-col-right {
+  display: flex;
+  flex-direction: column;
 }
 
 .rea-kicker {
@@ -275,10 +282,14 @@ button:disabled {
 
 /* Commercial District Evidence Card */
 .rea-evidence-box {
-  background: var(--bg-subtle);
+  background: #ffffff;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .rea-evidence-head {
@@ -300,9 +311,9 @@ button:disabled {
 }
 
 .rea-survival-pill {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
   font-size: 12px;
   font-weight: 700;
   padding: 4px 10px;
@@ -316,7 +327,7 @@ button:disabled {
 }
 
 .rea-ev-item {
-  background: #ffffff;
+  background: #fafaf9;
   border: 1px solid var(--border-light);
   border-radius: 8px;
   padding: 10px 12px;
@@ -338,7 +349,7 @@ button:disabled {
 }
 
 .ev-val.ev-profit {
-  color: var(--accent-emerald);
+  color: #ea580c;
 }
 
 .ev-sub {
@@ -353,6 +364,9 @@ button:disabled {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .rea-terminal-bar {
@@ -436,7 +450,7 @@ button:disabled {
 }
 
 .rea-link-parse-btn {
-  background: #10b981;
+  background: #ea580c;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -447,20 +461,20 @@ button:disabled {
 }
 
 .rea-link-parse-btn:hover {
-  background: #059669;
+  background: #c2410c;
 }
 
 .rea-parsed-box {
   margin-top: 8px;
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: rgba(24, 24, 27, 0.65);
+  border: 1px solid rgba(249, 115, 22, 0.35);
   border-radius: 7px;
   padding: 8px 10px;
 }
 
 .rea-parsed-status {
   font-size: 11px;
-  color: #6ee7b7;
+  color: #fdba74;
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -482,8 +496,8 @@ button:disabled {
 }
 
 .rea-unit-chip.active {
-  background: #10b981;
-  border-color: #10b981;
+  background: #ea580c;
+  border-color: #ea580c;
   color: #ffffff;
   font-weight: 700;
 }
@@ -538,7 +552,7 @@ button:disabled {
 
 .rea-term-slider {
   width: 100%;
-  accent-color: #34d399;
+  accent-color: #f97316;
 }
 
 .rea-cat-grid {
@@ -560,9 +574,9 @@ button:disabled {
 }
 
 .rea-cat-btn.active {
-  background: #ecfdf5;
-  border-color: #10b981;
-  color: #064e3b;
+  background: #fff7ed;
+  border-color: #ea580c;
+  color: #9a3412;
 }
 
 .rea-cat-top {
@@ -573,7 +587,7 @@ button:disabled {
 }
 
 .rea-best-tag {
-  background: #10b981;
+  background: #ea580c;
   color: #ffffff;
   font-size: 10px;
   font-weight: 700;
@@ -640,8 +654,8 @@ button:disabled {
 }
 
 .rea-choice-btn.active {
-  border: 1.5px solid var(--accent-blue);
-  background: #eff6ff;
+  border: 1.5px solid #ea580c;
+  background: #fff7ed;
 }
 
 .rea-scn-row {
@@ -664,7 +678,7 @@ button:disabled {
 }
 
 .rea-scn-btn small {
-  color: var(--accent-blue);
+  color: #ea580c;
   font-weight: 700;
 }
 
@@ -675,7 +689,7 @@ button:disabled {
 }
 
 .rea-scn-btn.active small {
-  color: #93c5fd;
+  color: #fdba74;
 }
 
 .rea-rule-note {
@@ -696,6 +710,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  align-items: stretch;
 }
 
 .world {
@@ -708,7 +723,7 @@ button:disabled {
 }
 
 .world.proposed {
-  border: 1.5px solid var(--accent-emerald);
+  border: 1.5px solid #ea580c;
 }
 
 .world-top {
@@ -727,7 +742,7 @@ button:disabled {
 }
 
 .world-tag.emerald {
-  color: var(--accent-emerald);
+  color: #ea580c;
 }
 
 .world-top h3 {
@@ -739,8 +754,9 @@ button:disabled {
 .route-status {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--accent-emerald);
-  background: #ecfdf5;
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -748,6 +764,7 @@ button:disabled {
 .route-status.bad {
   color: var(--accent-red);
   background: #fef2f2;
+  border-color: #fecaca;
 }
 
 .canvasbox {
@@ -978,8 +995,8 @@ button:disabled {
 
 .rea-insight-bar {
   margin-top: 12px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;
@@ -990,12 +1007,12 @@ button:disabled {
 }
 
 .rea-insight-bar strong {
-  color: #064e3b;
+  color: #9a3412;
   font-size: 13.5px;
 }
 
 .rea-insight-bar .muted {
-  color: #065f46;
+  color: #c2410c;
   font-size: 12px;
 }
 
@@ -1053,6 +1070,367 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.rea-orbit-hint {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   PGRUN.DEV / ISO-GLOW STYLE 3D ROTATABLE FLOORPLAN STAGE
+   ========================================================================== */
+.pgrun-stage-shell {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  border-radius: 14px;
+  border: 1px solid #d0d5dd;
+  background: #e6e8ec;
+  overflow: hidden;
+  user-select: none;
+  font-family: "JetBrains Mono", "Plus Jakarta Sans", "Noto Sans KR", monospace;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] {
+  background: #121316;
+  border-color: #2d323b;
+}
+
+.pgrun-canvas-mount {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pgrun-canvas-mount canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+.pgrun-hud-top-left {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pgrun-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(250, 250, 249, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #181c20;
+  pointer-events: auto;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-brand-badge {
+  background: rgba(26, 28, 34, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f1f5f9;
+}
+
+.pgrun-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ea580c;
+  display: inline-block;
+}
+
+.pgrun-seg {
+  display: inline-flex;
+  background: rgba(250, 250, 249, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  pointer-events: auto;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-seg {
+  background: rgba(26, 28, 34, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.pgrun-seg button {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #586069;
+  cursor: pointer;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-seg button {
+  color: #94a3b8;
+}
+
+.pgrun-seg button.active {
+  background: #181c20;
+  color: #ffffff;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-seg button.active {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.pgrun-hud-top-right {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.pgrun-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(250, 250, 249, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-swatches {
+  background: rgba(26, 28, 34, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.pgrun-swatches .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.pgrun-swatches .swatch.active {
+  opacity: 1;
+  transform: scale(1.22);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #181c20;
+}
+
+.pgrun-pill-btn,
+.pgrun-icon-btn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(250, 250, 249, 0.94);
+  color: #334155;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-pill-btn,
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-icon-btn {
+  background: rgba(26, 28, 34, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #cbd5e1;
+}
+
+.pgrun-pill-btn.active,
+.pgrun-pill-btn:hover,
+.pgrun-icon-btn:hover {
+  border-color: #ea580c;
+  color: #ea580c;
+}
+
+.pgrun-ctl-stack {
+  position: absolute;
+  top: 52px;
+  right: 16px;
+  width: 196px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 2;
+  max-height: calc(100% - 94px);
+  overflow-y: auto;
+}
+
+.pgrun-ctl-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.13);
+  background: rgba(250, 250, 249, 0.94);
+  color: #3f3f46;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-ctl-btn {
+  background: rgba(26, 28, 34, 0.94);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #94a3b8;
+}
+
+.pgrun-ctl-btn:hover {
+  color: #0f172a;
+  border-color: rgba(234, 88, 12, 0.45);
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-ctl-btn:hover {
+  color: #f8fafc;
+}
+
+.pgrun-ctl-btn.on {
+  color: #18181b;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 1px #ea580c inset;
+  background: #ffffff;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-ctl-btn.on {
+  color: #ffffff;
+  background: #252830;
+}
+
+.pgrun-ctl-btn kbd {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.pgrun-sep {
+  height: 2px;
+  flex: none;
+}
+
+.pgrun-info-card {
+  position: absolute;
+  left: 16px;
+  bottom: 46px;
+  max-width: min(390px, calc(100% - 230px));
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(250, 250, 249, 0.95);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-info-card {
+  background: rgba(26, 28, 34, 0.95);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pgrun-info-card h2 {
+  margin: 0 0 3px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ea580c;
+}
+
+.pgrun-info-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-info-sub {
+  color: #cbd5e1;
+}
+
+.pgrun-info-card p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.48;
+  color: #475569;
+  font-family: "Plus Jakarta Sans", "Noto Sans KR", sans-serif;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-info-card p {
+  color: #94a3b8;
+}
+
+.pgrun-bottom-bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: #586069;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pgrun-hint {
+  background: rgba(250, 250, 249, 0.88);
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  white-space: nowrap;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-hint {
+  background: rgba(26, 28, 34, 0.88);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-bottom-bar {
+  color: #94a3b8;
+}
+
+.pgrun-readout {
+  font-weight: 700;
+  color: #181c20;
+  background: rgba(250, 250, 249, 0.94);
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  white-space: nowrap;
+}
+
+.pgrun-stage-shell[data-stage-theme="dark"] .pgrun-readout {
+  color: #f1f5f9;
+  background: rgba(26, 28, 34, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 @media (max-width: 1100px) {
   .rea-layout {
     grid-template-columns: 1fr;
@@ -1068,6 +1446,9 @@ button:disabled {
   }
   .rea-fine-bar {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .pgrun-hint {
+    display: none;
   }
 }
 
@@ -1086,7 +1467,38 @@ button:disabled {
   .rea-scn-row {
     grid-template-columns: repeat(2, 1fr);
   }
+  .pgrun-stage-shell {
+    height: 540px;
+  }
+  .pgrun-hud-top-left {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    gap: 6px;
+  }
+  .pgrun-brand-badge {
+    display: none;
+  }
+  .pgrun-hud-top-right {
+    top: 46px;
+    left: 10px;
+    right: auto;
+  }
+  .pgrun-ctl-stack {
+    width: 154px;
+    top: auto;
+    right: 10px;
+    bottom: 42px;
+    max-height: 210px;
+  }
+  .pgrun-info-card {
+    left: 10px;
+    max-width: calc(100% - 176px);
+    bottom: 42px;
+    padding: 10px;
+  }
 }
+
 
 
   </style>
@@ -1097,6 +1509,6 @@ button:disabled {
   <div id="app" style="display:none">
     <span>만 개의 가게 · Ten Thousand Stores · 500 AI design families x 20 variations</span>
   </div>
-  <script type="module" src="/app.js?v=aistudio-root-fix"></script>
+  <script type="module" src="/app.js?v=c23decd"></script>
 </body>
 </html>

@@ -156,7 +156,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "order-desk",
         label: "Order counter",
-        koLabel: "주문대",
+        koLabel: "Order Counter",
         x: 3.2,
         y: 0.3,
         w: 2.5,
@@ -167,7 +167,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "pickup-desk",
         label: "Pickup counter",
-        koLabel: "픽업대",
+        koLabel: "Pickup Counter",
         x: 7.3,
         y: 0.3,
         w: 2.5,
@@ -178,7 +178,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "bench",
         label: "Window seating",
-        koLabel: "창가 벤치",
+        koLabel: "Window Bench",
         x: 0.3,
         y: 6.2,
         w: 1.8,
@@ -189,7 +189,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "display",
         label: "Movable display",
-        koLabel: "진열대",
+        koLabel: "Main Display",
         x: name === "baseline" ? 3.0 : 7.6,
         y: name === "baseline" ? 6.2 : 7.6,
         w: 3.8,
@@ -200,7 +200,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "table-a",
         label: "Cafe table A",
-        koLabel: "테이블 A",
+        koLabel: "Table A",
         x: 0.7,
         y: 2.5,
         w: 1.5,
@@ -211,7 +211,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "table-b",
         label: "Cafe table B",
-        koLabel: "테이블 B",
+        koLabel: "Table B",
         x: 0.7,
         y: 4.1,
         w: 1.5,
@@ -222,7 +222,7 @@ export function makeScene(name: "baseline" | "proposed" = "baseline"): Scene {
       {
         id: "table-c",
         label: "Cafe table C",
-        koLabel: "테이블 C",
+        koLabel: "Table C",
         x: 9.8,
         y: 3.7,
         w: 1.3,

@@ -1,6 +1,6 @@
 // src/engine/d3StatsCharts.ts
 import * as d3 from "d3";
-import type { SimResult } from "./rehearsalCore.ts";
+import type { SimResult } from "./rehearsalCore.js";
 
 export interface D3StatsChartPair {
   base: SimResult;
@@ -40,7 +40,7 @@ export function renderTenKMonteCarloChart(
     .append("svg")
     .attr("viewBox", `0 0 ${width} ${height}`)
     .attr("class", "d3-tenk-svg")
-    .attr("aria-label", "10,000개 평행 가게 시나리오 생존 분포 차트");
+    .attr("aria-label", "10,000 Parallel Store Scenarios Survival Distribution Chart");
 
   const x = d3
     .scaleBand<string>()
@@ -66,7 +66,7 @@ export function renderTenKMonteCarloChart(
         if (onSelectCluster) onSelectCluster(c.id);
       });
 
-    // Active highlight backdrop
+    // Active highlight backdrop (Signal Orange)
     if (isActive) {
       g.append("rect")
         .attr("x", bx - 3)
@@ -74,9 +74,9 @@ export function renderTenKMonteCarloChart(
         .attr("width", bw + 6)
         .attr("height", height - 4)
         .attr("rx", 5)
-        .attr("fill", "rgba(37, 99, 235, 0.09)")
-        .attr("stroke", "#2563eb")
-        .attr("stroke-width", 1);
+        .attr("fill", "rgba(234, 88, 12, 0.10)")
+        .attr("stroke", "#ea580c")
+        .attr("stroke-width", 1.2);
     }
 
     const baseLineY = height - 22;
@@ -84,33 +84,33 @@ export function renderTenKMonteCarloChart(
     const hCongested = baseLineY - y(c.congested);
     const hBlocked = baseLineY - y(c.blocked);
 
-    // Stacked bar: Survived (emerald)
+    // Stacked bar: Survived (Signal Orange)
     g.append("rect")
       .attr("x", bx)
       .attr("y", baseLineY - hSurvived)
       .attr("width", bw)
       .attr("height", Math.max(2, hSurvived))
       .attr("rx", 2)
-      .attr("fill", "#10b981");
+      .attr("fill", isActive ? "#ea580c" : "#f97316");
 
-    // Stacked bar: Congested (amber)
+    // Stacked bar: Congested (Warm Amber)
     if (c.congested > 0) {
       g.append("rect")
         .attr("x", bx)
         .attr("y", baseLineY - hSurvived - hCongested)
         .attr("width", bw)
         .attr("height", Math.max(1.5, hCongested))
-        .attr("fill", "#f59e0b");
+        .attr("fill", "#fbbf24");
     }
 
-    // Stacked bar: Blocked (red)
+    // Stacked bar: Blocked (Deep Graphite)
     if (c.blocked > 0) {
       g.append("rect")
         .attr("x", bx)
         .attr("y", baseLineY - hSurvived - hCongested - hBlocked)
         .attr("width", bw)
         .attr("height", Math.max(1.5, hBlocked))
-        .attr("fill", "#ef4444");
+        .attr("fill", "#3f3f46");
     }
 
     // Count label on top of bar
@@ -118,17 +118,17 @@ export function renderTenKMonteCarloChart(
       .attr("x", bx + bw / 2)
       .attr("y", baseLineY - hSurvived - hCongested - hBlocked - 4)
       .attr("text-anchor", "middle")
-      .attr("fill", isActive ? "#1d4ed8" : "#334155")
+      .attr("fill", isActive ? "#c2410c" : "#3f3f46")
       .attr("font-size", "8.5px")
       .attr("font-weight", "700")
-      .text(`${c.total.toLocaleString("ko-KR")}개`);
+      .text(`${c.total.toLocaleString("en-US")}`);
 
     // Cluster short label at bottom
     g.append("text")
       .attr("x", bx + bw / 2)
       .attr("y", height - 7)
       .attr("text-anchor", "middle")
-      .attr("fill", isActive ? "#0f172a" : "#64748b")
+      .attr("fill", isActive ? "#ea580c" : "#52525b")
       .attr("font-size", "8.5px")
       .attr("font-weight", isActive ? "800" : "600")
       .text(c.label);
@@ -257,8 +257,8 @@ export function updateWorldStatsD3Playhead(
       .select(".d3-playhead-label")
       .text(
         selector.includes("Wait")
-          ? `현재 대기 ${frame.queue}명`
-          : `현재 완료 ${frame.completed}명`
+          ? `Now: ${frame.queue} in queue`
+          : `Now: ${frame.completed} served`
       );
   };
 
@@ -326,7 +326,7 @@ function renderQueueTimelineChart(
       .attr("fill", "#dc2626")
       .attr("font-size", "10px")
       .attr("font-weight", "700")
-      .text("동선 차단 — 통로 폭 부족");
+      .text("ROUTE BLOCKED — AISLE TOO NARROW");
     return;
   }
 
@@ -366,10 +366,10 @@ function renderQueueTimelineChart(
       .attr("d", ghostLine);
   }
 
-  const mainColor = isProposed ? "#059669" : "#d97706";
+  const mainColor = isProposed ? "#ea580c" : "#52525b";
   const areaFill = isProposed
-    ? "rgba(16, 185, 129, 0.20)"
-    : "rgba(245, 158, 11, 0.22)";
+    ? "rgba(234, 88, 12, 0.20)"
+    : "rgba(82, 82, 91, 0.16)";
 
   const areaGen = d3
     .area<SimResult["frames"][number]>()
@@ -432,7 +432,7 @@ function renderQueueTimelineChart(
     .attr("y", CHART_H - 2)
     .attr("fill", "#64748b")
     .attr("font-size", "8.5px")
-    .text(`피크 대기줄 ${res.maxQueue}명`);
+    .text(`Peak Queue: ${res.maxQueue}`);
 
   svg
     .append("text")
@@ -443,7 +443,7 @@ function renderQueueTimelineChart(
     .attr("fill", "#334155")
     .attr("font-size", "8.5px")
     .attr("font-weight", "700")
-    .text(`현재 대기 ${currentFrame.queue}명`);
+    .text(`Now: ${currentFrame.queue} in queue`);
 }
 
 function renderThroughputChart(
@@ -500,10 +500,10 @@ function renderThroughputChart(
       .attr("d", ghostLine);
   }
 
-  const mainColor = isProposed ? "#059669" : "#2563eb";
+  const mainColor = isProposed ? "#ea580c" : "#52525b";
   const areaFill = isProposed
-    ? "rgba(16, 185, 129, 0.18)"
-    : "rgba(37, 99, 235, 0.16)";
+    ? "rgba(234, 88, 12, 0.18)"
+    : "rgba(82, 82, 91, 0.14)";
 
   const areaGen = d3
     .area<SimResult["frames"][number]>()
@@ -571,7 +571,7 @@ function renderThroughputChart(
     .attr("y", CHART_H - 2)
     .attr("fill", "#64748b")
     .attr("font-size", "8.5px")
-    .text(`전환율 ${convRate}% (${res.completed}/${res.arrivalCount}명)`);
+    .text(`Conv ${convRate}% (${res.completed}/${res.arrivalCount})`);
 
   svg
     .append("text")
@@ -582,7 +582,7 @@ function renderThroughputChart(
     .attr("fill", "#334155")
     .attr("font-size", "8.5px")
     .attr("font-weight", "700")
-    .text(`현재 완료 ${currentFrame.completed}명`);
+    .text(`Now: ${currentFrame.completed} served`);
 }
 
 function renderWalkBreakdownChart(
@@ -620,7 +620,7 @@ function renderWalkBreakdownChart(
       .attr("fill", "#dc2626")
       .attr("font-size", "10px")
       .attr("font-weight", "700")
-      .text("경로 단절 (이동 불가)");
+      .text("PATH DISCONNECTED");
     return;
   }
 
@@ -631,19 +631,19 @@ function renderWalkBreakdownChart(
 
   const legs = [
     {
-      label: "입구→주문",
+      label: "IN→POS",
       len: res.legs[0]?.length ?? 0,
-      color: isProposed ? "#10b981" : "#64748b",
+      color: isProposed ? "#fb923c" : "#71717a",
     },
     {
-      label: "주문→픽업",
+      label: "POS→PICK",
       len: res.legs[1]?.length ?? 0,
-      color: isProposed ? "#059669" : "#475569",
+      color: isProposed ? "#f97316" : "#52525b",
     },
     {
-      label: "픽업→출구",
+      label: "PICK→OUT",
       len: res.legs[2]?.length ?? 0,
-      color: isProposed ? "#047857" : "#334155",
+      color: isProposed ? "#ea580c" : "#3f3f46",
     },
   ];
 
