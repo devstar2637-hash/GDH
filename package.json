@@ -18,7 +18,9 @@
     "deploy": "bash infra/deploy.sh"
   },
   "dependencies": {
-    "@google/genai": "^1.0.0"
+    "@google/genai": "^1.0.0",
+    "@types/three": "^0.186.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

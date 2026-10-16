@@ -287,14 +287,24 @@ export function createAppServer(): Server {
       const path = url.pathname;
       const method = req.method ?? "GET";
 
-      if (method === "GET" && (path === "/" || path === "/index.html")) {
+      if (
+        method === "GET" &&
+        (path === "/" ||
+          path === "/index.html" ||
+          path === "/rehearsal" ||
+          path === "/rehearsal/" ||
+          path === "/rehearsal/index.html")
+      ) {
         const html = resolveClientAsset("index.html");
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
         res.end(html);
         return;
       }
 
-      if (method === "GET" && path === "/app.js") {
+      if (
+        method === "GET" &&
+        (path === "/app.js" || path === "/rehearsal/app.js")
+      ) {
         const js = resolveClientAsset("app.js");
         res.writeHead(200, {
           "Content-Type": "application/javascript; charset=utf-8",
