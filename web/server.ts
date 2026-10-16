@@ -1,13 +1,15 @@
 import http from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { gzipSync } from 'node:zlib';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_BASE_STORE_DESIGN, DEFAULT_CONSTRAINTS } from '../shared/constants.js';
 import type { Constraints, StoreDesign, Shock, RunResult, TokenUsage } from '../shared/types.js';
-import { checkStoreConstraints, runOrchestration, generateStructuredStoreDesigns } from '../engine/index.js';
+import { checkStoreConstraints, runOrchestration, generateStructuredStoreDesigns, expandDesignFamiliesTo10k } from '../engine/index.js';
 import { generateDesigns } from '../loop/index.js';
+import { generateFamilyDesigns } from '../loop/familyBatches.js';
 
 const publicDir = fileURLToPath(new URL('./public/', import.meta.url));
 const runsDir = resolve(process.env.RUNS_DIR || 'runs');
@@ -16,14 +18,20 @@ const runs = new Map<string, RunEnvelope>();
 type RunEnvelope = {
   runId: string; state: 'DONE' | 'FAIL' | 'BLOCKED'; reason: string | null;
   inputHash: string; engineSha: string; createdAt: string; replay: boolean;
-  mode: 'preview' | 'ai'; ai: { status: string; model: string | null; tokens: TokenUsage[]; reason: string | null };
+  mode: 'preview' | 'ai'; ai: { status: string; model: string | null; tokens: TokenUsage[]; reason: string | null; requestsCompleted?: number };
   calibrationStatus: 'unverified'; calibrationNote: string; inputSnapshot: Record<string, unknown>;
+  validatedSeedDesigns?: StoreDesign[];
+  generation: { kind: 'deterministic_presets' | 'live_model_proposals'; requestedCandidates: number; calculatedCandidates: number; uniqueDesignIds: number; uniqueAssumptionSets: number; seedFamilies: number | null };
   result: RunResult | null;
 };
 class BadRequest extends Error { constructor(message: string, public status = 400) { super(message); } }
+type ServerAdapters = { generateFamilyDesigns?: typeof generateFamilyDesigns; generateDesigns?: typeof generateDesigns };
 function json(res: http.ServerResponse, status: number, value: unknown) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-  res.end(JSON.stringify(value));
+  const raw = Buffer.from(JSON.stringify(value));
+  const compress = raw.length > 65536 && /\bgzip\b/.test(String(res.req.headers['accept-encoding'] ?? ''));
+  const bytes = compress ? gzipSync(raw, { level: 1 }) : raw;
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Vary': 'Accept-Encoding', 'Content-Length': bytes.length, ...(compress ? { 'Content-Encoding': 'gzip' } : {}) });
+  res.end(bytes);
 }
 function object(v: unknown, label: string): Record<string, unknown> {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new BadRequest(`${label} must be an object`);
@@ -57,6 +65,7 @@ export function validateRequest(raw: Record<string, unknown>) {
   const input = object(raw.inputs, 'inputs');
   const n = (k: string, lo: number, hi: number, integer = false) => number(input[k], k, lo, hi, integer);
   const snapshot = {
+    variantCount: number(raw.variantCount ?? 10000, 'variantCount', 1000, 10000, true),
     budgetKrw: n('budgetKrw', 1_000_000, 10_000_000_000, true),
     depositKrw: n('depositKrw', 0, 10_000_000_000, true),
     fitoutKrw: n('fitoutKrw', 0, 10_000_000_000, true),
@@ -67,6 +76,7 @@ export function validateRequest(raw: Record<string, unknown>) {
     makeTimeSec: n('makeTimeSec', 25, 1800), openDaysPerWeek: n('openDaysPerWeek', 1, 7),
     cogsRatio: n('cogsRatio', 0, .85), seed: number(raw.seed ?? 20261016, 'seed', 0, 4294967295, true)
   };
+  if (snapshot.variantCount !== 1000 && snapshot.variantCount !== 10000) throw new BadRequest('variantCount: 10000 default or 1000 spike only');
   const tag = (field: string) => ({ kind: 'assumed' as const, field, note: 'Explicit user scenario assumption; no on-site verification claimed.' });
   const constraints: Constraints = { ...DEFAULT_CONSTRAINTS, budgetKrw: snapshot.budgetKrw, seed: snapshot.seed, horizonMonths: 36, reserveRatioMin: .10 };
   const design: StoreDesign = {
@@ -101,24 +111,56 @@ async function persist(run: RunEnvelope) {
   runs.set(run.runId, run);
   if (runs.size > 20) runs.delete(runs.keys().next().value!);
 }
-async function execute(raw: Record<string, unknown>): Promise<RunEnvelope> {
+async function execute(raw: Record<string, unknown>, adapters: ServerAdapters = {}): Promise<RunEnvelope> {
   const v = validateRequest(raw);
   const mode = raw.mode === 'ai' ? 'ai' : 'preview';
   if (raw.mode !== undefined && raw.mode !== 'ai' && raw.mode !== 'preview') throw new BadRequest('mode: preview or ai');
   const inputHash = createHash('sha256').update(JSON.stringify({ mode, ...v.snapshot })).digest('hex');
   const run: RunEnvelope = { runId: `run-${randomUUID()}`, state: 'BLOCKED', reason: null, inputHash, engineSha: engineSha(), createdAt: new Date().toISOString(), replay: false, mode,
-    ai: { status: 'not_invoked', model: null, tokens: [], reason: null }, calibrationStatus: 'unverified', calibrationNote: '보정 미검증. 상권 개·폐업률 비교는 개별 점포의 현금흐름·미래 결과를 검증하지 않습니다.', inputSnapshot: v.snapshot, result: null };
+    ai: { status: 'not_invoked', model: null, tokens: [], reason: null }, calibrationStatus: 'unverified', calibrationNote: '보정 미검증. 상권 개·폐업률 비교는 개별 점포의 현금흐름·미래 결과를 검증하지 않습니다.', inputSnapshot: v.snapshot,
+    generation: { kind: mode === 'ai' ? 'live_model_proposals' : 'deterministic_presets', requestedCandidates: v.snapshot.variantCount, calculatedCandidates: 0, uniqueDesignIds: 0, uniqueAssumptionSets: 0, seedFamilies: null }, result: null };
   try {
     let designs: StoreDesign[] | undefined;
     if (mode === 'ai') {
-      const generated = await generateDesigns(v.design, v.constraints, { maxDesigns: 4, signal: AbortSignal.timeout(20_000) });
+      const generated = v.snapshot.variantCount === 10000
+        ? await (adapters.generateFamilyDesigns ?? generateFamilyDesigns)(v.design, v.constraints)
+        : await (adapters.generateDesigns ?? generateDesigns)(v.design, v.constraints, { maxDesigns: 4, signal: AbortSignal.timeout(20_000) });
       run.ai = { status: generated.status, model: generated.model, tokens: generated.tokens, reason: generated.reason };
-      if (!generated.designs.length) { run.reason = generated.reason || 'AI returned no valid designs'; await persist(run); return run; }
-      designs = generated.designs;
+      if ('requestsCompleted' in generated && typeof generated.requestsCompleted === 'number') run.ai.requestsCompleted = generated.requestsCompleted;
+      if (v.snapshot.variantCount === 10000) {
+        run.generation.seedFamilies = generated.designs.length;
+        if (generated.status !== 'generated' || generated.designs.length !== 500) {
+          run.validatedSeedDesigns = generated.designs;
+          run.state = 'FAIL';
+          run.reason = `유효한 AI 설계군 ${generated.designs.length}/500 — 미완료, 기본 후보로 대체하지 않음${generated.reason ? ` · ${generated.reason}` : ''}`;
+          await persist(run); return run;
+        }
+        designs = expandDesignFamiliesTo10k(generated.designs, v.constraints, 20);
+      } else {
+        if (!generated.designs.length) { run.state = 'FAIL'; run.reason = generated.reason || 'AI returned no valid designs'; await persist(run); return run; }
+        designs = generated.designs;
+      }
     }
-    // Keep the exact user case in the preview; other presets carry their own changed assumptions.
-    designs ??= [v.design, ...generateStructuredStoreDesigns(v.design, v.constraints, 999)];
-    const result = runOrchestration({ runId: run.runId, baseDesign: v.design, constraints: v.constraints, mode: 1000, customDesigns: designs, scenarios: [{ id: 'user-scenario', shocks: v.shocks }], runAdversarial: false, persistToDisk: false, inputHash, engineSha: run.engineSha, tokens: run.ai.tokens, inputFiles: ['explicit-user-assumptions'] });
+    // Keep the exact user case. The other seeds and variations are explicitly local assumptions.
+    if (!designs) {
+      if (v.snapshot.variantCount === 10000) {
+        const seeds = [v.design, ...generateStructuredStoreDesigns(v.design, v.constraints, 499)]
+          .map((design, i) => ({ ...design, familyId: `preview-seed-${i + 1}` }));
+        designs = expandDesignFamiliesTo10k(seeds, v.constraints, 20);
+        designs[0] = { ...v.design, familyId: seeds[0].familyId };
+        run.generation.seedFamilies = seeds.length;
+      } else {
+        designs = [v.design, ...generateStructuredStoreDesigns(v.design, v.constraints, 999)];
+        run.generation.seedFamilies = designs.length;
+      }
+    }
+    const assumptionKey = (d: StoreDesign) => JSON.stringify([d.seats,d.floorAreaM2,d.deposit.value,d.monthlyRent.value,d.fitoutCost.value,d.staffFte,d.ownerHoursPerWeek,d.menuTier,d.avgTicketKrw,d.makeTimeSec,d.openDaysPerWeek,d.equipmentKrw,d.cupsPerDayBase,d.cogsRatio,d.openingMonth,d.wagePerStaffKrw,d.otherExpenseRatio]);
+    run.generation.calculatedCandidates = designs.length;
+    run.generation.uniqueDesignIds = new Set(designs.map(d => d.id)).size;
+    run.generation.uniqueAssumptionSets = new Set(designs.map(assumptionKey)).size;
+    const engineMode = v.snapshot.variantCount === 10000 ? 10000 : 1000;
+    const result = runOrchestration({ runId: run.runId, baseDesign: v.design, constraints: v.constraints, mode: engineMode, customDesigns: designs, scenarios: [{ id: 'user-scenario', shocks: v.shocks }], runAdversarial: false, persistToDisk: false, inputHash, engineSha: run.engineSha, tokens: run.ai.tokens, inputFiles: ['explicit-user-assumptions'] });
+    if (mode === 'ai' && run.ai.status === 'generated' && run.generation.seedFamilies === 500) result.modeLabel = '500 AI design families x 20 variations';
     run.result = result; run.state = result.status.endState || 'FAIL'; run.reason = result.status.endReason || null;
     // Retain the actual engine report; the surrounding unverified label prevents a macro-fit claim being presented as validation of this individual store.
     await persist(run); return run;
@@ -130,7 +172,7 @@ async function execute(raw: Record<string, unknown>): Promise<RunEnvelope> {
     run.ai.reason = run.reason; await persist(run); return run;
   }
 }
-export function createServer() {
+export function createServer(adapters: ServerAdapters = {}) {
   return http.createServer(async (req, res) => {
     try {
       const pathname = new URL(req.url || '/', 'http://localhost').pathname;
@@ -142,10 +184,12 @@ export function createServer() {
           const input = await body(req);
           if (pathname === '/patches') {
             const v = validateRequest(input);
-            try { return json(res, 200, await generateDesigns(v.design, v.constraints, { maxDesigns: 4, signal: AbortSignal.timeout(20_000) })); }
+            try { return json(res, 200, v.snapshot.variantCount === 10000
+              ? await (adapters.generateFamilyDesigns ?? generateFamilyDesigns)(v.design, v.constraints)
+              : await (adapters.generateDesigns ?? generateDesigns)(v.design, v.constraints, { maxDesigns: 4, signal: AbortSignal.timeout(20_000) })); }
             catch (e) { const code = e && typeof e === 'object' && 'code' in e ? String(e.code) : 'PROVIDER_ERROR'; return json(res, 503, { status: 'BLOCKED', code, reason: code === 'UNCONFIGURED' ? 'AI 미연결' : 'AI proposal unavailable' }); }
           }
-          return json(res, 200, await execute(input));
+          return json(res, 200, await execute(input, adapters));
         } finally { busy = false; }
       }
       if (req.method === 'GET' && /^\/runs\/run-[a-f0-9-]{36}$/.test(pathname)) {

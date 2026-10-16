@@ -190,7 +190,8 @@ export function buildLandscapeSummary(
 }
 
 /**
- * Expand 500 AI design families into 10,000 variants (20 deterministic variations per family)
+ * Expand seed designs into separately identified deterministic variants.
+ * Unique identifiers do not imply unique economic structures or AI provenance.
  * with seeded jitter within +/-15%, strictly respecting budget and reserve >= 10% (SPEC.md §7, AT-16).
  */
 export function expandDesignFamiliesTo10k(
@@ -206,12 +207,16 @@ export function expandDesignFamiliesTo10k(
   for (let f = 0; f < families.length; f++) {
     const base = families[f];
     const familyId = base.familyId ?? `fam-${String(f + 1).padStart(3, "0")}`;
+    // familyId is caller metadata and may repeat. The input position scopes each
+    // base ID so result/design joins cannot overwrite another seed's ledger.
+    const variantId = (v: number) =>
+      `${base.id}-family-${String(f + 1).padStart(3, "0")}-var-${String(v + 1).padStart(2, "0")}`;
 
     for (let v = 0; v < variationsPerFamily; v++) {
       if (v === 0) {
         out.push({
           ...base,
-          id: `${familyId}-var-01`,
+          id: variantId(v),
           familyId,
         });
         continue;
@@ -239,14 +244,14 @@ export function expandDesignFamiliesTo10k(
         800_000,
         Math.round((base.monthlyRent.value * randRange(prng, 0.85, 1.15)) / 50_000) * 50_000
       );
-      const staffFte = Math.max(0.5, Math.round(base.staffFte * randRange(prng, 0.85, 1.15) * 10) / 10);
+      const staffFte = Math.max(base.staffFte === 0 ? 0 : 0.5, Math.round(base.staffFte * randRange(prng, 0.85, 1.15) * 10) / 10);
       const avgTicketKrw = Math.max(
         2500,
         Math.round((base.avgTicketKrw * randRange(prng, 0.88, 1.12)) / 100) * 100
       );
       const makeTimeSec = Math.max(35, Math.round(base.makeTimeSec * randRange(prng, 0.85, 1.15)));
       const cupsPerDayBase = Math.max(
-        60,
+        base.cupsPerDayBase === 0 ? 0 : 60,
         Math.round((base.cupsPerDayBase ?? 185) * randRange(prng, 0.85, 1.15))
       );
       const cogsRatio = Math.min(
@@ -256,7 +261,7 @@ export function expandDesignFamiliesTo10k(
 
       const candidate: StoreDesign = {
         ...base,
-        id: `${familyId}-var-${String(v + 1).padStart(2, "0")}`,
+        id: variantId(v),
         familyId,
         seats,
         floorAreaM2: areaM2,

@@ -37,7 +37,7 @@ import {
   evaluateBaselineComparison,
   generateStructuredStoreDesigns,
 } from "./baseline.js";
-import { findDecisionCliffAndMeasurement } from "./cliff.js";
+import { findDecisionCliffAndMeasurement, type CliffVerification } from "./cliff.js";
 import { verifyIndependentPnlSamples } from "./independentPnl.js";
 import {
   buildLandscapeSummary,
@@ -47,7 +47,7 @@ import {
   pickLeaderVariant,
 } from "./landscape.js";
 import { sha256Canonical } from "./prng.js";
-import { simulateBatch } from "./simulator.js";
+import { simulateBatch, simulateSingleVariant, type SimulationOptions } from "./simulator.js";
 
 export interface OrchestrateOptions {
   runId?: string;
@@ -181,13 +181,29 @@ export function computeOracleFileHashes(repoRoot = process.cwd()): Record<string
   return hashes;
 }
 
+function rejectDuplicateDesignIds(designs: readonly StoreDesign[], source: string): void {
+  const seen = new Set<string>();
+  for (const design of designs) {
+    if (seen.has(design.id)) {
+      throw new Error(`Duplicate designId ${JSON.stringify(design.id)} in ${source}`);
+    }
+    seen.add(design.id);
+  }
+}
+
 /**
  * Execute the full deterministic A Thousand Stores simulation and verification pipeline.
  * Defaults to 10,000 deterministic preset variants (500 seeds x 20 variations)
  * and also supports 1,000 variants. This function makes no model calls.
  */
-export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
+export function runOrchestration(options: OrchestrateOptions = {}): RunResult & { cliffVerification: CliffVerification } {
   const tStart = performance.now();
+  // Check caller IDs before expansion can rename them, and again on the actual
+  // simulation set below. Duplicate IDs would overwrite verifier design maps.
+  rejectDuplicateDesignIds(
+    [...(options.customDesigns ?? []), ...(options.injectedDesigns ?? [])],
+    "customDesigns/injectedDesigns"
+  );
   const constraints: Constraints = options.constraints ?? { ...DEFAULT_CONSTRAINTS };
   const baseDesign: StoreDesign = options.baseDesign ?? { ...DEFAULT_BASE_STORE_DESIGN };
   const mode: 1000 | 10000 = options.mode ?? 10000;
@@ -252,13 +268,27 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
     options.injectedDesigns && options.injectedDesigns.length > 0
       ? [...validDesigns, ...options.injectedDesigns]
       : validDesigns;
+  rejectDuplicateDesignIds(allDesigns, "simulation designs");
 
   // 3. 36-Month Deterministic Cash-Flow Simulation (AT-03, AT-05, AT-06, AT-16)
   const simStart = performance.now();
-  const results = simulateBatch(allDesigns, primaryScenario, constraints, {
+  const simulationOptions: SimulationOptions = {
     keepAllMonths: mode === 1000,
     sampleMonthLimit: 120,
-  });
+  };
+  const results = simulateBatch(allDesigns, primaryScenario, constraints, simulationOptions);
+  const ledgerLeader = pickLeaderVariant(results);
+  if (ledgerLeader && ledgerLeader.months.length === 0) {
+    const leaderIndex = results.indexOf(ledgerLeader);
+    const replay = simulateSingleVariant(
+      allDesigns[leaderIndex], primaryScenario, constraints, true, simulationOptions
+    );
+    // Preserve the batch's 120-per-outcome sampling policy and add only the
+    // actual leader's ledger. Aggregate values remain those from the batch.
+    ledgerLeader.months = replay.months;
+  }
+  // Simulation timing includes the optional one-design leader-ledger replay;
+  // it excludes subsequent P&L, landscape, cliff and baseline analysis.
   const computeMs = Number((performance.now() - simStart).toFixed(2));
 
   // Count rejected constraint violations (AT-03: rejected, not counted as deaths)
@@ -284,14 +314,17 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   // 4. Ledger consistency check: both paths reuse computeMonthStep.
   const pnlCheck = verifyIndependentPnlSamples(
     allDesigns,
-    results,
+    // The verifier samples each outcome's first 25 retained ledgers. Prioritize
+    // the actual leader without changing the public results/designs ordering.
+    ledgerLeader ? [ledgerLeader, ...results.filter((r) => r !== ledgerLeader)] : results,
     primaryScenario,
-    constraints
+    constraints,
+    simulationOptions
   );
   gateLog.push({
     gate: "pnl_recompute",
     passed: pnlCheck.passed ? null : false,
-    detail: `공유 월별 산식을 사용한 P&L 상호일치 검사 (${pnlCheck.sampledCount}개 표본: 생존 ${pnlCheck.aliveSampled} + 폐업 ${pnlCheck.deadSampled}) 최대 오차 ${pnlCheck.maxAbsDiffKrw.toFixed(4)}원 (기준 <= 1원). 독립 오라클 검증 아님`,
+    detail: `공유 월별 산식을 사용한 P&L 상호일치 검사 (${pnlCheck.sampledCount}개 표본: 생존 ${pnlCheck.aliveSampled} + 폐업 ${pnlCheck.deadSampled}; 실제 리더 ${ledgerLeader?.designId ?? "없음"} 우선 포함) 최대 오차 ${pnlCheck.maxAbsDiffKrw.toFixed(4)}원 (기준 <= 1원). 독립 오라클 검증 아님`,
     value: pnlCheck.maxAbsDiffKrw,
     threshold: 1,
     at: nowIso(),
@@ -304,8 +337,8 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
 
   // 6. Decision Cliff & Next Measurement (AT-07, AT-08)
   const validDesignsOnly = allDesigns.filter((_, idx) => results[idx]?.constraintsOk);
-  const { cliff, nextMeasurement } = findDecisionCliffAndMeasurement(
-    validDesignsOnly.slice(0, 120),
+  const { cliff, nextMeasurement, verification: cliffVerification } = findDecisionCliffAndMeasurement(
+    validDesignsOnly,
     baseDesign,
     primaryScenario,
     constraints
@@ -452,9 +485,30 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   const decisionChoice: RunResult["decision"]["choice"] =
     calibration.label === "uncalibrated" ? "measure" : "measure";
 
+  if (mode === 10000) {
+    // Internal checks use the retained batch ledgers above. Export only fifty
+    // real sampled ledgers (prefer 25 per outcome) plus the actual leader.
+    // Keep original ordering so an eligible first user-base remains sampled.
+    const eligible = results.filter((r) =>
+      r !== ledgerLeader && r.constraintsOk && r.months.length > 0
+    );
+    const retained = new Set([
+      ...eligible.filter((r) => r.deathMonth === null).slice(0, 25),
+      ...eligible.filter((r) => r.deathMonth !== null).slice(0, 25),
+    ]);
+    for (const result of eligible) {
+      if (retained.size >= 50) break;
+      retained.add(result);
+    }
+    if (ledgerLeader?.months.length) retained.add(ledgerLeader);
+    for (const result of results) {
+      if (!retained.has(result)) result.months = [];
+    }
+  }
+
   const totalElapsedMs = Number((performance.now() - tStart).toFixed(2));
 
-  const runResult: RunResult = {
+  const runResult: RunResult & { cliffVerification: CliffVerification } = {
     runId,
     constraints,
     designs: allDesigns,
@@ -463,6 +517,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
     landscape,
     deathCauses,
     cliff,
+    cliffVerification,
     nextMeasurement,
     calibration,
     baseline,
@@ -543,16 +598,12 @@ export function persistRunArtifacts(
     "utf8"
   );
 
-  // Store lightweight result snapshot (without full 36-month arrays for 10,000 variants to avoid 50MB JSON bloat)
-  const compactResult: RunResult = {
-    ...result,
-    results: result.results.map((r, idx) =>
-      idx < 100 ? r : { ...r, months: [] }
-    ),
-  };
+  // The result already bounds retained 10k ledgers to fifty real samples plus
+  // the actual leader. Preserve that selection in saved/exportable evidence;
+  // truncating by array index would discard a leader outside the first 100.
   writeFileSync(
     join(runDir, "result.json"),
-    JSON.stringify(compactResult, null, 2),
+    JSON.stringify(result, null, 2),
     "utf8"
   );
 

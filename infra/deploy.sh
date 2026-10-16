@@ -21,5 +21,5 @@ fi
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --project "$PROJECT" >/dev/null
 gcloud run deploy "$SERVICE" --source . --project "$PROJECT" --region "$REGION" --allow-unauthenticated --port 8080 \
   "${SECRET_ARGS[@]}" --set-env-vars "GEMINI_MODEL=${GEMINI_MODEL:-gemini-4-argon},ENGINE_SHA=$ENGINE_REV" \
-  --max-instances 1 --concurrency 4 --timeout 60 --memory 1Gi
+  --max-instances 1 --concurrency 4 --timeout 120 --memory 1Gi
 gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format='value(status.url)'

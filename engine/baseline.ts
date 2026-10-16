@@ -131,8 +131,8 @@ export function generateStructuredStoreDesigns(
 
   for (let i = 2; i < count; i++) {
     const archetype = i % 12;
-    const familyIdx = Math.floor(i / 2) + 1;
-    const familyId = `fam-${String(Math.min(500, familyIdx)).padStart(3, "0")}`;
+    // Each generated seed owns its identity, even when economic inputs repeat.
+    const familyId = `fam-${String(i + 1).padStart(3, "0")}`;
 
     let areaM2 = 45;
     let seats = 20;

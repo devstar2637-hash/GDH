@@ -157,7 +157,8 @@ describe("Lane A1: Deterministic engine unit behavior", () => {
     assert.equal(run.nextMeasurement.variable, String(run.cliff.variable));
     assert.notEqual(run.cliff.leaderBelow, run.cliff.leaderAbove);
 
-    const validDesigns = run.designs.filter((_, i) => run.results[i]?.constraintsOk).slice(0, 120);
+    // Verify the reported leaders against every valid candidate, not a prefix.
+    const validDesigns = run.designs.filter((_, i) => run.results[i]?.constraintsOk);
     const delta = run.cliff.relativeDelta ?? 0;
     const step = 0.03;
     const leaderBelow = evaluateLeaderAtAssumptionDelta(
@@ -177,6 +178,8 @@ describe("Lane A1: Deterministic engine unit behavior", () => {
       run.constraints
     );
     assert.notEqual(leaderBelow, leaderAbove);
+    assert.equal(leaderBelow, run.cliff.leaderBelow);
+    assert.equal(leaderAbove, run.cliff.leaderAbove);
   });
 
   it("local structured presets remain an explorer even when coverage metrics match the random baseline", () => {

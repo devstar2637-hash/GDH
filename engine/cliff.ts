@@ -1,7 +1,7 @@
 // engine/cliff.ts — Lane A1. Decision Cliff (AT-07) and Next Field Measurement (AT-08).
-// Sweeps candidate assumptions across -30%..+30% in 11 steps, identifies the single smallest
-// relative boundary where the #1 design flips, verifies the flip on both sides (-1 step vs +1 step),
-// and verifies that perturbing a control assumption by the same relative width does NOT flip #1.
+// Proposes coarse brackets on a bounded subset, then checks both endpoints and
+// a control against every valid design. This does not establish a global minimum
+// or an exact continuous threshold; an unverified proposal returns null.
 
 import type {
   Cliff,
@@ -10,7 +10,8 @@ import type {
   Scenario,
   StoreDesign,
 } from "../shared/types.js";
-import { pickLeaderVariant } from "./landscape.js";
+import { compareVariantsLexicographic, pickLeaderVariant } from "./landscape.js";
+import { checkStoreConstraints } from "./constraints.js";
 import { simulateBatch, type SimulationOptions } from "./simulator.js";
 
 export type CliffVariableKey =
@@ -58,7 +59,7 @@ const ASSUMPTION_SPECS: readonly AssumptionSpec[] = [
         const effectiveMult = Math.max(0.4, 1 + delta * craftSensitivity);
         return {
           ...d,
-          makeTimeSec: Math.max(25, Math.round(d.makeTimeSec * effectiveMult)),
+          makeTimeSec: Math.max(1, Math.round(d.makeTimeSec * effectiveMult)),
         };
       });
       return { designs: shifted, options: { keepAllMonths: false, sampleMonthLimit: 0 } };
@@ -77,7 +78,7 @@ const ASSUMPTION_SPECS: readonly AssumptionSpec[] = [
       const shifted = designs.map((d) => {
         const areaSensitivity = d.floorAreaM2 >= 45 ? 1.25 : 0.75;
         const nextRent = Math.max(
-          500_000,
+          0,
           Math.round(d.monthlyRent.value * (1 + delta * areaSensitivity))
         );
         return {
@@ -102,7 +103,7 @@ const ASSUMPTION_SPECS: readonly AssumptionSpec[] = [
         const base = d.cupsPerDayBase ?? 185;
         return {
           ...d,
-          cupsPerDayBase: Math.max(30, Math.round(base * (1 + delta))),
+          cupsPerDayBase: Math.max(0, Math.round(base * (1 + delta))),
         };
       });
       return { designs: shifted, options: { keepAllMonths: false, sampleMonthLimit: 0 } };
@@ -120,7 +121,7 @@ const ASSUMPTION_SPECS: readonly AssumptionSpec[] = [
     applyDelta: (designs, _baseDesign, delta) => {
       const shifted = designs.map((d) => ({
         ...d,
-        avgTicketKrw: Math.max(2000, Math.round(d.avgTicketKrw * (1 + delta * 0.5))),
+        avgTicketKrw: Math.max(1, Math.round(d.avgTicketKrw * (1 + delta * 0.5))),
       }));
       return { designs: shifted, options: { keepAllMonths: false, sampleMonthLimit: 0 } };
     },
@@ -139,19 +140,52 @@ const ASSUMPTION_SPECS: readonly AssumptionSpec[] = [
         const base = d.cogsRatio ?? 0.32;
         return {
           ...d,
-          cogsRatio: Math.min(0.75, Math.max(0.15, Number((base * (1 + delta * 0.4)).toFixed(4)))),
+          cogsRatio: Math.min(1, Math.max(0, Number((base * (1 + delta * 0.4)).toFixed(4)))),
         };
       });
       return { designs: shifted, options: { keepAllMonths: false, sampleMonthLimit: 0 } };
     },
   },
+  {
+    key: "staffFte", unit: "FTE", uncertaintyWidth: 0.30,
+    whyKo: "유급 인력 가정의 변화가 인건비와 제조 용량을 함께 바꿀 때 후보 순위를 비교합니다.",
+    howToMeasureOnsiteKo: (v) => `7일간 시간대별 주문량과 근무표를 기록해 기준 설계 환산 인력 ${v} FTE 가정을 확인하세요.`,
+    getBaseValue: (d) => d.staffFte,
+    applyDelta: (designs, _base, delta) => ({
+      designs: designs.map((d) => ({ ...d, staffFte: Math.max(0, Number((d.staffFte * (1 + delta)).toFixed(4))) })),
+      options: { keepAllMonths: false, sampleMonthLimit: 0 },
+    }),
+  },
 ];
+
+export interface CliffVerification {
+  method: "subset_proposals_full_batch_endpoints";
+  globalMinimumVerified: false;
+  totalDesigns: number;
+  proposalDesigns: number;
+  proposedBrackets: number;
+  checkedBrackets: number;
+  fullBatchEvaluations: number;
+  lowerDelta: number | null;
+  upperDelta: number | null;
+  elapsedMs: number;
+}
 
 export interface CliffAnalysisResult {
   cliff: Cliff | null;
   nextMeasurement: NextMeasurement | null;
   controlVariable: string;
   controlLeaderUnchanged: boolean;
+  verification: CliffVerification;
+}
+
+export function applyAssumptionDelta(variable: CliffVariableKey, delta: number,
+  designs: readonly StoreDesign[], baseDesign: StoreDesign) {
+  const spec = ASSUMPTION_SPECS.find((s) => s.key === variable);
+  if (!spec || !Number.isFinite(delta)) return null;
+  // A zero perturbation must not introduce floors, rounding, or new defaults.
+  if (delta === 0) return { designs: [...designs], options: { keepAllMonths: false, sampleMonthLimit: 0 } };
+  return spec.applyDelta(designs, baseDesign, delta);
 }
 
 /**
@@ -166,15 +200,16 @@ export function evaluateLeaderAtAssumptionDelta(
   scenario: Scenario,
   constraints: Constraints
 ): string | null {
-  const spec = ASSUMPTION_SPECS.find((s) => s.key === variable);
-  if (!spec) return null;
-  const { designs: mutated, options } = spec.applyDelta(designs, baseDesign, delta);
+  const applied = applyAssumptionDelta(variable, delta, designs, baseDesign);
+  if (!applied) return null;
+  const { designs: mutated, options } = applied;
   const results = simulateBatch(mutated, scenario, constraints, options);
   return pickLeaderVariant(results)?.designId ?? null;
 }
 
 /**
- * Find the single Decision Cliff (AT-07) and Next Field Measurement (AT-08).
+ * Find one bounded, full-batch-confirmed sensitivity bracket. Not a global
+ * minimum search: at most three subset proposals and two control variables each.
  */
 export function findDecisionCliffAndMeasurement(
   designs: readonly StoreDesign[],
@@ -182,14 +217,20 @@ export function findDecisionCliffAndMeasurement(
   scenario: Scenario,
   constraints: Constraints
 ): CliffAnalysisResult {
-  const validDesigns = designs.filter((d) => d.seats >= 0 && d.floorAreaM2 > 0);
+  const started = performance.now();
+  const validDesigns = designs.filter((d) => checkStoreConstraints(d, constraints).ok);
+  const verification: CliffVerification = {
+    method: "subset_proposals_full_batch_endpoints", globalMinimumVerified: false,
+    totalDesigns: validDesigns.length, proposalDesigns: 0, proposedBrackets: 0,
+    checkedBrackets: 0, fullBatchEvaluations: 0, lowerDelta: null, upperDelta: null, elapsedMs: 0,
+  };
+  const finish = (cliff: Cliff | null = null, nextMeasurement: NextMeasurement | null = null,
+    controlVariable = "not_verified"): CliffAnalysisResult => {
+    verification.elapsedMs = Number((performance.now() - started).toFixed(2));
+    return { cliff, nextMeasurement, controlVariable, controlLeaderUnchanged: cliff !== null, verification };
+  };
   if (validDesigns.length < 2) {
-    return {
-      cliff: null,
-      nextMeasurement: null,
-      controlVariable: "avgTicketKrw",
-      controlLeaderUnchanged: true,
-    };
+    return finish();
   }
 
   // Evaluate baseline leader at delta = 0
@@ -197,15 +238,20 @@ export function findDecisionCliffAndMeasurement(
     keepAllMonths: false,
     sampleMonthLimit: 0,
   });
+  verification.fullBatchEvaluations++;
   const baseLeader = pickLeaderVariant(baseResults)?.designId ?? null;
   if (!baseLeader) {
-    return {
-      cliff: null,
-      nextMeasurement: null,
-      controlVariable: "avgTicketKrw",
-      controlLeaderUnchanged: true,
-    };
+    return finish();
   }
+
+  // Include actual contenders and broad coverage, rather than assume that the
+  // first 120 input designs contain the full population's leader.
+  const byId = new Map(validDesigns.map((d) => [d.id, d]));
+  const proposalIds = new Set<string>([validDesigns[0].id]);
+  for (const result of [...baseResults].sort(compareVariantsLexicographic).slice(0, 59)) proposalIds.add(result.designId);
+  for (let i = 0; i < Math.min(60, validDesigns.length); i++) proposalIds.add(validDesigns[Math.floor(i * validDesigns.length / Math.min(60, validDesigns.length))].id);
+  const proposalDesigns = validDesigns.length <= 120 ? validDesigns : [...proposalIds].map((id) => byId.get(id)!);
+  verification.proposalDesigns = proposalDesigns.length;
 
   interface CandidateFlip {
     spec: AssumptionSpec;
@@ -231,7 +277,7 @@ export function findDecisionCliffAndMeasurement(
           : evaluateLeaderAtAssumptionDelta(
               spec.key,
               delta,
-              validDesigns,
+              proposalDesigns,
               baseDesign,
               scenario,
               constraints
@@ -239,25 +285,23 @@ export function findDecisionCliffAndMeasurement(
       leadersByStep.push(leaderId);
     }
 
-    // Find transition step closest to delta = 0 (index 5)
-    let bestFlip: CandidateFlip | null = null;
+    // Each adjacent-grid transition is only a proposal until full-N checks pass.
     for (let i = 0; i < SWEEP_STEPS.length - 1; i++) {
       const lBelow = leadersByStep[i];
       const lAbove = leadersByStep[i + 1];
       if (lBelow && lAbove && lBelow !== lAbove) {
         const dBelow = SWEEP_STEPS[i];
         const dAbove = SWEEP_STEPS[i + 1];
-        const midDelta = (dBelow + dAbove) / 2;
+        const midDelta = Number(((dBelow + dAbove) / 2).toFixed(6));
         const absDelta = Math.max(0.03, Math.abs(midDelta));
-        const baseVal = spec.getBaseValue(baseDesign);
+        const baseVal = spec.getBaseValue(spec.applyDelta([baseDesign], baseDesign, midDelta).designs[0]);
         const boundaryValue =
-          spec.unit === "ratio"
-            ? Number((baseVal * (1 + midDelta)).toFixed(3))
-            : Math.round(baseVal * (1 + midDelta));
+          spec.unit === "ratio" || spec.unit === "FTE"
+            ? Number(baseVal.toFixed(3))
+            : Math.round(baseVal);
         const priorityScore = Number(((1 / absDelta) * spec.uncertaintyWidth).toFixed(3));
 
-        if (!bestFlip || absDelta < bestFlip.absDelta) {
-          bestFlip = {
+          candidates.push({
             spec,
             stepIndexBelow: i,
             stepIndexAbove: i + 1,
@@ -267,71 +311,59 @@ export function findDecisionCliffAndMeasurement(
             leaderBelow: lBelow,
             leaderAbove: lAbove,
             priorityScore,
-          };
-        }
+          });
       }
     }
 
-    if (bestFlip) {
-      candidates.push(bestFlip);
-    }
   }
 
   if (candidates.length === 0) {
-    return {
-      cliff: null,
-      nextMeasurement: null,
-      controlVariable: "avgTicketKrw",
-      controlLeaderUnchanged: true,
-    };
+    return finish();
   }
 
-  // Sort by smallest relative |delta| (SPEC §5: "smallest |delta| at which #1 changes")
+  verification.proposedBrackets = candidates.length;
+  // Ordering prioritizes nearby proposals; it is not proof of a global minimum.
   candidates.sort((a, b) => a.absDelta - b.absDelta || b.priorityScore - a.priorityScore);
-  const chosen = candidates[0];
-
-  // Verify AT-08 control variable: find another assumption that does NOT flip #1 at the same relative delta
-  let controlVar: CliffVariableKey = "avgTicketKrw";
-  let controlUnchanged = true;
-  for (const spec of ASSUMPTION_SPECS) {
-    if (spec.key === chosen.spec.key) continue;
-    const testDelta = chosen.deltaBoundary >= 0 ? chosen.absDelta : -chosen.absDelta;
-    const leaderAtControl = evaluateLeaderAtAssumptionDelta(
-      spec.key,
-      testDelta,
-      validDesigns,
-      baseDesign,
-      scenario,
-      constraints
-    );
-    if (leaderAtControl === baseLeader) {
-      controlVar = spec.key;
-      controlUnchanged = true;
-      break;
+  const cache = new Map<string, string | null>();
+  const fullLeader = (variable: CliffVariableKey, delta: number) => {
+    if (delta === 0) return baseLeader;
+    const key = `${variable}:${delta.toFixed(6)}`;
+    if (!cache.has(key)) {
+      verification.fullBatchEvaluations++;
+      cache.set(key, evaluateLeaderAtAssumptionDelta(variable, delta, validDesigns, baseDesign, scenario, constraints));
     }
-  }
-
-  const cliff: Cliff = {
+    return cache.get(key)!;
+  };
+  for (const chosen of candidates.slice(0, 3)) {
+    verification.checkedBrackets++;
+    const lower = Number((chosen.deltaBoundary - .03).toFixed(6));
+    const upper = Number((chosen.deltaBoundary + .03).toFixed(6));
+    const below = fullLeader(chosen.spec.key, lower);
+    const above = fullLeader(chosen.spec.key, upper);
+    if (!below || !above || below === above) continue;
+    const control = ASSUMPTION_SPECS.filter((s) => s.key !== chosen.spec.key).slice(0, 2)
+      .find((s) => fullLeader(s.key, lower) === baseLeader && fullLeader(s.key, upper) === baseLeader);
+    if (!control) continue;
+    verification.lowerDelta = lower;
+    verification.upperDelta = upper;
+    const cliff: Cliff = {
     variable: chosen.spec.key,
     boundaryValue: chosen.boundaryValue,
     relativeDelta: Number(chosen.deltaBoundary.toFixed(3)),
-    leaderBelow: chosen.leaderBelow,
-    leaderAbove: chosen.leaderAbove,
+    leaderBelow: below,
+    leaderAbove: above,
     unit: chosen.spec.unit,
   };
 
   const nextMeasurement: NextMeasurement = {
     variable: chosen.spec.key,
-    why: chosen.spec.whyKo,
-    howToMeasureOnsite: chosen.spec.howToMeasureOnsiteKo(chosen.boundaryValue),
+    why: `최대 ${proposalDesigns.length}개 후보의 제안 후 전체 ${validDesigns.length}개에서 상대 변화 ${lower}..${upper} 양끝과 대조변수를 확인한 구간입니다. 전역 최소·정확한 전환값은 미확인입니다. ${chosen.spec.whyKo}`,
+    howToMeasureOnsite: `표시값은 기준 설계 환산 중간값이며 후보별 민감도 규칙을 사용한 가정입니다. ${chosen.spec.howToMeasureOnsiteKo(chosen.boundaryValue)}`,
     priorityScore: chosen.priorityScore,
     uncertaintyWidth: chosen.spec.uncertaintyWidth,
   };
 
-  return {
-    cliff,
-    nextMeasurement,
-    controlVariable: controlVar,
-    controlLeaderUnchanged: controlUnchanged,
-  };
+    return finish(cliff, nextMeasurement, control.key);
+  }
+  return finish();
 }
