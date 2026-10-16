@@ -2464,6 +2464,7 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   const gatePass = gl.filter((g) => g.passed === true).length;
   setText("sbGateLog", gl.length ? `${gatePass}/${gl.length} PASS · ${gl.map((g) => `${g.gate}:${g.passed === true ? "ok" : g.passed === false ? "FAIL" : "n/a"}`).join(" ")}` : "-");
   setText("s5PassCount", gl.length ? `${gatePass}/${gl.length}` : "-");
+  setText("s5AllGreenBadge", gl.length ? (gatePass === gl.length ? "ALL PASS" : `${gl.length - gatePass} FAIL`) : "-");
 
   const totalN = run.results.length || 10000;
   const survivors = run.results.filter((r) => r.deathMonth === null).length;
