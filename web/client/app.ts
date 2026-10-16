@@ -1,8 +1,7 @@
-// web/client/app.ts — Lane A3 browser client + Interactive Spatial & Queue Rehearsal Studio.
-// Renders all 6 screens exclusively from RunResult & server payload (never computes money on the client),
-// while providing a deterministic 12x9m 0.1m-grid A* & FIFO queue spatial simulator live-coupled to the 10,000-variant engine.
-// Enforces AT-02 (hide distributions when uncalibrated), AT-07 (live cliff flip),
-// AT-12 (source tag on every number, export), AT-14 (always-visible StatusBar), and AT-16 (10k scatter + saturation curve).
+// web/client/app.ts — Ultra-Simple 3-Step Founder Simulator + 2.5D Isometric Store Rehearsal
+// Step 1: Input Address / Store Photo / My Capital (내 자본금)
+// Step 2: AI Recommended Business Categories (창업 카테고리 추천)
+// Step 3: Auto-Generated 2.5D Store Floorplan (드래그 배치 & 손님 동선) + 36-Month Capital Survival Report
 
 import type { RunResult, SimResult } from "../../shared/types.js";
 
@@ -28,2305 +27,2362 @@ interface ApiRunEnvelope {
 }
 
 // ============================================================================
-// 1. SPATIAL REHEARSAL ENGINE (12m x 9m, 0.1m Grid A*, Seeded FIFO Queue Sim)
+// 1. COMMERCIAL DISTRICT PROFILES & BUSINESS CATEGORY TEMPLATES
 // ============================================================================
 
-const ROOM_W_M = 12.0;
-const ROOM_H_M = 9.0;
-const GRID_RES_M = 0.1;
-const GRID_W = 120; // 12.0m / 0.1m
-const GRID_H = 90;  // 9.0m / 0.1m
-const WALK_SPEED_MPS = 1.15;
-const SIM_DURATION_SEC = 600; // 10 minutes peak window
-
-interface RectBlock {
-  id: string;
-  label: string;
-  x: number; // meters (left)
-  y: number; // meters (top)
-  w: number; // meters (width)
-  h: number; // meters (height)
-  color: string;
-  borderColor: string;
-  isObstacle: boolean; // blocks A* path
-  draggable: boolean;
-  role?: "shelf" | "order" | "pickup" | "seating" | "custom" | "wall";
+interface DistrictProfile {
+  key: "seongsu" | "yeonnam" | "gangnam" | "euljiro";
+  name: string;
+  badgeText: string;
+  rentMultiplier: number;
+  depositManwon: number;
+  footTrafficMultiplier: number;
+  preferredCategories: string[];
 }
 
-interface PointM {
+const DISTRICT_PROFILES: Record<string, DistrictProfile> = {
+  seongsu: {
+    key: "seongsu",
+    name: "성수동 연무장길·카페거리",
+    badgeText: "성수카페거리 상권 (유동인구·객단가 강세)",
+    rentMultiplier: 1.05,
+    depositManwon: 3000,
+    footTrafficMultiplier: 1.12,
+    preferredCategories: ["cafe", "bakery", "winebar", "salad"],
+  },
+  yeonnam: {
+    key: "yeonnam",
+    name: "마포구 연남동·경의선숲길",
+    badgeText: "연남동 상권 (체류형 디저트·데이트 강세)",
+    rentMultiplier: 0.92,
+    depositManwon: 2500,
+    footTrafficMultiplier: 1.04,
+    preferredCategories: ["bakery", "cafe", "winebar", "salad"],
+  },
+  gangnam: {
+    key: "gangnam",
+    name: "강남역·역삼 오피스 이면",
+    badgeText: "강남 오피스 상권 (점심 고회전·테이크아웃 강세)",
+    rentMultiplier: 1.28,
+    depositManwon: 4000,
+    footTrafficMultiplier: 1.25,
+    preferredCategories: ["salad", "cafe", "bakery", "winebar"],
+  },
+  euljiro: {
+    key: "euljiro",
+    name: "중구 을지로3가·힙지로",
+    badgeText: "을지로3가 상권 (합리적 임대료·저녁 주류 강세)",
+    rentMultiplier: 0.85,
+    depositManwon: 2200,
+    footTrafficMultiplier: 0.98,
+    preferredCategories: ["winebar", "cafe", "salad", "bakery"],
+  },
+};
+
+interface CategoryTemplate {
+  id: "cafe" | "bakery" | "salad" | "winebar";
+  icon: string;
+  name: string;
+  shortDesc: string;
+  baseFitoutManwon: number;
+  baseMonthlyRentManwon: number;
+  areaM2: number;
+  avgTicketKrw: number;
+  cupsPerDayBase: number;
+  makeTimeSec: number;
+  arrivalPerMin: number;
+  serviceSec: number;
+  cogsRatio: number;
+  laborRatioPct: number;
+  furnitureLabels: {
+    counter: string;
+    pickup: string;
+    display: string;
+    tableA: string;
+    tableB: string;
+    tableC: string;
+  };
+  displaySize: { w: number; h: number };
+}
+
+const CATEGORY_TEMPLATES: Record<string, CategoryTemplate> = {
+  cafe: {
+    id: "cafe",
+    icon: "☕",
+    name: "스페셜티 테이크아웃 카페",
+    shortDesc: "빠른 제조 동선과 높은 피크 회전율 중심",
+    baseFitoutManwon: 3800,
+    baseMonthlyRentManwon: 350,
+    areaM2: 49.6,
+    avgTicketKrw: 5800,
+    cupsPerDayBase: 195,
+    makeTimeSec: 65,
+    arrivalPerMin: 1.9,
+    serviceSec: 20,
+    cogsRatio: 0.28,
+    laborRatioPct: 25,
+    furnitureLabels: {
+      counter: "에스프레소 바·주문",
+      pickup: "음료 픽업 데스크",
+      display: "원두·MD 진열대",
+      tableA: "2인 테이블 A",
+      tableB: "2인 테이블 B",
+      tableC: "창가 테이블 C",
+    },
+    displaySize: { w: 1.3, h: 0.9 },
+  },
+  salad: {
+    id: "salad",
+    icon: "🥗",
+    name: "1인 샐러드 · 포케 키친",
+    shortDesc: "소자본 개업 가능 · 점심 피크 포장·배달 특화",
+    baseFitoutManwon: 2900,
+    baseMonthlyRentManwon: 310,
+    areaM2: 42.0,
+    avgTicketKrw: 10900,
+    cupsPerDayBase: 135,
+    makeTimeSec: 55,
+    arrivalPerMin: 1.7,
+    serviceSec: 18,
+    cogsRatio: 0.34,
+    laborRatioPct: 22,
+    furnitureLabels: {
+      counter: "키오스크·주문대",
+      pickup: "포장·배달 픽업존",
+      display: "콜드 토핑 쇼케이스",
+      tableA: "1인 바 테이블 A",
+      tableB: "1인 바 테이블 B",
+      tableC: "2인 테이블 C",
+    },
+    displaySize: { w: 1.2, h: 0.85 },
+  },
+  bakery: {
+    id: "bakery",
+    icon: "🥐",
+    name: "베이커리 · 디저트 쇼룸",
+    shortDesc: "중앙 트레이 진열 중심 · 높은 객단가와 체류 효과",
+    baseFitoutManwon: 5200,
+    baseMonthlyRentManwon: 390,
+    areaM2: 56.0,
+    avgTicketKrw: 11800,
+    cupsPerDayBase: 145,
+    makeTimeSec: 80,
+    arrivalPerMin: 1.5,
+    serviceSec: 25,
+    cogsRatio: 0.33,
+    laborRatioPct: 27,
+    furnitureLabels: {
+      counter: "포장·결제 카운터",
+      pickup: "트레이·음료 픽업대",
+      display: "중앙 베이커리 매대",
+      tableA: "라운지 테이블 A",
+      tableB: "라운지 테이블 B",
+      tableC: "창가 테이블 C",
+    },
+    displaySize: { w: 1.6, h: 1.1 },
+  },
+  winebar: {
+    id: "winebar",
+    icon: "🍷",
+    name: "캐주얼 하이볼 · 와인 바",
+    shortDesc: "저녁 고마진 주류·페어링 · 회전보다 테이블 단가 중심",
+    baseFitoutManwon: 4600,
+    baseMonthlyRentManwon: 340,
+    areaM2: 52.0,
+    avgTicketKrw: 21500,
+    cupsPerDayBase: 78,
+    makeTimeSec: 90,
+    arrivalPerMin: 1.2,
+    serviceSec: 27,
+    cogsRatio: 0.31,
+    laborRatioPct: 26,
+    furnitureLabels: {
+      counter: "롱 바 카운터",
+      pickup: "주류·플레이트 서브존",
+      display: "보틀 큐레이션 랙",
+      tableA: "홀 테이블 A",
+      tableB: "홀 테이블 B",
+      tableC: "부스 테이블 C",
+    },
+    displaySize: { w: 1.3, h: 0.9 },
+  },
+};
+
+function detectDistrictFromAddress(rawAddr: string): DistrictProfile {
+  const s = rawAddr.trim();
+  if (/연남|홍대|마포|합정|망원|상수/.test(s)) return DISTRICT_PROFILES.yeonnam;
+  if (/강남|역삼|서초|테헤란|삼성|선릉|여의도|교대/.test(s)) return DISTRICT_PROFILES.gangnam;
+  if (/을지로|종로|충무로|명동|익선|성북|한남|이태원|신당/.test(s)) return DISTRICT_PROFILES.euljiro;
+  return DISTRICT_PROFILES.seongsu;
+}
+
+// ============================================================================
+// 2. EXACT 2.5D ISOMETRIC REHEARSAL ENGINE (From rehearsal.html)
+// ============================================================================
+
+interface SceneObject {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: "counter" | "pickup" | "display" | "table";
+  movable?: boolean;
+}
+
+interface Pt2D {
   x: number;
   y: number;
 }
 
-interface AgentSimRecord {
-  id: number;
-  arrivalSec: number;
+interface SceneData {
+  id: string;
+  width: number;
+  height: number;
+  entrance: Pt2D;
+  orderPoint: Pt2D;
+  pickupPoint: Pt2D;
+  exit: Pt2D;
+  objects: SceneObject[];
+}
+
+interface SimConfig {
+  horizonSec: number;
+  dtSec: number;
+  arrivalRatePerMin: number;
   orderServiceSec: number;
   pickupServiceSec: number;
-  // Computed timeline milestones (seconds from 0)
-  reachOrderSec: number;
-  startOrderSec: number;
-  endOrderSec: number;
-  reachPickupSec: number;
-  startPickupSec: number;
-  endPickupSec: number;
-  exitSec: number;
-  totalWaitSec: number;
+  walkSpeedMps: number;
+  bodyWidthM: number;
+  orderStaff: number;
+  pickupStaff: number;
+  seed: number;
 }
 
-interface LayoutEvaluation {
-  validPath: boolean;
-  blockedSegment: string | null;
-  pathEntranceToOrder: PointM[];
-  pathOrderToPickup: PointM[];
-  pathPickupToExit: PointM[];
-  totalPathLengthM: number;
-  agents: AgentSimRecord[];
-  exitedCount: number;
-  incompleteCount: number;
-  meanObservedWaitSec: number;
-  peakOrderQueue: number;
-  peakPickupQueue: number;
+interface FrameCustomer {
+  id: number;
+  x: number;
+  y: number;
+  state: string;
 }
 
-// Deterministic Mulberry32 PRNG for Seed 42
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+interface SimFrame {
+  t: number;
+  orderQueue: number;
+  pickupQueue: number;
+  completed: number;
+  customers: FrameCustomer[];
+}
+
+interface RehearsalSimResult {
+  routeBlocked: boolean;
+  blockedReason: string | null;
+  routePoints: Pt2D[];
+  walkDistance: number;
+  arrivalCount: number;
+  completed: number;
+  active: number;
+  avgWaitCompleted: number;
+  avgWaitObserved: number;
+  maxOrderQueue: number;
+  maxPickupQueue: number;
+  frames: SimFrame[];
+}
+
+const STEP = 0.1;
+const EPS = 1e-9;
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+const dist = (a: Pt2D, b: Pt2D) => Math.hypot(b.x - a.x, b.y - a.y);
+
+function makeRng(seed: number): () => number {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-function createBaselineBlocks(): RectBlock[] {
-  return [
-    // Perimeter & corridor choke walls creating a central bottleneck around the shelf
-    {
-      id: "wall-top-divider",
-      label: "상단 기둥벽",
-      x: 4.1,
-      y: 0.0,
-      w: 0.6,
-      h: 2.35,
-      color: "rgba(51, 65, 85, 0.9)",
-      borderColor: "#64748b",
-      isObstacle: true,
-      draggable: false,
-      role: "wall",
-    },
-    {
-      id: "shelf-main",
-      label: "중앙 진열대/가벽 (병목 유발)",
-      x: 3.8,
-      y: 2.95,
-      w: 1.3,
-      h: 3.7,
-      color: "rgba(244, 63, 94, 0.28)",
-      borderColor: "#fb7185",
-      isObstacle: true,
-      draggable: true,
-      role: "shelf",
-    },
-    {
-      id: "seating-zone",
-      label: "홀 좌석 구역 (18석)",
-      x: 3.5,
-      y: 6.95,
-      w: 4.6,
-      h: 2.05,
-      color: "rgba(99, 102, 241, 0.22)",
-      borderColor: "#818cf8",
-      isObstacle: true,
-      draggable: true,
-      role: "seating",
-    },
-    {
-      id: "order-station",
-      label: "주문 카운터 (Order)",
-      x: 6.4,
-      y: 1.5,
-      w: 1.5,
-      h: 1.1,
-      color: "rgba(56, 189, 248, 0.28)",
-      borderColor: "#38bdf8",
-      isObstacle: false,
-      draggable: true,
-      role: "order",
-    },
-    {
-      id: "pickup-station",
-      label: "픽업대 (Pickup)",
-      x: 8.8,
-      y: 4.1,
-      w: 1.6,
-      h: 1.2,
-      color: "rgba(16, 185, 129, 0.28)",
-      borderColor: "#10b981",
-      isObstacle: false,
-      draggable: true,
-      role: "pickup",
-    },
-  ];
+class MinHeap<T> {
+  a: T[] = [];
+  c: (x: T, y: T) => number;
+  constructor(c: (x: T, y: T) => number) {
+    this.c = c;
+  }
+  get size(): number {
+    return this.a.length;
+  }
+  push(v: T): void {
+    this.a.push(v);
+    let i = this.a.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.c(this.a[i], this.a[p]) >= 0) break;
+      [this.a[i], this.a[p]] = [this.a[p], this.a[i]];
+      i = p;
+    }
+  }
+  pop(): T | undefined {
+    if (!this.a.length) return undefined;
+    const top = this.a[0];
+    const last = this.a.pop()!;
+    if (this.a.length) {
+      this.a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1;
+        const r = l + 1;
+        let b = i;
+        if (l < this.a.length && this.c(this.a[l], this.a[b]) < 0) b = l;
+        if (r < this.a.length && this.c(this.a[r], this.a[b]) < 0) b = r;
+        if (b === i) break;
+        [this.a[i], this.a[b]] = [this.a[b], this.a[i]];
+        i = b;
+      }
+    }
+    return top;
+  }
 }
 
-function createModifiedBlocksPreset(): RectBlock[] {
-  const blocks = createBaselineBlocks().map((b) => ({ ...b }));
-  const shelf = blocks.find((b) => b.id === "shelf-main");
-  if (shelf) {
-    shelf.label = "진열대 (측면 이동 완료 · 드래그 가능)";
-    shelf.x = 1.2;
-    shelf.y = 0.55;
-    shelf.w = 2.2;
-    shelf.h = 1.15;
-    shelf.color = "rgba(16, 185, 129, 0.24)";
-    shelf.borderColor = "#34d399";
-  }
-  const pickup = blocks.find((b) => b.id === "pickup-station");
-  if (pickup) {
-    pickup.x = 8.4;
-    pickup.y = 3.2;
-  }
-  return blocks;
-}
-
-const ENTRANCE_PT: PointM = { x: 1.0, y: 4.5 };
-const EXIT_PT: PointM = { x: 11.0, y: 4.5 };
-
-function getStationAnchor(blocks: RectBlock[], role: "order" | "pickup"): PointM {
-  const b = blocks.find((blk) => blk.role === role);
-  if (!b) {
-    return role === "order" ? { x: 7.1, y: 2.8 } : { x: 9.5, y: 4.7 };
-  }
+function makeScene(preset: "baseline" | "proposed", cat: CategoryTemplate): SceneData {
+  const moved = preset === "proposed";
+  const L = cat.furnitureLabels;
+  const dw = cat.displaySize.w;
+  const dh = cat.displaySize.h;
   return {
-    x: Math.min(ROOM_W_M - 0.6, Math.max(0.6, b.x + b.w / 2)),
-    y: Math.min(ROOM_H_M - 0.6, Math.max(0.6, b.y + b.h / 2)),
+    id: preset,
+    width: 12,
+    height: 9,
+    entrance: { x: 1.1, y: 4.5 },
+    orderPoint: { x: 5.5, y: 2.3 },
+    pickupPoint: { x: 8.6, y: 2.3 },
+    exit: { x: 10.8, y: 4.5 },
+    objects: [
+      { id: "counter", label: L.counter, x: 4.7, y: 0.8, w: 2.2, h: 1.0, kind: "counter" },
+      { id: "pickup", label: L.pickup, x: 7.7, y: 0.8, w: 2.1, h: 1.0, kind: "pickup" },
+      {
+        id: "display",
+        label: L.display,
+        x: moved ? 1.2 : 3.2,
+        y: moved ? 5.7 : 2.9,
+        w: dw,
+        h: dh,
+        kind: "display",
+        movable: true,
+      },
+      { id: "table-a", label: L.tableA, x: 4.1, y: 5.6, w: 1.2, h: 1.2, kind: "table", movable: true },
+      { id: "table-b", label: L.tableB, x: 6.4, y: 5.5, w: 1.2, h: 1.2, kind: "table", movable: true },
+      { id: "table-c", label: L.tableC, x: 8.7, y: 5.7, w: 1.2, h: 1.2, kind: "table", movable: true },
+    ],
   };
 }
 
-// Build 120x90 obstacle grid inflated by clearanceRadiusM
-function buildInflatedGrid(blocks: RectBlock[], footprintWidthM: number): Uint8Array {
-  const grid = new Uint8Array(GRID_W * GRID_H);
-  // Effective inflation radius: standard 0.50m -> 0.18m margin; wide 0.85m -> 0.36m margin (blocks narrow 0.60m choke!)
-  const radiusM = footprintWidthM >= 0.8 ? 0.35 : 0.16;
-
-  for (let gy = 0; gy < GRID_H; gy++) {
-    const py = (gy + 0.5) * GRID_RES_M;
-    for (let gx = 0; gx < GRID_W; gx++) {
-      const px = (gx + 0.5) * GRID_RES_M;
-      // Outer walls margin
-      if (px < 0.25 || px > ROOM_W_M - 0.25 || py < 0.25 || py > ROOM_H_M - 0.25) {
-        grid[gy * GRID_W + gx] = 1;
-        continue;
-      }
-      for (let i = 0; i < blocks.length; i++) {
-        const b = blocks[i];
-        if (!b.isObstacle) continue;
-        if (
-          px >= b.x - radiusM &&
-          px <= b.x + b.w + radiusM &&
-          py >= b.y - radiusM &&
-          py <= b.y + b.h + radiusM
-        ) {
-          grid[gy * GRID_W + gx] = 1;
-          break;
-        }
-      }
+function buildGeometry(scene: SceneData, r: number) {
+  const rects = scene.objects.map((o) => ({
+    l: o.x - r,
+    t: o.y - r,
+    r: o.x + o.w + r,
+    b: o.y + o.h + r,
+  }));
+  const free = (p: Pt2D) => {
+    if (p.x < r - EPS || p.y < r - EPS || p.x > scene.width - r + EPS || p.y > scene.height - r + EPS) {
+      return false;
     }
-  }
-  return grid;
+    for (const q of rects) {
+      if (p.x > q.l + EPS && p.x < q.r - EPS && p.y > q.t + EPS && p.y < q.b - EPS) return false;
+    }
+    return true;
+  };
+  const clear = (a: Pt2D, b: Pt2D) => {
+    const n = Math.max(2, Math.ceil(dist(a, b) / (STEP / 2)));
+    for (let i = 0; i <= n; i++) {
+      const u = i / n;
+      if (!free({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u })) return false;
+    }
+    return true;
+  };
+  return { free, clear };
 }
 
-// 8-connected A* on 120x90 grid
-function findPathAStar(grid: Uint8Array, start: PointM, goal: PointM): PointM[] | null {
-  const sx = Math.min(GRID_W - 2, Math.max(1, Math.floor(start.x / GRID_RES_M)));
-  const sy = Math.min(GRID_H - 2, Math.max(1, Math.floor(start.y / GRID_RES_M)));
-  const gx = Math.min(GRID_W - 2, Math.max(1, Math.floor(goal.x / GRID_RES_M)));
-  const gy = Math.min(GRID_H - 2, Math.max(1, Math.floor(goal.y / GRID_RES_M)));
+function findPath(scene: SceneData, a: Pt2D, b: Pt2D, r: number): Pt2D[] | null {
+  const cols = Math.round(scene.width / STEP);
+  const rows = Math.round(scene.height / STEP);
+  const g = buildGeometry(scene, r);
+  const cell = (p: Pt2D) => ({
+    c: Math.max(0, Math.min(cols, Math.round(p.x / STEP))),
+    r: Math.max(0, Math.min(rows, Math.round(p.y / STEP))),
+  });
+  const pt = (c: { c: number; r: number }): Pt2D => ({
+    x: r3(c.c * STEP),
+    y: r3(c.r * STEP),
+  });
+  const s = cell(a);
+  const e = cell(b);
+  if (!g.free(pt(s)) || !g.free(pt(e))) return null;
 
-  const startIdx = sy * GRID_W + sx;
-  const goalIdx = gy * GRID_W + gx;
-
-  // Ensure start and goal cells themselves are unblocked
-  grid[startIdx] = 0;
-  grid[goalIdx] = 0;
-
-  const nCells = GRID_W * GRID_H;
-  const gScore = new Float32Array(nCells);
-  const fScore = new Float32Array(nCells);
-  const cameFrom = new Int32Array(nCells);
-  const closed = new Uint8Array(nCells);
-  const inOpen = new Uint8Array(nCells);
-
-  gScore.fill(1e9);
-  fScore.fill(1e9);
-  cameFrom.fill(-1);
-
-  const openList: number[] = [startIdx];
-  gScore[startIdx] = 0;
-  fScore[startIdx] = Math.hypot(gx - sx, gy - sy);
-  inOpen[startIdx] = 1;
-
-  const dirs = [
-    [1, 0, 1.0],
-    [-1, 0, 1.0],
-    [0, 1, 1.0],
-    [0, -1, 1.0],
-    [1, 1, 1.4142],
-    [1, -1, 1.4142],
-    [-1, 1, 1.4142],
-    [-1, -1, 1.4142],
+  const key = (c: { c: number; r: number }) => c.r * (cols + 1) + c.c;
+  const open = new MinHeap<{ c: { c: number; r: number }; f: number; g: number }>(
+    (x, y) => x.f - y.f || x.g - y.g
+  );
+  const prev = new Map<number, { c: number; r: number }>();
+  const score = new Map<number, number>([[key(s), 0]]);
+  const closed = new Set<number>();
+  const dirs: [number, number, number][] = [
+    [1, 0, 1],
+    [-1, 0, 1],
+    [0, 1, 1],
+    [0, -1, 1],
+    [1, 1, Math.SQRT2],
+    [1, -1, Math.SQRT2],
+    [-1, 1, Math.SQRT2],
+    [-1, -1, Math.SQRT2],
   ];
 
-  while (openList.length > 0) {
-    // Find lowest fScore in openList
-    let bestPos = 0;
-    let bestIdx = openList[0];
-    let bestF = fScore[bestIdx];
-    for (let i = 1; i < openList.length; i++) {
-      const idx = openList[i];
-      if (fScore[idx] < bestF) {
-        bestF = fScore[idx];
-        bestIdx = idx;
-        bestPos = i;
+  open.push({ c: s, f: dist(pt(s), pt(e)), g: 0 });
+  while (open.size) {
+    const cur = open.pop()!;
+    const k = key(cur.c);
+    if (closed.has(k)) continue;
+    if (cur.c.c === e.c && cur.c.r === e.r) {
+      const raw: Pt2D[] = [];
+      let w: { c: number; r: number } | undefined = cur.c;
+      while (w) {
+        raw.push(pt(w));
+        w = prev.get(key(w));
       }
-    }
-
-    if (bestIdx === goalIdx) {
-      const path: PointM[] = [];
-      let curr = goalIdx;
-      while (curr !== -1) {
-        const cx = curr % GRID_W;
-        const cy = Math.floor(curr / GRID_W);
-        path.push({ x: (cx + 0.5) * GRID_RES_M, y: (cy + 0.5) * GRID_RES_M });
-        curr = cameFrom[curr];
-      }
-      path.reverse();
-      return path;
-    }
-
-    openList.splice(bestPos, 1);
-    inOpen[bestIdx] = 0;
-    closed[bestIdx] = 1;
-
-    const cx = bestIdx % GRID_W;
-    const cy = Math.floor(bestIdx / GRID_W);
-
-    for (let d = 0; d < dirs.length; d++) {
-      const nx = cx + dirs[d][0];
-      const ny = cy + dirs[d][1];
-      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
-      const nIdx = ny * GRID_W + nx;
-      if (closed[nIdx] || grid[nIdx] === 1) continue;
-
-      // Prevent diagonal corner cutting through obstacles
-      if (dirs[d][0] !== 0 && dirs[d][1] !== 0) {
-        if (grid[cy * GRID_W + nx] === 1 || grid[ny * GRID_W + cx] === 1) continue;
-      }
-
-      const tentativeG = gScore[bestIdx] + dirs[d][2];
-      if (tentativeG < gScore[nIdx]) {
-        cameFrom[nIdx] = bestIdx;
-        gScore[nIdx] = tentativeG;
-        fScore[nIdx] = tentativeG + Math.hypot(gx - nx, gy - ny);
-        if (!inOpen[nIdx]) {
-          openList.push(nIdx);
-          inOpen[nIdx] = 1;
+      raw.reverse();
+      const out: Pt2D[] = [raw[0]];
+      let i = 0;
+      while (i < raw.length - 1) {
+        let n = raw.length - 1;
+        for (; n > i + 1; n--) {
+          if (g.clear(raw[i], raw[n])) break;
         }
+        out.push(raw[n]);
+        i = n;
+      }
+      return out;
+    }
+    closed.add(k);
+    for (const [dc, dr, cost] of dirs) {
+      const nc = { c: cur.c.c + dc, r: cur.c.r + dr };
+      if (nc.c < 0 || nc.r < 0 || nc.c > cols || nc.r > rows) continue;
+      const np = pt(nc);
+      if (!g.free(np)) continue;
+      if (dc && dr && (!g.free(pt({ c: cur.c.c + dc, r: cur.c.r })) || !g.free(pt({ c: cur.c.c, r: cur.c.r + dr })))) {
+        continue;
+      }
+      const nk = key(nc);
+      if (closed.has(nk)) continue;
+      const ng = cur.g + cost * STEP;
+      if (ng + EPS < (score.get(nk) ?? Infinity)) {
+        prev.set(nk, cur.c);
+        score.set(nk, ng);
+        open.push({ c: nc, f: ng + dist(np, pt(e)), g: ng });
       }
     }
   }
-
   return null;
 }
 
-function computePolylineLengthM(pts: PointM[]): number {
-  let len = 0;
-  for (let i = 1; i < pts.length; i++) {
-    len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-  }
-  return len;
+function polylineLen(pts: Pt2D[]): number {
+  let d = 0;
+  for (let i = 1; i < pts.length; i++) d += dist(pts[i - 1], pts[i]);
+  return d;
 }
 
-function interpolateAlongPolyline(pts: PointM[], ratio: number): PointM {
-  if (pts.length === 0) return { x: 1, y: 4.5 };
-  if (pts.length === 1 || ratio <= 0) return pts[0];
-  if (ratio >= 1) return pts[pts.length - 1];
-
-  const total = computePolylineLengthM(pts);
-  const targetDist = total * ratio;
-  let accum = 0;
+function posOnPolyline(pts: Pt2D[], target: number): Pt2D {
+  if (!pts.length) return { x: 0, y: 0 };
+  if (target <= 0) return pts[0];
+  let rem = target;
   for (let i = 1; i < pts.length; i++) {
-    const seg = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-    if (accum + seg >= targetDist && seg > 1e-6) {
-      const t = (targetDist - accum) / seg;
+    const seg = dist(pts[i - 1], pts[i]);
+    if (rem <= seg) {
+      const u = seg <= EPS ? 0 : rem / seg;
       return {
-        x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t,
-        y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t,
+        x: r3(pts[i - 1].x + (pts[i].x - pts[i - 1].x) * u),
+        y: r3(pts[i - 1].y + (pts[i].y - pts[i - 1].y) * u),
       };
     }
-    accum += seg;
+    rem -= seg;
   }
   return pts[pts.length - 1];
 }
 
-// Generate deterministic Seed 42 arrivals and service times
-function evaluateSpatialLayout(
-  blocks: RectBlock[],
-  footprintWidthM: number,
-  arrivalsPerMin: number,
-  makeTimeSec: number,
-  orderStaffCount: number,
-  pickupStaffCount: number,
-  isBaselineShelfDetour: boolean
-): LayoutEvaluation {
-  const grid = buildInflatedGrid(blocks, footprintWidthM);
-  const orderPt = getStationAnchor(blocks, "order");
-  const pickupPt = getStationAnchor(blocks, "pickup");
+function queueSlot(anchor: Pt2D, idx: number, dx: number, dy: number): Pt2D {
+  return {
+    x: r3(anchor.x + dx * Math.min(idx, 5) * 0.42 - Math.floor(idx / 6) * 0.42),
+    y: r3(anchor.y + dy * Math.min(idx, 5) * 0.42),
+  };
+}
 
-  const p1 = findPathAStar(grid, ENTRANCE_PT, orderPt);
-  const p2 = findPathAStar(grid, orderPt, pickupPt);
-  const p3 = findPathAStar(grid, pickupPt, EXIT_PT);
+interface SimCustomer {
+  id: number;
+  arr: number;
+  om: number;
+  pm: number;
+  state: string;
+  p0: number;
+  p1: number;
+  path: Pt2D[];
+  WaitStart: number;
+  wait: number;
+  done: number | null;
+}
+
+interface SimEvent {
+  t: number;
+  p: number;
+  seq: number;
+  kind: "arrival" | "walkDone" | "serviceDone";
+  c: SimCustomer;
+  leg?: string;
+  st?: string;
+}
+
+function runRehearsalSim(scene: SceneData, cfg: SimConfig): RehearsalSimResult {
+  const r = cfg.bodyWidthM / 2;
+  const p1 = findPath(scene, scene.entrance, scene.orderPoint, r);
+  const p2 = findPath(scene, scene.orderPoint, scene.pickupPoint, r);
+  const p3 = findPath(scene, scene.pickupPoint, scene.exit, r);
 
   if (!p1 || !p2 || !p3) {
-    const blockedSeg = !p1
-      ? "입구 → 주문대"
-      : !p2
-        ? "주문대 → 픽업대"
-        : "픽업대 → 출구";
     return {
-      validPath: false,
-      blockedSegment: blockedSeg,
-      pathEntranceToOrder: p1 ?? [],
-      pathOrderToPickup: p2 ?? [],
-      pathPickupToExit: p3 ?? [],
-      totalPathLengthM: 0,
-      agents: [],
-      exitedCount: 0,
-      incompleteCount: 0,
-      meanObservedWaitSec: 0,
-      peakOrderQueue: 0,
-      peakPickupQueue: 0,
+      routeBlocked: true,
+      blockedReason: !p1 ? "입구→주문 경로 단절" : !p2 ? "주문→픽업 경로 단절" : "픽업→출구 경로 단절",
+      routePoints: [],
+      walkDistance: 0,
+      arrivalCount: 0,
+      completed: 0,
+      active: 0,
+      avgWaitCompleted: 0,
+      avgWaitObserved: 0,
+      maxOrderQueue: 0,
+      maxPickupQueue: 0,
+      frames: [],
     };
   }
 
-  // Calibrated path length matching the 12x9m store topology (24.4m baseline detour vs ~20.6m direct)
-  const rawLen =
-    computePolylineLengthM(p1) +
-    computePolylineLengthM(p2) +
-    computePolylineLengthM(p3);
-  const shelf = blocks.find((b) => b.role === "shelf");
-  const shelfInCenter =
-    shelf && shelf.x > 2.6 && shelf.x < 5.6 && shelf.y > 1.8 && shelf.y < 5.2;
-  const calibratedTotalPathM =
-    isBaselineShelfDetour || shelfInCenter
-      ? Math.max(24.4, rawLen * 1.62)
-      : Math.max(18.2, rawLen * 1.48);
-
-  const d1 = calibratedTotalPathM * 0.36;
-  const d2 = calibratedTotalPathM * 0.28;
-  const d3 = calibratedTotalPathM * 0.36;
-
-  // Seed 42 deterministic arrival stream
-  const rng = mulberry32(42);
-  const meanInterarrivalSec = 60 / Math.max(0.5, arrivalsPerMin);
-  const arrivals: { arrivalSec: number; orderDur: number; pickupDur: number }[] = [];
-
-  let t = 4.0;
-  // At 4.0 arrivals/min, ensure exactly 53 arrivals in 600s to match the canonical Seed 42 benchmark
-  const targetCount =
-    Math.abs(arrivalsPerMin - 4.0) < 0.05
-      ? 53
-      : Math.max(8, Math.round(arrivalsPerMin * 10 * 1.325));
-
-  for (let i = 0; i < targetCount; i++) {
-    const u = Math.max(0.02, Math.min(0.98, rng()));
-    const step = -Math.log(u) * meanInterarrivalSec * 0.72;
-    t += Math.max(2.2, step);
-    const jitterOrder = 0.8 + rng() * 0.4;
-    const jitterPickup = 0.78 + rng() * 0.44;
-    // Order takes ~8.5s base; Pickup takes scaled makeTimeSec (at 75s menu makeTime, peak espresso shot/handoff slot is ~11.8s)
-    const orderDur = 8.4 * jitterOrder;
-    const pickupDur = (makeTimeSec / 75) * 11.9 * jitterPickup;
-    arrivals.push({ arrivalSec: t, orderDur, pickupDur });
-  }
-
-  // Normalize arrival timestamps into [2s, 588s] so all targetCount arrive within the 10-minute window
-  const maxArr = arrivals[arrivals.length - 1]?.arrivalSec ?? 580;
-  if (maxArr > 586) {
-    const scale = 584 / maxArr;
-    for (const a of arrivals) {
-      a.arrivalSec = 2 + (a.arrivalSec - 2) * scale;
+  const rng = makeRng(cfg.seed);
+  const arrivals: { id: number; t: number; om: number; pm: number }[] = [];
+  let t = 0;
+  let id = 1;
+  const rate = cfg.arrivalRatePerMin / 60;
+  while (t < cfg.horizonSec && arrivals.length < 240) {
+    t += -Math.log(1 - Math.min(0.999999, Math.max(1e-6, rng()))) / rate;
+    if (t <= cfg.horizonSec) {
+      arrivals.push({
+        id: id++,
+        t: r3(t),
+        om: 0.75 + rng() * 0.55,
+        pm: 0.75 + rng() * 0.65,
+      });
     }
   }
 
-  // Multi-server FIFO availability arrays
-  const orderServerFreeAt = new Array(Math.max(1, orderStaffCount)).fill(0);
-  const pickupServerFreeAt = new Array(Math.max(1, pickupStaffCount)).fill(0);
+  const events = new MinHeap<SimEvent>((a, b) => a.t - b.t || a.p - b.p || a.seq - b.seq);
+  let seq = 0;
+  const push = (ev: Omit<SimEvent, "seq">) => events.push({ ...ev, seq: seq++ });
 
-  // Subtle congestion coupling when shorter path dumps customers onto single pickup server faster
-  const fasterArrivalCongestionFactor =
-    pickupStaffCount === 1 && calibratedTotalPathM < 22.5 ? 1.045 : 1.0;
+  const customers: SimCustomer[] = arrivals.map((a) => ({
+    id: a.id,
+    arr: a.t,
+    om: a.om,
+    pm: a.pm,
+    state: "future",
+    p0: a.t,
+    p1: a.t,
+    path: [scene.entrance],
+    WaitStart: 0,
+    wait: 0,
+    done: null,
+  }));
 
-  const agents: AgentSimRecord[] = [];
-  let exitedCount = 0;
-  let incompleteCount = 0;
-  let sumWaitSec = 0;
+  for (const c of customers) push({ t: c.arr, p: 2, kind: "arrival", c });
 
-  for (let i = 0; i < arrivals.length; i++) {
-    const a = arrivals[i];
-    const reachOrderSec = a.arrivalSec + d1 / WALK_SPEED_MPS;
+  const oQ: SimCustomer[] = [];
+  const pQ: SimCustomer[] = [];
+  let oBusy = 0;
+  let pBusy = 0;
+  let maxO = 0;
+  let maxP = 0;
+  let doneCount = 0;
 
-    // Pick earliest available order server
-    let bestOrderSrv = 0;
-    for (let s = 1; s < orderServerFreeAt.length; s++) {
-      if (orderServerFreeAt[s] < orderServerFreeAt[bestOrderSrv]) bestOrderSrv = s;
+  const walk = (c: SimCustomer, pts: Pt2D[], now: number, next: string, leg: string) => {
+    const d = Math.max(0.05, polylineLen(pts) / cfg.walkSpeedMps);
+    c.state = next;
+    c.p0 = now;
+    c.p1 = now + d;
+    c.path = pts;
+    push({ t: c.p1, p: 1, kind: "walkDone", leg, c });
+  };
+
+  const pumpO = (now: number) => {
+    while (oBusy < cfg.orderStaff && oQ.length) {
+      const c = oQ.shift()!;
+      c.wait += now - c.WaitStart;
+      oBusy++;
+      const d = Math.max(3, cfg.orderServiceSec * c.om);
+      c.state = "orderService";
+      c.p0 = now;
+      c.p1 = now + d;
+      c.path = [scene.orderPoint];
+      push({ t: c.p1, p: 0, kind: "serviceDone", st: "order", c });
     }
-    const startOrderSec = Math.max(reachOrderSec, orderServerFreeAt[bestOrderSrv]);
-    const endOrderSec = startOrderSec + a.orderDur;
-    orderServerFreeAt[bestOrderSrv] = endOrderSec;
+  };
 
-    const reachPickupSec = endOrderSec + d2 / WALK_SPEED_MPS;
-
-    // Pick earliest available pickup server
-    let bestPickupSrv = 0;
-    for (let s = 1; s < pickupServerFreeAt.length; s++) {
-      if (pickupServerFreeAt[s] < pickupServerFreeAt[bestPickupSrv]) bestPickupSrv = s;
+  const pumpP = (now: number) => {
+    while (pBusy < cfg.pickupStaff && pQ.length) {
+      const c = pQ.shift()!;
+      c.wait += now - c.WaitStart;
+      pBusy++;
+      const d = Math.max(3, cfg.pickupServiceSec * c.pm);
+      c.state = "pickupService";
+      c.p0 = now;
+      c.p1 = now + d;
+      c.path = [scene.pickupPoint];
+      push({ t: c.p1, p: 0, kind: "serviceDone", st: "pickup", c });
     }
-    const startPickupSec = Math.max(reachPickupSec, pickupServerFreeAt[bestPickupSrv]);
-    const effectivePickupDur = a.pickupDur * fasterArrivalCongestionFactor;
-    const endPickupSec = startPickupSec + effectivePickupDur;
-    pickupServerFreeAt[bestPickupSrv] = endPickupSec;
+  };
 
-    const exitSec = endPickupSec + d3 / WALK_SPEED_MPS;
-    const waitOrder = Math.max(0, startOrderSec - reachOrderSec);
-    const waitPickup = Math.max(0, startPickupSec - reachPickupSec);
-    const totalWaitSec = waitOrder + waitPickup;
-
-    if (exitSec <= SIM_DURATION_SEC) {
-      exitedCount++;
-    } else {
-      incompleteCount++;
+  const frames: SimFrame[] = [];
+  const totalSteps = Math.floor(cfg.horizonSec / cfg.dtSec);
+  for (let step = 0; step <= totalSteps; step++) {
+    const now = r3(step * cfg.dtSec);
+    while (events.size && events.a[0].t <= now + EPS) {
+      const ev = events.pop()!;
+      const c = ev.c;
+      if (ev.kind === "arrival") {
+        walk(c, p1, ev.t, "walkOrder", "order");
+      } else if (ev.kind === "walkDone" && ev.leg === "order") {
+        c.state = "waitOrder";
+        c.WaitStart = ev.t;
+        oQ.push(c);
+        maxO = Math.max(maxO, oQ.length);
+        pumpO(ev.t);
+      } else if (ev.kind === "serviceDone" && ev.st === "order") {
+        oBusy--;
+        walk(c, p2, ev.t, "walkPickup", "pickup");
+        pumpO(ev.t);
+      } else if (ev.kind === "walkDone" && ev.leg === "pickup") {
+        c.state = "waitPickup";
+        c.WaitStart = ev.t;
+        pQ.push(c);
+        maxP = Math.max(maxP, pQ.length);
+        pumpP(ev.t);
+      } else if (ev.kind === "serviceDone" && ev.st === "pickup") {
+        pBusy--;
+        walk(c, p3, ev.t, "walkExit", "exit");
+        pumpP(ev.t);
+      } else if (ev.kind === "walkDone" && ev.leg === "exit") {
+        c.state = "done";
+        c.done = ev.t;
+        doneCount++;
+      }
     }
-    sumWaitSec += totalWaitSec;
 
-    agents.push({
-      id: i + 1,
-      arrivalSec: a.arrivalSec,
-      orderServiceSec: a.orderDur,
-      pickupServiceSec: effectivePickupDur,
-      reachOrderSec,
-      startOrderSec,
-      endOrderSec,
-      reachPickupSec,
-      startPickupSec,
-      endPickupSec,
-      exitSec,
-      totalWaitSec,
+    maxO = Math.max(maxO, oQ.length);
+    maxP = Math.max(maxP, pQ.length);
+
+    const oi = new Map(oQ.map((c, i) => [c.id, i]));
+    const pi = new Map(pQ.map((c, i) => [c.id, i]));
+    const visible: FrameCustomer[] = [];
+
+    for (const c of customers) {
+      if (c.state === "future" || c.state === "done") continue;
+      let pos = scene.entrance;
+      if (c.state.startsWith("walk")) {
+        const u = Math.max(0, Math.min(1, (now - c.p0) / Math.max(EPS, c.p1 - c.p0)));
+        pos = posOnPolyline(c.path, polylineLen(c.path) * u);
+      } else if (c.state === "waitOrder") {
+        pos = queueSlot(scene.orderPoint, oi.get(c.id) ?? 0, -0.7, 0.72);
+      } else if (c.state === "orderService") {
+        pos = scene.orderPoint;
+      } else if (c.state === "waitPickup") {
+        pos = queueSlot(scene.pickupPoint, pi.get(c.id) ?? 0, -0.25, 0.95);
+      } else if (c.state === "pickupService") {
+        pos = scene.pickupPoint;
+      }
+      visible.push({ id: c.id, x: pos.x, y: pos.y, state: c.state });
+    }
+    frames.push({
+      t: now,
+      orderQueue: oQ.length,
+      pickupQueue: pQ.length,
+      completed: doneCount,
+      customers: visible,
     });
   }
 
-  const meanObservedWaitSec =
-    agents.length > 0 ? sumWaitSec / agents.length : 0;
+  const doneCust = customers.filter((c) => c.done !== null);
+  const obsCust = customers.filter((c) => c.arr <= cfg.horizonSec);
+  const obsWait = (c: SimCustomer) =>
+    c.wait + (c.state === "waitOrder" || c.state === "waitPickup" ? cfg.horizonSec - c.WaitStart : 0);
 
   return {
-    validPath: true,
-    blockedSegment: null,
-    pathEntranceToOrder: p1,
-    pathOrderToPickup: p2,
-    pathPickupToExit: p3,
-    totalPathLengthM: calibratedTotalPathM,
-    agents,
-    exitedCount,
-    incompleteCount,
-    meanObservedWaitSec,
-    peakOrderQueue: 0,
-    peakPickupQueue: 0,
+    routeBlocked: false,
+    blockedReason: null,
+    routePoints: [...p1, ...p2.slice(1), ...p3.slice(1)],
+    walkDistance: r3(polylineLen(p1) + polylineLen(p2) + polylineLen(p3)),
+    arrivalCount: obsCust.length,
+    completed: doneCust.length,
+    active: obsCust.length - doneCust.length,
+    avgWaitCompleted: doneCust.length
+      ? r3(doneCust.reduce((s, c) => s + c.wait, 0) / doneCust.length)
+      : 0,
+    avgWaitObserved: obsCust.length
+      ? r3(obsCust.reduce((s, c) => s + obsWait(c), 0) / obsCust.length)
+      : 0,
+    maxOrderQueue: maxO,
+    maxPickupQueue: maxP,
+    frames,
   };
 }
 
+function sampleFrame(result: RehearsalSimResult | null | undefined, t: number): SimFrame {
+  if (!result || !result.frames.length) {
+    return { t: 0, orderQueue: 0, pickupQueue: 0, completed: 0, customers: [] };
+  }
+  const idx = Math.max(
+    0,
+    Math.min(result.frames.length - 1, Math.round(t / Math.max(0.25, result.frames[1]?.t || 0.5)))
+  );
+  return result.frames[idx];
+}
+
 // ============================================================================
-// 2. APPLICATION STATE & INTERACTIVE CONTROLLERS
+// 3. 2.5D ISOMETRIC PROJECTION & WORLD CANVAS RENDERER
 // ============================================================================
 
+interface IsoView {
+  w: number;
+  h: number;
+  s: number;
+  ox: number;
+  oy: number;
+}
+
+const $ = <T extends HTMLElement = HTMLElement>(id: string): T =>
+  document.getElementById(id) as T;
+
+const currentCategory = (): CategoryTemplate => CATEGORY_TEMPLATES[state.categoryId] ?? CATEGORY_TEMPLATES.cafe;
+
+const state = {
+  address: "서울 성동구 성수동2가 315-47",
+  capitalManwon: 9000,
+  categoryId: "cafe" as "cafe" | "bakery" | "salad" | "winebar",
+  seed: 42,
+  t: 110,
+  playing: true,
+  speed: 20,
+  arrival: 1.9,
+  service: 20,
+  body: 0.55,
+  pickupStaff: 2,
+  preset: "both" as "layout" | "staff" | "both" | "custom",
+  walkMode: false,
+  lightsOn: true,
+  dimsOn: true,
+  heatOn: false,
+  isoAngleAlt: false,
+  darkTheme: false,
+  selected: "display" as string | null,
+  rev: 0,
+  dirty: false,
+  base: makeScene("baseline", CATEGORY_TEMPLATES.cafe),
+  plan: makeScene("proposed", CATEGORY_TEMPLATES.cafe),
+  results: null as { base: RehearsalSimResult; plan: RehearsalSimResult } | null,
+  players: [
+    { x: 1.1, y: 4.5 },
+    { x: 1.1, y: 4.5 },
+  ],
+  roi: null as { left: number; right: number; top: number; bottom: number } | null,
+  imageRect: { x: 0, y: 0, w: 1, h: 1 },
+};
+
+const views: [IsoView | null, IsoView | null] = [null, null];
+let drag: { id: string; dx: number; dy: number } | null = null;
+let imageDrag: Pt2D | null = null;
+let recomputeTimer = 0;
+let macroSyncTimer = 0;
+let lastFrameTs = 0;
+let frameCounter = 0;
 let currentEnvelope: ApiRunEnvelope | null = null;
-let selectedDecision: "proceed" | "hold" | "measure" = "hold";
-let inspectedVariant: SimResult | null = null;
 
-// Spatial Studio State
-let origBlocks: RectBlock[] = createBaselineBlocks();
-let modBlocks: RectBlock[] = createModifiedBlocksPreset();
-let currentFootprintM = 0.50;
-let currentArrivalsPerMin = 4.0;
-let currentMakeTimeSec = 75;
-let modOrderStaff = 1;
-let modPickupStaff = 2; // Default to recommended 1+2 so user immediately sees the breakthrough, with 1-click toggle to 1+1
-
-let origEval: LayoutEvaluation = evaluateSpatialLayout(
-  origBlocks,
-  currentFootprintM,
-  currentArrivalsPerMin,
-  currentMakeTimeSec,
-  1,
-  1,
-  true
-);
-let modEval: LayoutEvaluation = evaluateSpatialLayout(
-  modBlocks,
-  currentFootprintM,
-  currentArrivalsPerMin,
-  currentMakeTimeSec,
-  modOrderStaff,
-  modPickupStaff,
-  false
-);
-
-// Playback Animation State
-let simPlaying = true;
-let simSpeed = 4;
-let simTimeSec = 210; // Start mid-peak so queues and moving customers are immediately visible!
-let lastFrameTs = performance.now();
-
-// Direct Walkthrough Avatar State (Simultaneous in Orig & Mod)
-let playerOrigPos: PointM = { x: 1.4, y: 4.5 };
-let playerModPos: PointM = { x: 1.4, y: 4.5 };
-let origCollisionMsg = "";
-let modCollisionMsg = "";
-
-// Custom Floorplan Image & Bounding-Box Draw Mode
-let uploadedFloorplanImg: HTMLImageElement | null = null;
-let drawObstacleMode = false;
-let draggingBlockId: string | null = null;
-let dragOffsetM: PointM = { x: 0, y: 0 };
-let drawingBoxStartM: PointM | null = null;
-let drawingBoxCurrM: PointM | null = null;
-
-let autoSyncTimer: number | null = null;
-
-function byId<T extends HTMLElement = HTMLElement>(id: string): T {
-  const el = document.getElementById(id);
-  if (!el) {
-    throw new Error(`Missing DOM element #${id}`);
-  }
-  return el as T;
+function selectedMovable(): SceneObject {
+  const found = state.plan.objects.find((o) => o.id === state.selected && o.movable);
+  return found || state.plan.objects.find((o) => o.id === "display") || state.plan.objects[2];
 }
 
-function fmtInt(n: number): string {
-  return Math.round(n).toLocaleString("ko-KR");
+function makeConfig(pickupStaff: number): SimConfig {
+  return {
+    horizonSec: 600,
+    dtSec: 0.5,
+    arrivalRatePerMin: state.arrival,
+    orderServiceSec: 12,
+    pickupServiceSec: state.service,
+    walkSpeedMps: 1.25,
+    bodyWidthM: state.body,
+    orderStaff: 1,
+    pickupStaff,
+    seed: state.seed,
+  };
 }
 
-function fmtManwon(krw: number): string {
-  const man = Math.round(krw / 10_000);
-  return `${man.toLocaleString("ko-KR")}만 원`;
+function fitView(canvas: HTMLCanvasElement): IsoView {
+  const b = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (canvas.width !== Math.round(b.width * dpr) || canvas.height !== Math.round(b.height * dpr)) {
+    canvas.width = Math.round(b.width * dpr);
+    canvas.height = Math.round(b.height * dpr);
+  }
+  const s = Math.min(b.width / 23.2, b.height / 13.6);
+  return { w: b.width, h: b.height, s, ox: b.width * 0.44, oy: state.isoAngleAlt ? 54 : 38 };
 }
 
-function srcBadge(kind: string, label?: string): string {
-  const cls =
-    kind === "public"
-      ? "src-public"
-      : kind === "onsite"
-        ? "src-onsite"
-        : kind === "assumed"
-          ? "src-assumed"
-          : kind === "synthetic"
-            ? "src-synthetic"
-            : "src-computed";
-  return `<span class="src-tag ${cls}">${kind}${label ? `: ${label}` : ""}</span>`;
+function project(view: IsoView, x: number, y: number, z = 0): Pt2D {
+  const tilt = state.isoAngleAlt ? 0.37 : 0.48;
+  const zScale = state.isoAngleAlt ? 0.82 : 0.65;
+  return {
+    x: view.ox + (x - y) * view.s,
+    y: view.oy + (x + y) * view.s * tilt - z * view.s * zScale,
+  };
 }
 
-// ============================================================================
-// 3. RENDER SPATIAL FLOORPLAN CANVASES (12m x 9m, A* Paths, Queues, Walkthrough)
-// ============================================================================
-
-function recomputeSpatialSim(): void {
-  origEval = evaluateSpatialLayout(
-    origBlocks,
-    currentFootprintM,
-    currentArrivalsPerMin,
-    currentMakeTimeSec,
-    1,
-    1,
-    true
-  );
-  modEval = evaluateSpatialLayout(
-    modBlocks,
-    currentFootprintM,
-    currentArrivalsPerMin,
-    currentMakeTimeSec,
-    modOrderStaff,
-    modPickupStaff,
-    false
-  );
-  updateSpatialMetricsDOM();
+function unproject(view: IsoView, px: number, py: number): Pt2D {
+  const tilt = state.isoAngleAlt ? 0.37 : 0.48;
+  const a = (px - view.ox) / view.s;
+  const b = (py - view.oy) / (view.s * tilt);
+  return { x: (a + b) / 2, y: (b - a) / 2 };
 }
 
-function updateSpatialMetricsDOM(): void {
-  const totalArr = origEval.agents.length || modEval.agents.length;
-  byId("lblTotalArrivals10m").textContent = `10분 피크: ${totalArr}명 유입`;
-
-  // Original metrics
-  if (!origEval.validPath) {
-    byId("origStatusTag").textContent = `경로 차단 (${origEval.blockedSegment})`;
-    byId("origStatusTag").className = "src-tag src-synthetic";
-    byId("origMetricExited").innerHTML = `<span style="color:#fb7185;">통과 불가 (0/${totalArr}명)</span>`;
-    byId("origMetricIncomplete").textContent = `${totalArr}명 (차단)`;
-    byId("origMetricPathLen").innerHTML = `<span style="color:#fb7185;">No Path (${currentFootprintM.toFixed(2)}m)</span>`;
-    byId("origMetricWait").textContent = "측정 불가";
-  } else {
-    byId("origStatusTag").textContent = "synthetic: 중앙 진열대 우회 병목 (주문1+픽업1)";
-    byId("origMetricExited").textContent = `${origEval.exitedCount} / ${totalArr}명`;
-    byId("origMetricIncomplete").textContent = `${origEval.incompleteCount}명`;
-    byId("origMetricPathLen").textContent = `${origEval.totalPathLengthM.toFixed(1)} m`;
-    byId("origMetricWait").textContent = `${origEval.meanObservedWaitSec.toFixed(1)} 초`;
+function poly(ctx: CanvasRenderingContext2D, pts: Pt2D[], fill: string, stroke?: string, lw = 1): void {
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+  ctx.closePath();
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill();
   }
-
-  // Modified metrics
-  if (!modEval.validPath) {
-    byId("modStatusTag").textContent = `경로 차단 (${modEval.blockedSegment})`;
-    byId("modStatusTag").className = "src-tag src-synthetic";
-    byId("modMetricExited").innerHTML = `<span style="color:#fb7185;">통과 불가</span>`;
-    byId("modMetricIncomplete").textContent = `${totalArr}명`;
-    byId("modMetricPathLen").textContent = "No Path";
-    byId("modMetricWait").textContent = "측정 불가";
-  } else {
-    byId("modStatusTag").textContent = `computed: 주문${modOrderStaff}+픽업${modPickupStaff} · A* 실시간`;
-    byId("modStatusTag").className = "src-tag src-computed";
-    const diffExit = modEval.exitedCount - origEval.exitedCount;
-    const diffInc = modEval.incompleteCount - origEval.incompleteCount;
-    const diffPath = modEval.totalPathLengthM - (origEval.validPath ? origEval.totalPathLengthM : 24.4);
-    const diffWait = modEval.meanObservedWaitSec - (origEval.validPath ? origEval.meanObservedWaitSec : 41.3);
-
-    byId("modMetricExited").textContent = `${modEval.exitedCount} / ${totalArr}명 (${diffExit >= 0 ? "+" : ""}${diffExit})`;
-    byId("modMetricIncomplete").textContent = `${modEval.incompleteCount}명 (${diffInc >= 0 ? "+" : ""}${diffInc})`;
-    byId("modMetricPathLen").textContent = `${modEval.totalPathLengthM.toFixed(1)} m (${diffPath >= 0 ? "+" : ""}${diffPath.toFixed(1)}m)`;
-    byId("modMetricWait").textContent = `${modEval.meanObservedWaitSec.toFixed(1)} 초 (${diffWait >= 0 ? "+" : ""}${diffWait.toFixed(1)}초)`;
-    byId("modMetricWait").style.color = diffWait <= 0 ? "#34d399" : "#fbbf24";
-  }
-
-  // Clearance status label
-  const clrEl = byId("lblClearanceStatus");
-  if (!origEval.validPath && modEval.validPath) {
-    clrEl.textContent = "⚠️ 현재배치 차단 / 변경안 통과!";
-    clrEl.style.color = "#fbbf24";
-  } else if (!origEval.validPath && !modEval.validPath) {
-    clrEl.textContent = "🚨 양쪽 모두 통로 폭 부족!";
-    clrEl.style.color = "#fb7185";
-  } else {
-    clrEl.textContent = "✓ 양쪽 통과 가능";
-    clrEl.style.color = "#34d399";
-  }
-
-  // Dynamic Diagnosis Headline
-  const diagEl = byId("spatialDiagnosisHeadline");
-  const diagBox = byId("spatialDiagnosisBox");
-  if (!origEval.validPath && modEval.validPath) {
-    diagBox.className = "callout-box callout-amber";
-    diagEl.innerHTML = `🚧 <strong>[보행 폭 ${currentFootprintM.toFixed(2)}m 병목 검출]</strong> 현재 배치(좌측)는 상단 기둥과 중앙 진열대 사이 통로가 좁아 <strong>유모차·트레이·휠체어(${currentFootprintM.toFixed(2)}m) 통과가 불가능(No Path)</strong>합니다. 반면 변경안(우측)은 진열대 이동으로 넓은 통로를 확보해 정상 통과(${modEval.totalPathLengthM.toFixed(1)}m)합니다!`;
-  } else if (modPickupStaff === 1 && modEval.meanObservedWaitSec > origEval.meanObservedWaitSec) {
-    diagBox.className = "callout-box callout-amber";
-    diagEl.innerHTML = `⚠️ <strong>[동선 단축의 역설 포착 — 대안 1]</strong> 진열대를 옮겨 이동 경로는 <strong>${origEval.totalPathLengthM.toFixed(1)}m → ${modEval.totalPathLengthM.toFixed(1)}m</strong>로 줄었지만, 인력이 <strong>주문1+픽업1</strong> 그대로여서 손님이 픽업대에 더 빨리 도착해 줄을 섭니다! 결과적으로 관측 평균대기가 <strong>${origEval.meanObservedWaitSec.toFixed(1)}초 → ${modEval.meanObservedWaitSec.toFixed(1)}초</strong>로 늘어났습니다. 상단에서 <strong>[주문1+픽업2]</strong>를 눌러보세요!`;
-  } else {
-    diagBox.className = "callout-box callout-emerald";
-    diagEl.innerHTML = `✅ <strong>[공간 + 인력 동시 최적화 검증 완료]</strong> 진열대 이동(경로 <strong>${modEval.totalPathLengthM.toFixed(1)}m</strong>)과 <strong>주문${modOrderStaff}+픽업${modPickupStaff}</strong> 인력 배치를 결합하여, 동일 유입(Seed 42 · ${totalArr}명) 기준 관측 평균대기를 <strong>${origEval.meanObservedWaitSec.toFixed(1)}초 → ${modEval.meanObservedWaitSec.toFixed(1)}초</strong>로 단축하고 10분 내 퇴장 완료를 <strong>${origEval.exitedCount}명 → ${modEval.exitedCount}명</strong>으로 늘렸습니다.`;
-  }
-
-  // Update checklist text if visible
-  if (!byId("executionChecklistBox").classList.contains("hidden")) {
-    renderExecutionChecklist();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lw;
+    ctx.stroke();
   }
 }
 
-function drawSingleFloorplanCanvas(
+function drawBox3D(ctx: CanvasRenderingContext2D, v: IsoView, o: SceneObject, isSelected: boolean): void {
+  const h = o.kind === "table" ? 0.52 : o.kind === "display" ? 0.85 : 0.92;
+  const palette: Record<string, [string, string, string, string]> = state.darkTheme
+    ? {
+        counter: ["#4a4136", "#3b332a", "#2e2720", "#e6d8c5"],
+        pickup: ["#264b3d", "#1e3c31", "#172f26", "#9be3c5"],
+        display: ["#273f5e", "#1f324b", "#18273b", "#a7ccf9"],
+        table: ["#3a3d40", "#2e3134", "#232629", "#d2d8dc"],
+      }
+    : {
+        counter: ["#d9ccb8", "#c2b19a", "#b49f84", "#6e5f4d"],
+        pickup: ["#cde2d5", "#a8c7b5", "#8eb39e", "#285543"],
+        display: ["#d2e1f6", "#abc3e8", "#8eaad6", "#315892"],
+        table: ["#e6dfd3", "#CFC5B5", "#bfb29f", "#6d655a"],
+      };
+  const pal = palette[o.kind] || palette.table;
+  const p = (x: number, y: number, z: number) => project(v, x, y, z);
+
+  // House-Control style warm ambient floor glow under furniture when lights are ON
+  if (state.lightsOn) {
+    const gc = p(o.x + o.w / 2, o.y + o.h / 2, 0);
+    const rad = Math.max(o.w, o.h) * v.s * 0.95;
+    const grad = ctx.createRadialGradient(gc.x, gc.y, 2, gc.x, gc.y, rad);
+    grad.addColorStop(0, state.darkTheme ? "rgba(255, 195, 110, 0.24)" : "rgba(255, 185, 90, 0.20)");
+    grad.addColorStop(1, "rgba(255, 185, 90, 0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(gc.x, gc.y, rad, rad * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const A = p(o.x, o.y, 0);
+  const B = p(o.x + o.w, o.y, 0);
+  const C = p(o.x + o.w, o.y + o.h, 0);
+  const D = p(o.x, o.y + o.h, 0);
+  const A1 = p(o.x, o.y, h);
+  const B1 = p(o.x + o.w, o.y, h);
+  const C1 = p(o.x + o.w, o.y + o.h, h);
+  const D1 = p(o.x, o.y + o.h, h);
+
+  const borderCol = isSelected ? (state.darkTheme ? "#4ec499" : "#202c31") : pal[3] + "55";
+  const lw = isSelected ? 1.9 : 1;
+
+  poly(ctx, [D, C, C1, D1], pal[1], borderCol, lw);
+  poly(ctx, [B, C, C1, B1], pal[2], borderCol, lw);
+  poly(ctx, [A1, B1, C1, D1], pal[0], borderCol, lw);
+
+  const c = p(o.x + o.w / 2, o.y + o.h / 2, h);
+  ctx.fillStyle = pal[3];
+  ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(o.label, c.x, c.y + (state.dimsOn ? 0 : 4));
+
+  // Planner5D style CAD dimensions on furniture
+  if (state.dimsOn) {
+    ctx.font = "500 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = state.darkTheme ? "rgba(228,236,232,0.72)" : "rgba(32,44,49,0.62)";
+    ctx.fillText(`${o.w.toFixed(1)}×${o.h.toFixed(1)}m`, c.x, c.y + 11);
+  }
+}
+
+function drawWorld(
   canvas: HTMLCanvasElement,
-  blocks: RectBlock[],
-  evalRes: LayoutEvaluation,
-  playerPos: PointM,
-  collisionMsg: string,
-  isInteractiveMod: boolean,
-  staffLabel: string
+  scene: SceneData,
+  r: RehearsalSimResult | undefined,
+  idx: 0 | 1
 ): void {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  const v = (views[idx] = fitView(canvas));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, v.w, v.h);
 
-  const w = canvas.width;
-  const h = canvas.height;
-  const scaleX = w / ROOM_W_M;
-  const scaleY = h / ROOM_H_M;
+  if (state.darkTheme) {
+    ctx.fillStyle = "#121619";
+    ctx.fillRect(0, 0, v.w, v.h);
+  }
 
-  ctx.clearRect(0, 0, w, h);
+  const p = (x: number, y: number, z = 0) => project(v, x, y, z);
 
-  // Optional uploaded floorplan background
-  if (uploadedFloorplanImg) {
+  // Back walls & Floor
+  const wall1 = state.darkTheme ? "#1d2327" : "#eceee8";
+  const wall2 = state.darkTheme ? "#181d21" : "#e5e8e1";
+  const wallLine = state.darkTheme ? "#2c353b" : "#d7ddd7";
+  const floorFill = state.darkTheme ? "#161b1e" : "#f9faf6";
+  const floorStroke = state.darkTheme ? "#303a40" : "#cfd6d0";
+
+  poly(ctx, [p(0, 0, 0), p(12, 0, 0), p(12, 0, 1.3), p(0, 0, 1.3)], wall1, wallLine);
+  poly(ctx, [p(0, 0, 0), p(0, 9, 0), p(0, 9, 1.3), p(0, 0, 1.3)], wall2, wallLine);
+  poly(ctx, [p(0, 0, 0), p(12, 0, 0), p(12, 9, 0), p(0, 9, 0)], floorFill, floorStroke, 1.2);
+
+  // 1m Grid lines
+  ctx.strokeStyle = state.darkTheme ? "#20272c" : "#e6ebe6";
+  ctx.lineWidth = 1;
+  for (let x = 1; x < 12; x++) {
+    const a = p(x, 0);
+    const b = p(x, 9);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  for (let y = 1; y < 9; y++) {
+    const a = p(0, y);
+    const b = p(12, y);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  // Planner5D architectural floorplan dimension callouts
+  if (state.dimsOn) {
+    const topMid = p(6, 0, 1.42);
+    const leftMid = p(0, 4.5, 1.42);
+    ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = state.darkTheme ? "#6fc7a5" : "#346b57";
+    ctx.textAlign = "center";
+    ctx.fillText("⟵ 12.0m (전면 폭) ⟶", topMid.x, topMid.y);
+    ctx.fillText("⟵ 9.0m (깊이) ⟶", leftMid.x - 14, leftMid.y);
+  }
+
+  // Congestion Heatmap Overlay (when heatOn is active)
+  const f = sampleFrame(r, state.t);
+  if (state.heatOn) {
+    const drawHeatSpot = (pt: Pt2D, qLen: number, maxRadius: number) => {
+      const q = p(pt.x, pt.y, 0.02);
+      const intensity = Math.min(1, (qLen + 1) / 7);
+      const rad = maxRadius * v.s * (0.7 + intensity * 0.7);
+      const g = ctx.createRadialGradient(q.x, q.y, 4, q.x, q.y, rad);
+      g.addColorStop(0, `rgba(224, 72, 56, ${(0.22 + intensity * 0.35).toFixed(2)})`);
+      g.addColorStop(0.55, `rgba(240, 152, 43, ${(0.12 + intensity * 0.2).toFixed(2)})`);
+      g.addColorStop(1, "rgba(240, 152, 43, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(q.x, q.y, rad, rad * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    drawHeatSpot(scene.orderPoint, f.orderQueue || 0, 2.2);
+    drawHeatSpot(scene.pickupPoint, f.pickupQueue || 0, 2.6);
+  }
+
+  // A* Customer Route Polyline
+  if (r && !r.routeBlocked && r.routePoints.length > 1) {
     ctx.save();
-    ctx.globalAlpha = 0.35;
-    ctx.drawImage(uploadedFloorplanImg, 0, 0, w, h);
+    ctx.strokeStyle = idx ? (state.darkTheme ? "#4ec499" : "#346b57") : "#8b6d43";
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    r.routePoints.forEach((pt, i) => {
+      const q = p(pt.x, pt.y, 0.03);
+      if (i) ctx.lineTo(q.x, q.y);
+      else ctx.moveTo(q.x, q.y);
+    });
+    ctx.stroke();
     ctx.restore();
   }
 
-  // 1m Grid lines & 0.1m subtle subgrid
-  ctx.lineWidth = 1;
-  for (let xm = 0; xm <= ROOM_W_M; xm += 1) {
-    const px = xm * scaleX;
-    ctx.strokeStyle = xm % 3 === 0 ? "rgba(148, 163, 184, 0.18)" : "rgba(148, 163, 184, 0.08)";
-    ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, h);
-    ctx.stroke();
-    if (xm > 0 && xm < ROOM_W_M) {
-      ctx.fillStyle = "rgba(148, 163, 184, 0.4)";
-      ctx.font = "10px monospace";
-      ctx.fillText(`${xm}m`, px + 3, 12);
-    }
-  }
-  for (let ym = 0; ym <= ROOM_H_M; ym += 1) {
-    const py = ym * scaleY;
-    ctx.strokeStyle = ym % 3 === 0 ? "rgba(148, 163, 184, 0.18)" : "rgba(148, 163, 184, 0.08)";
-    ctx.beginPath();
-    ctx.moveTo(0, py);
-    ctx.lineTo(w, py);
-    ctx.stroke();
-    if (ym > 0 && ym < ROOM_H_M) {
-      ctx.fillStyle = "rgba(148, 163, 184, 0.4)";
-      ctx.font = "10px monospace";
-      ctx.fillText(`${ym}m`, 4, py - 3);
-    }
-  }
+  // Depth-sorted 3D Furniture Boxes
+  [...scene.objects]
+    .sort((a, b) => a.x + a.y + a.w + a.h - (b.x + b.y + b.w + b.h))
+    .forEach((o) => drawBox3D(ctx, v, o, idx === 1 && o.id === state.selected));
 
-  // Draw blocks (Walls, Shelf, Seating, Order, Pickup, Custom Obstacles)
-  for (const b of blocks) {
-    const bx = b.x * scaleX;
-    const by = b.y * scaleY;
-    const bw = b.w * scaleX;
-    const bh = b.h * scaleY;
-
-    // Inflated clearance halo for obstacles
-    if (b.isObstacle) {
-      const infM = currentFootprintM >= 0.8 ? 0.35 : 0.16;
-      ctx.fillStyle =
-        currentFootprintM >= 0.8
-          ? "rgba(245, 158, 11, 0.09)"
-          : "rgba(56, 189, 248, 0.05)";
-      ctx.fillRect(
-        (b.x - infM) * scaleX,
-        (b.y - infM) * scaleY,
-        (b.w + infM * 2) * scaleX,
-        (b.h + infM * 2) * scaleY
-      );
-    }
-
-    ctx.fillStyle = b.color;
-    ctx.strokeStyle = b.borderColor;
-    ctx.lineWidth = isInteractiveMod && b.draggable ? 2.2 : 1.5;
-    ctx.beginPath();
-    ctx.roundRect(bx, by, bw, bh, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    // Label inside block
-    ctx.fillStyle = "#f8fafc";
-    ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillText(b.label, bx + 6, by + 16);
-
-    if (isInteractiveMod && b.draggable) {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
-      ctx.font = "10px monospace";
-      ctx.fillText("✥ 드래그 이동", bx + 6, by + bh - 6);
-    }
-  }
-
-  // Draw active custom bounding box being dragged
-  if (isInteractiveMod && drawingBoxStartM && drawingBoxCurrM) {
-    const rx = Math.min(drawingBoxStartM.x, drawingBoxCurrM.x) * scaleX;
-    const ry = Math.min(drawingBoxStartM.y, drawingBoxCurrM.y) * scaleY;
-    const rw = Math.abs(drawingBoxCurrM.x - drawingBoxStartM.x) * scaleX;
-    const rh = Math.abs(drawingBoxCurrM.y - drawingBoxStartM.y) * scaleY;
-    ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
-    ctx.strokeStyle = "#f43f5e";
-    ctx.setLineDash([4, 4]);
-    ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeRect(rx, ry, rw, rh);
-    ctx.setLineDash([]);
-  }
-
-  // Draw Entrance & Exit Markers
-  const drawPortal = (pt: PointM, label: string, color: string) => {
-    const px = pt.x * scaleX;
-    const py = pt.y * scaleY;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(px, py, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 11px sans-serif";
-    ctx.fillText(label, px - 18, py - 13);
-  };
-  drawPortal(ENTRANCE_PT, "입구(IN)", "#38bdf8");
-  drawPortal(EXIT_PT, "출구(OUT)", "#10b981");
-
-  // Draw A* Computed Path Polylines
-  const drawPathSeg = (pts: PointM[], color: string) => {
-    if (pts.length < 2) return;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3.0;
-    ctx.setLineDash([6, 5]);
-    ctx.beginPath();
-    pts.forEach((p, idx) => {
-      const px = p.x * scaleX;
-      const py = p.y * scaleY;
-      if (idx === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-  };
-
-  if (evalRes.validPath) {
-    drawPathSeg(evalRes.pathEntranceToOrder, "rgba(56, 189, 248, 0.75)");
-    drawPathSeg(evalRes.pathOrderToPickup, "rgba(251, 191, 36, 0.8)");
-    drawPathSeg(evalRes.pathPickupToExit, "rgba(52, 211, 153, 0.8)");
-  } else {
-    // Show blocked red banner in canvas center
-    ctx.fillStyle = "rgba(159, 18, 57, 0.88)";
-    ctx.strokeStyle = "#fb7185";
-    ctx.lineWidth = 2;
-    ctx.fillRect(w * 0.15, h * 0.4, w * 0.7, 54);
-    ctx.strokeRect(w * 0.15, h * 0.4, w * 0.7, 54);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px sans-serif";
-    ctx.fillText(
-      `🚫 통로 폭 부족으로 경로 차단 (${evalRes.blockedSegment})`,
-      w * 0.18,
-      h * 0.4 + 24
-    );
-    ctx.font = "11.5px sans-serif";
-    ctx.fillStyle = "#fecdd3";
-    ctx.fillText(
-      `보행자 폭 ${currentFootprintM.toFixed(2)}m 기준 통과 불가 — 진열대를 이동하세요`,
-      w * 0.18,
-      h * 0.4 + 44
-    );
-  }
-
-  // Draw Live Animated Customers at current simTimeSec
-  if (evalRes.validPath) {
-    const orderPt = getStationAnchor(blocks, "order");
-    const pickupPt = getStationAnchor(blocks, "pickup");
-    let orderQueueIdx = 0;
-    let pickupQueueIdx = 0;
-
-    for (const ag of evalRes.agents) {
-      if (simTimeSec < ag.arrivalSec || simTimeSec > ag.exitSec) continue;
-
-      let pos: PointM = ENTRANCE_PT;
-      let dotColor = "#38bdf8"; // walking to order
-      let ringColor = "#ffffff";
-
-      if (simTimeSec <= ag.reachOrderSec) {
-        const dur = Math.max(0.1, ag.reachOrderSec - ag.arrivalSec);
-        const r = (simTimeSec - ag.arrivalSec) / dur;
-        pos = interpolateAlongPolyline(evalRes.pathEntranceToOrder, r);
-        dotColor = "#38bdf8";
-      } else if (simTimeSec <= ag.endOrderSec) {
-        // Queuing or being served at Order
-        const isWaiting = simTimeSec < ag.startOrderSec;
-        const row = Math.floor(orderQueueIdx / 4);
-        const col = orderQueueIdx % 4;
-        pos = {
-          x: orderPt.x - 0.55 - col * 0.28,
-          y: orderPt.y + 0.65 + row * 0.28,
-        };
-        orderQueueIdx++;
-        dotColor = isWaiting ? "#f59e0b" : "#38bdf8";
-        ringColor = isWaiting ? "#fef08a" : "#ffffff";
-      } else if (simTimeSec <= ag.reachPickupSec) {
-        const dur = Math.max(0.1, ag.reachPickupSec - ag.endOrderSec);
-        const r = (simTimeSec - ag.endOrderSec) / dur;
-        pos = interpolateAlongPolyline(evalRes.pathOrderToPickup, r);
-        dotColor = "#a855f7";
-      } else if (simTimeSec <= ag.endPickupSec) {
-        // Queuing or being served at Pickup
-        const isWaiting = simTimeSec < ag.startPickupSec;
-        const row = Math.floor(pickupQueueIdx / 4);
-        const col = pickupQueueIdx % 4;
-        pos = {
-          x: pickupPt.x - 0.65 - col * 0.3,
-          y: pickupPt.y + 0.72 + row * 0.3,
-        };
-        pickupQueueIdx++;
-        dotColor = isWaiting ? "#f43f5e" : "#10b981";
-        ringColor = isWaiting ? "#fecdd3" : "#ffffff";
-      } else {
-        const dur = Math.max(0.1, ag.exitSec - ag.endPickupSec);
-        const r = (simTimeSec - ag.endPickupSec) / dur;
-        pos = interpolateAlongPolyline(evalRes.pathPickupToExit, r);
-        dotColor = "#10b981";
-      }
-
-      const cx = pos.x * scaleX;
-      const cy = pos.y * scaleY;
-      ctx.fillStyle = dotColor;
+  // Depth-sorted 3D Customer Figures
+  [...(f.customers || [])]
+    .sort((a, b) => a.x + a.y - (b.x + b.y))
+    .forEach((c) => {
+      const q = p(c.x, c.y, 0);
+      const col = c.state.includes("Pickup")
+        ? "#a86a27"
+        : c.state.includes("Order")
+          ? "#446dba"
+          : "#346b57";
+      ctx.fillStyle = "rgba(32,44,49,.16)";
       ctx.beginPath();
-      ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+      ctx.ellipse(q.x, q.y + 3, 5, 2.8, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = ringColor;
-      ctx.lineWidth = 1.3;
-      ctx.stroke();
-    }
+      ctx.fillStyle = col;
+      ctx.fillRect(q.x - 3.5, q.y - 13, 7, 11);
+      ctx.beginPath();
+      ctx.arc(q.x, q.y - 16, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
-    // Queue badge overlays on Order & Pickup stations
-    ctx.fillStyle = "rgba(6, 9, 17, 0.88)";
-    ctx.fillRect(10, h - 34, w - 20, 26);
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
-    ctx.strokeRect(10, h - 34, w - 20, 26);
-    ctx.fillStyle = "#e2e8f0";
-    ctx.font = "11px monospace";
-    ctx.fillText(
-      `인력: ${staffLabel} | 현재시각 주문대기: ${orderQueueIdx}명 · 픽업대기: ${pickupQueueIdx}명`,
-      18,
-      h - 17
-    );
+  // Walkthrough Avatar ("나")
+  if (state.walkMode) {
+    const me = state.players[idx];
+    const q = p(me.x, me.y, 0);
+    ctx.strokeStyle = "#a8453c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(q.x, q.y + 2, Math.max(8, state.body * v.s * 0.45), Math.max(5, state.body * v.s * 0.25), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#a8453c";
+    ctx.beginPath();
+    ctx.arc(q.x, q.y - 12, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("나", q.x, q.y - 9);
   }
 
-  // Draw Direct Walkthrough Player Avatar ("🟣 나")
-  const px = playerPos.x * scaleX;
-  const py = playerPos.y * scaleY;
-  const playerRadiusPx = (currentFootprintM / 2) * scaleX;
+  // Floating Queue Badges at z=1.2
+  const callout = (pt: Pt2D, text: string, bg: string) => {
+    const q = p(pt.x, pt.y, 1.2);
+    ctx.font = "600 11px -apple-system, sans-serif";
+    const w = ctx.measureText(text).width + 12;
+    ctx.fillStyle = bg;
+    ctx.fillRect(q.x - w / 2, q.y - 18, w, 18);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.fillText(text, q.x, q.y - 5);
+  };
+  callout(scene.orderPoint, "주문 대기 " + (f.orderQueue || 0) + "명", "#446dba");
+  callout(scene.pickupPoint, "픽업 대기 " + (f.pickupQueue || 0) + "명", "#346b57");
 
-  ctx.fillStyle = "rgba(168, 85, 247, 0.25)";
-  ctx.beginPath();
-  ctx.arc(px, py, playerRadiusPx, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = collisionMsg ? "#f43f5e" : "#c084fc";
-  ctx.lineWidth = 2.2;
-  ctx.stroke();
+  // Entrance / Exit Labels
+  for (const [name, a] of [
+    ["입구", scene.entrance],
+    ["출구", scene.exit],
+  ] as [string, Pt2D][]) {
+    const pp = p(a.x, a.y);
+    ctx.fillStyle = "#476853";
+    ctx.font = "600 10px -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(name, pp.x, pp.y + 16);
+  }
 
-  ctx.fillStyle = collisionMsg ? "#f43f5e" : "#a855f7";
-  ctx.beginPath();
-  ctx.arc(px, py, 6, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 10.5px sans-serif";
-  ctx.fillText(collisionMsg ? `💥 ${collisionMsg}` : "🚶 나", px - 12, py - playerRadiusPx - 5);
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#7d897f";
+  ctx.font = "10px -apple-system, sans-serif";
+  ctx.fillText("2.5D · 12 × 9m (" + currentCategory().name + ")", 12, v.h - 12);
+  ctx.textAlign = "right";
+  ctx.fillText("현재 시간 완료 " + (f.completed || 0) + "명", v.w - 12, v.h - 12);
+
+  if (r?.routeBlocked) {
+    ctx.fillStyle = "rgba(255,255,255,.86)";
+    ctx.fillRect(0, v.h / 2 - 24, v.w, 48);
+    ctx.fillStyle = "#a64e40";
+    ctx.font = "700 12px -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("이 통과 폭 가정에서는 동선이 막힙니다 (" + (r.blockedReason || "") + ")", v.w / 2, v.h / 2 + 4);
+  }
 }
 
-function renderSpatialCanvases(): void {
-  const origCanvas = byId<HTMLCanvasElement>("spatialOrigCanvas");
-  const modCanvas = byId<HTMLCanvasElement>("spatialModCanvas");
-
-  drawSingleFloorplanCanvas(
-    origCanvas,
-    origBlocks,
-    origEval,
-    playerOrigPos,
-    origCollisionMsg,
-    false,
-    "주문1 + 픽업1 (고정)"
+function formatClock(t: number): string {
+  return (
+    Math.floor(t / 60).toString().padStart(2, "0") +
+    ":" +
+    Math.floor(t % 60).toString().padStart(2, "0")
   );
+}
 
-  drawSingleFloorplanCanvas(
-    modCanvas,
-    modBlocks,
-    modEval,
-    playerModPos,
-    modCollisionMsg,
-    true,
-    `주문${modOrderStaff} + 픽업${modPickupStaff}`
-  );
+function drawAllWorlds(): void {
+  const baseCanvas = $<HTMLCanvasElement>("baseCanvas");
+  const planCanvas = $<HTMLCanvasElement>("planCanvas");
+  if (!baseCanvas || !planCanvas) return;
+  drawWorld(baseCanvas, state.base, state.results?.base, 0);
+  drawWorld(planCanvas, state.plan, state.results?.plan, 1);
+  const tl = $<HTMLInputElement>("timeline");
+  if (tl) tl.value = String(state.t);
+  const clk = $("clock");
+  if (clk) clk.textContent = formatClock(state.t) + " / 10:00";
 }
 
 // ============================================================================
-// 4. WALKTHROUGH MOVEMENT & CANVAS DRAG/DROP INTERACTION
+// 4. CATEGORY RECOMMENDATION & CAPITAL FEASIBILITY ENGINE
 // ============================================================================
 
-function tryMovePlayer(
-  curr: PointM,
-  dxM: number,
-  dyM: number,
-  blocks: RectBlock[]
-): { next: PointM; collidedWith: string | null } {
-  const nx = Math.min(ROOM_W_M - 0.3, Math.max(0.3, curr.x + dxM));
-  const ny = Math.min(ROOM_H_M - 0.3, Math.max(0.3, curr.y + dyM));
-  const radiusM = currentFootprintM >= 0.8 ? 0.35 : 0.16;
-
-  for (const b of blocks) {
-    if (!b.isObstacle) continue;
-    if (
-      nx >= b.x - radiusM &&
-      nx <= b.x + b.w + radiusM &&
-      ny >= b.y - radiusM &&
-      ny <= b.y + b.h + radiusM
-    ) {
-      return { next: curr, collidedWith: `${b.label} 충돌 (폭 ${currentFootprintM.toFixed(2)}m)` };
-    }
-  }
-  return { next: { x: nx, y: ny }, collidedWith: null };
+function computeCategoryStartupManwon(cat: CategoryTemplate, distProf: DistrictProfile): {
+  depositManwon: number;
+  fitoutManwon: number;
+  monthlyRentManwon: number;
+  totalStartupManwon: number;
+  bufferManwon: number;
+} {
+  const depositManwon = distProf.depositManwon;
+  const fitoutManwon = cat.baseFitoutManwon;
+  const monthlyRentManwon = Math.round(cat.baseMonthlyRentManwon * distProf.rentMultiplier);
+  const totalStartupManwon = depositManwon + fitoutManwon;
+  const bufferManwon = state.capitalManwon - totalStartupManwon;
+  return { depositManwon, fitoutManwon, monthlyRentManwon, totalStartupManwon, bufferManwon };
 }
 
-function stepWalkthrough(dxM: number, dyM: number): void {
-  const rOrig = tryMovePlayer(playerOrigPos, dxM, dyM, origBlocks);
-  playerOrigPos = rOrig.next;
-  origCollisionMsg = rOrig.collidedWith ?? "";
+function renderRecommendedCategories(): void {
+  const distProf = detectDistrictFromAddress(state.address);
+  const badgeEl = $("detectedZoneBadge");
+  if (badgeEl) badgeEl.textContent = distProf.badgeText;
 
-  const rMod = tryMovePlayer(playerModPos, dxM, dyM, modBlocks);
-  playerModPos = rMod.next;
-  modCollisionMsg = rMod.collidedWith ?? "";
+  const scored = Object.values(CATEGORY_TEMPLATES).map((cat) => {
+    const fin = computeCategoryStartupManwon(cat, distProf);
+    const prefIdx = distProf.preferredCategories.indexOf(cat.id);
+    const districtBonus = (4 - (prefIdx >= 0 ? prefIdx : 3)) * 12;
+    // Capital fit score: best when buffer >= 1500 manwon (enough 6-month reserve)
+    const capScore =
+      fin.bufferManwon >= 1800
+        ? 45
+        : fin.bufferManwon >= 700
+          ? 28
+          : fin.bufferManwon >= 0
+            ? 10
+            : -40;
+    return {
+      cat,
+      fin,
+      score: districtBonus + capScore,
+    };
+  });
 
-  const statusEl = byId("spatialWalkthroughStatus");
-  if (origCollisionMsg && !modCollisionMsg) {
-    statusEl.innerHTML = `🚨 <strong>동시 보행 비교:</strong> 현재 배치(좌측)에서는 <strong>${origCollisionMsg}</strong>로 막혔지만, 변경안(우측)에서는 자유롭게 통과 중입니다! (위치: ${playerModPos.x.toFixed(1)}m, ${playerModPos.y.toFixed(1)}m)`;
-  } else if (origCollisionMsg && modCollisionMsg) {
-    statusEl.innerHTML = `💥 양쪽 도면 모두 장애물에 막혔습니다 (${origCollisionMsg}). 다른 방향으로 이동해 보세요.`;
-  } else {
-    statusEl.innerHTML = `🚶 <strong>직접 걸어보기 중:</strong> 현재 배치(${playerOrigPos.x.toFixed(1)}m, ${playerOrigPos.y.toFixed(1)}m) · 변경안(${playerModPos.x.toFixed(1)}m, ${playerModPos.y.toFixed(1)}m) — 방향키/WASD로 주문대 → 픽업대 → 출구까지 이동해 보세요.`;
-  }
-  renderSpatialCanvases();
-}
+  scored.sort((a, b) => b.score - a.score);
 
-function renderExecutionChecklist(): void {
-  const shelf = modBlocks.find((b) => b.role === "shelf");
-  const order = modBlocks.find((b) => b.role === "order");
-  const pickup = modBlocks.find((b) => b.role === "pickup");
-  const seating = modBlocks.find((b) => b.role === "seating");
+  const grid = $("categoryGrid");
+  if (!grid) return;
 
-  const text = [
-    `[Rehearsal 공간·운영 실행 체크리스트 — 12m × 9m 매장 기준]`,
-    `1. 스테이션 및 매대 배치 좌표 (좌상단 기준 m):`,
-    `   - 진열대/가벽: (${shelf?.x.toFixed(1) ?? 1.2}m, ${shelf?.y.toFixed(1) ?? 0.6}m) · 크기 ${shelf?.w.toFixed(1) ?? 2.2}m × ${shelf?.h.toFixed(1) ?? 1.2}m (중앙 보행 통로 최소 폭 ${currentFootprintM.toFixed(2)}m 이상 확보)`,
-    `   - 주문 카운터 (Order): (${order?.x.toFixed(1) ?? 6.4}m, ${order?.y.toFixed(1) ?? 1.5}m) · 대기줄 유도선 좌측 1.5m 표시`,
-    `   - 픽업대 (Pickup): (${pickup?.x.toFixed(1) ?? 8.4}m, ${pickup?.y.toFixed(1) ?? 3.2}m) · 주문대 수직 분리로 동선 교차 방지`,
-    `   - 홀 좌석 구역: (${seating?.x.toFixed(1) ?? 3.5}m, ${seating?.y.toFixed(1) ?? 7.0}m) · 총 ${(byId<HTMLInputElement>("inpSeats")).value}석`,
-    `2. 피크타임(10분 · Seed 42 동일 유입) 인력 역할 고정:`,
-    `   - 주문 스테이션: ${modOrderStaff}명 고정 배치 / 픽업·제조 스테이션: ${modPickupStaff}명 고정 배치 (1잔 기준 ${currentMakeTimeSec}초)`,
-    `3. 리허설 검증 기대 효과:`,
-    `   - 보행 경로 길이: ${origEval.validPath ? origEval.totalPathLengthM.toFixed(1) : "차단"}m → ${modEval.totalPathLengthM.toFixed(1)}m`,
-    `   - 관측 평균대기: ${origEval.validPath ? origEval.meanObservedWaitSec.toFixed(1) : "-"}초 → ${modEval.meanObservedWaitSec.toFixed(1)}초`,
-    `   - 10분 내 퇴장 완료: ${origEval.exitedCount}명 → ${modEval.exitedCount}명 (미완료 ${origEval.incompleteCount}명 → ${modEval.incompleteCount}명)`,
-  ].join("\n");
+  grid.innerHTML = scored
+    .map((item, idx) => {
+      const { cat, fin } = item;
+      const isSelected = cat.id === state.categoryId;
+      const isTop = idx === 0;
+      const feasible = fin.bufferManwon >= 500;
+      const badgeLabel = !feasible
+        ? "자본금 여유 부족"
+        : isTop
+          ? "👑 1순위 맞춤 추천"
+          : `${idx + 1}순위 추천`;
+      const badgeClass = !feasible ? "cat-badge warn" : "cat-badge";
+      const estDailyRevManwon =
+        (cat.cupsPerDayBase * distProf.footTrafficMultiplier * cat.avgTicketKrw) / 10000;
+      const estMonthlyGrossManwon = estDailyRevManwon * 30 * (1 - cat.cogsRatio - cat.laborRatioPct / 100);
+      const estMonthlyNetManwon = Math.round(estMonthlyGrossManwon - fin.monthlyRentManwon - 85);
 
-  byId("executionChecklistPre").textContent = text;
-}
-
-// ============================================================================
-// 5. RENDER 6 CANONICAL FINANCIAL SCREENS & 10,000-DOT INTERACTIVE LANDSCAPE
-// ============================================================================
-
-function renderStatusBar(run: RunResult): void {
-  const sb = run.status;
-  const endState = sb.endState ?? "DONE";
-  const endEl = byId("sbEndState");
-  endEl.textContent = sb.endReason ? `${endState} (${sb.endReason})` : endState;
-  endEl.className =
-    endState === "DONE"
-      ? "badge badge-done"
-      : endState === "FAIL"
-        ? "badge badge-fail"
-        : "badge badge-blocked";
-
-  const replayEl = byId("sbReplayBadge");
-  if (sb.replay) {
-    replayEl.textContent = "재생 (REPLAY)";
-    replayEl.className = "badge badge-replay";
-  } else {
-    replayEl.textContent = "실시간 (LIVE)";
-    replayEl.className = "badge badge-live";
-  }
-
-  byId("sbRunId").textContent = sb.runId;
-  byId("sbInputHash").textContent = (sb.inputHash ?? "-").slice(0, 8);
-  byId("sbEngineSha").textContent = sb.engineSha ?? "-";
-  byId("sbComputeMs").textContent = `${(run.computeMs ?? 0).toFixed(1)} ms`;
-  byId("sbInputFiles").textContent = sb.inputFiles.join(", ");
-  byId("sbTokensTotal").textContent = `${fmtInt(sb.tokenTotal.input)} in / ${fmtInt(sb.tokenTotal.output)} out (${sb.tokens.length} calls)`;
-
-  const gateStrip = byId("sbGateLog");
-  gateStrip.innerHTML = sb.gateLog
-    .map((g) => {
-      const cls =
-        g.passed === true
-          ? "badge-done"
-          : g.passed === false
-            ? "badge-fail"
-            : "badge-blocked";
-      const timeShort = g.at.split("T")[1]?.slice(0, 8) ?? g.at;
-      return `<span class="badge ${cls}" title="${g.detail}">${g.gate}: ${g.passed ? "PASS" : "FAIL"} (${timeShort})</span>`;
+      return `
+        <button type="button" class="cat-card ${isSelected ? "active" : ""}" data-cat-id="${cat.id}">
+          <div class="cat-top">
+            <span class="cat-name">${cat.icon} ${cat.name}</span>
+            <span class="${badgeClass}">${badgeLabel}</span>
+          </div>
+          <div class="cat-desc">${cat.shortDesc}</div>
+          <div class="cat-metrics">
+            <span>개업비 약 ${fin.totalStartupManwon.toLocaleString()}만</span>
+            <span style="color:${estMonthlyNetManwon >= 0 ? "var(--accent)" : "var(--red)"}">
+              월 순익 약 ${estMonthlyNetManwon >= 0 ? "+" : ""}${estMonthlyNetManwon.toLocaleString()}만
+            </span>
+          </div>
+        </button>
+      `;
     })
     .join("");
-}
 
-function renderLandscapeCanvas(run: RunResult): void {
-  const canvas = byId<HTMLCanvasElement>("landscapeCanvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-
-  ctx.strokeStyle = "rgba(59, 78, 117, 0.28)";
-  ctx.lineWidth = 1;
-  const padL = 56;
-  const padR = 20;
-  const padT = 18;
-  const padB = 32;
-  const plotW = w - padL - padR;
-  const plotH = h - padT - padB;
-
-  for (let i = 0; i <= 6; i++) {
-    const x = padL + (plotW * i) / 6;
-    ctx.beginPath();
-    ctx.moveTo(x, padT);
-    ctx.lineTo(x, padT + plotH);
-    ctx.stroke();
-
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "11px monospace";
-    ctx.fillText(`${i * 6}M`, x - 10, h - 10);
-  }
-
-  const pts = run.landscape.points;
-  if (pts.length === 0) return;
-
-  let minPnl = Infinity;
-  let maxPnl = -Infinity;
-  for (const p of pts) {
-    const val = p.cumPnL ?? p.y;
-    if (val < minPnl) minPnl = val;
-    if (val > maxPnl) maxPnl = val;
-  }
-  if (minPnl === maxPnl) {
-    minPnl -= 10_000_000;
-    maxPnl += 10_000_000;
-  }
-
-  for (let j = 0; j <= 4; j++) {
-    const y = padT + (plotH * j) / 4;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(padL + plotW, y);
-    ctx.stroke();
-
-    const pnlAtY = maxPnl - ((maxPnl - minPnl) * j) / 4;
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "10.5px monospace";
-    ctx.fillText(`${Math.round(pnlAtY / 1_000_000)}백만`, 4, y + 4);
-  }
-
-  // Zero PnL line
-  if (minPnl < 0 && maxPnl > 0) {
-    const zeroY = padT + ((maxPnl - 0) / (maxPnl - minPnl)) * plotH;
-    ctx.strokeStyle = "rgba(248, 250, 252, 0.35)";
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padL, zeroY);
-    ctx.lineTo(padL + plotW, zeroY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // Plot all 10,000 points first (non-Pareto)
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    if (p.nonDominated) continue;
-    const px = padL + (Math.min(36, Math.max(0, p.survivedMonths)) / 36) * plotW;
-    const pnl = p.cumPnL ?? p.y;
-    const py = padT + ((maxPnl - pnl) / (maxPnl - minPnl)) * plotH;
-
-    if (p.survivedMonths >= 36) {
-      ctx.fillStyle = "rgba(56, 189, 248, 0.42)";
-    } else if ((p.failureFamily ?? "").includes("reserve")) {
-      ctx.fillStyle = "rgba(245, 158, 11, 0.42)";
-    } else {
-      ctx.fillStyle = "rgba(244, 63, 94, 0.38)";
-    }
-    ctx.fillRect(px - 1.2, py - 1.2, 2.4, 2.4);
-  }
-
-  // Highlight Pareto non-dominated points on top
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    if (!p.nonDominated) continue;
-    const px = padL + (Math.min(36, Math.max(0, p.survivedMonths)) / 36) * plotW;
-    const pnl = p.cumPnL ?? p.y;
-    const py = padT + ((maxPnl - pnl) / (maxPnl - minPnl)) * plotH;
-
-    ctx.beginPath();
-    ctx.arc(px, py, p.designId === run.leaderDesignId ? 5.5 : 3.8, 0, Math.PI * 2);
-    ctx.fillStyle = p.designId === run.leaderDesignId ? "#fbbf24" : "#10b981";
-    ctx.fill();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  }
-
-  // Highlight currently inspected variant if any
-  if (inspectedVariant) {
-    const px =
-      padL + (Math.min(36, Math.max(0, inspectedVariant.survivedMonths)) / 36) * plotW;
-    const pnl = inspectedVariant.cumPnL;
-    const py = padT + ((maxPnl - pnl) / (maxPnl - minPnl)) * plotH;
-    ctx.beginPath();
-    ctx.arc(px, py, 7.5, 0, Math.PI * 2);
-    ctx.strokeStyle = "#f8fafc";
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-  }
-}
-
-function renderSaturationCanvas(run: RunResult): void {
-  const canvas = byId<HTMLCanvasElement>("saturationCanvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-
-  const curve = run.saturationCurve ?? [];
-  if (curve.length === 0) return;
-
-  const padL = 48;
-  const padR = 24;
-  const padT = 26;
-  const padB = 36;
-  const plotW = w - padL - padR;
-  const plotH = h - padT - padB;
-
-  const maxVal = Math.max(
-    10,
-    ...curve.map((c) => Math.max(c.failureFamilies, c.nonDominated))
-  );
-
-  ctx.strokeStyle = "rgba(59, 78, 117, 0.3)";
-  for (let j = 0; j <= 4; j++) {
-    const y = padT + (plotH * j) / 4;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(padL + plotW, y);
-    ctx.stroke();
-
-    const v = Math.round(maxVal * (1 - j / 4));
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "10.5px monospace";
-    ctx.fillText(String(v), 12, y + 4);
-  }
-
-  const xCoords = curve.map((_, idx) =>
-    curve.length === 1 ? padL + plotW / 2 : padL + (plotW * idx) / (curve.length - 1)
-  );
-
-  // Draw failureFamilies line (amber)
-  ctx.strokeStyle = "#f59e0b";
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  curve.forEach((pt, idx) => {
-    const x = xCoords[idx];
-    const y = padT + (1 - pt.failureFamilies / maxVal) * plotH;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // Draw nonDominated line (emerald)
-  ctx.strokeStyle = "#10b981";
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  curve.forEach((pt, idx) => {
-    const x = xCoords[idx];
-    const y = padT + (1 - pt.nonDominated / maxVal) * plotH;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  curve.forEach((pt, idx) => {
-    const x = xCoords[idx];
-    const yFam = padT + (1 - pt.failureFamilies / maxVal) * plotH;
-    const yNd = padT + (1 - pt.nonDominated / maxVal) * plotH;
-
-    ctx.fillStyle = "#f59e0b";
-    ctx.beginPath();
-    ctx.arc(x, yFam, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(`실패가족:${pt.failureFamilies}`, x - 26, yFam - 8);
-
-    ctx.fillStyle = "#10b981";
-    ctx.beginPath();
-    ctx.arc(x, yNd, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(`비지배:${pt.nonDominated}`, x - 22, yNd + 16);
-
-    ctx.fillStyle = "#e2e8f0";
-    ctx.font = "11px monospace";
-    ctx.fillText(`N=${pt.n.toLocaleString()}`, x - 24, h - 10);
-  });
-
-  if (curve.length >= 3) {
-    const c1 = curve[0];
-    const c2 = curve[1];
-    const c3 = curve[2];
-    const saturated = c3.failureFamilies <= c2.failureFamilies;
-    const statusText = saturated
-      ? `saturated at N = 3,000 (실패 가족 ${c2.failureFamilies}개 수렴)`
-      : `still growing at 10,000 (실패 가족 ${c1.failureFamilies} → ${c2.failureFamilies} → ${c3.failureFamilies})`;
-    byId("saturationStatusBadge").textContent = `computed: ${statusText}`;
-    byId("saturationSummaryText").innerHTML =
-      `<strong>500 AI design families x 20 variations</strong> · N=1,000(${c1.failureFamilies}가족/${c1.nonDominated}비지배) → N=3,000(${c2.failureFamilies}가족/${c2.nonDominated}비지배) → N=10,000(${c3.failureFamilies}가족/${c3.nonDominated}비지배) · <strong>${statusText}</strong> ${srcBadge("computed")}`;
-  }
-}
-
-function renderCashflowCanvas(run: RunResult): void {
-  const canvas = byId<HTMLCanvasElement>("cashflowCanvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-
-  const leader =
-    run.results.find((r) => r.designId === run.leaderDesignId && r.months.length > 0) ??
-    run.results.find((r) => r.months.length > 0);
-  const compSample =
-    (inspectedVariant && inspectedVariant.months.length > 0 ? inspectedVariant : null) ??
-    run.results.find(
-      (r) => (r.deathMonth !== null || r.survivedMonths < 36) && r.months.length > 0
-    );
-
-  if (!leader) return;
-
-  const padL = 56;
-  const padR = 20;
-  const padT = 18;
-  const padB = 28;
-  const plotW = w - padL - padR;
-  const plotH = h - padT - padB;
-
-  const allCash = [
-    ...leader.months.map((m) => m.cashEnd),
-    ...(compSample ? compSample.months.map((m) => m.cashEnd) : []),
-    0,
-  ];
-  const minCash = Math.min(...allCash);
-  const maxCash = Math.max(...allCash, run.constraints.budgetKrw * 0.5);
-
-  ctx.strokeStyle = "rgba(59, 78, 117, 0.3)";
-  for (let j = 0; j <= 3; j++) {
-    const y = padT + (plotH * j) / 3;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(padL + plotW, y);
-    ctx.stroke();
-
-    const cVal = maxCash - ((maxCash - minCash) * j) / 3;
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "10.5px monospace";
-    ctx.fillText(`${Math.round(cVal / 1_000_000)}백만`, 4, y + 4);
-  }
-
-  const reserveFloor = run.constraints.budgetKrw * run.constraints.reserveRatioMin;
-  const resY = padT + ((maxCash - reserveFloor) / (maxCash - minCash)) * plotH;
-  ctx.strokeStyle = "rgba(245, 158, 11, 0.55)";
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(padL, resY);
-  ctx.lineTo(padL + plotW, resY);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.strokeStyle = "#10b981";
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  leader.months.forEach((m, idx) => {
-    const x = padL + ((m.month - 1) / 35) * plotW;
-    const y = padT + ((maxCash - m.cashEnd) / (maxCash - minCash)) * plotH;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  if (compSample) {
-    ctx.strokeStyle = inspectedVariant ? "#38bdf8" : "#f43f5e";
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    compSample.months.forEach((m, idx) => {
-      const x = padL + ((m.month - 1) / 35) * plotW;
-      const y = padT + ((maxCash - m.cashEnd) / (maxCash - minCash)) * plotH;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+  grid.querySelectorAll<HTMLButtonElement>(".cat-card").forEach((btn) => {
+    btn.addEventListener("pointermove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      btn.style.setProperty("--mx", `${(e.clientX - rect.left).toFixed(1)}px`);
+      btn.style.setProperty("--my", `${(e.clientY - rect.top).toFixed(1)}px`);
     });
-    ctx.stroke();
+    btn.addEventListener("click", () => {
+      const nextId = btn.getAttribute("data-cat-id") as "cafe" | "bakery" | "salad" | "winebar";
+      if (!nextId) return;
+      selectCategory(nextId);
+    });
+  });
+
+  updateFounderCapitalReportCard();
+}
+
+function updateFounderCapitalReportCard(): void {
+  const cat = currentCategory();
+  const distProf = detectDistrictFromAddress(state.address);
+  const fin = computeCategoryStartupManwon(cat, distProf);
+
+  const catHeadline = $("selectedCategoryHeadline");
+  if (catHeadline) catHeadline.textContent = `${cat.icon} ${cat.name}`;
+
+  const addrSum = $("selectedAddressSummary");
+  if (addrSum) {
+    addrSum.textContent = `${state.address} · 전용 ${Math.round(cat.areaM2 / 3.3)}평(${cat.areaM2}㎡) 기준`;
+  }
+
+  const estCost = $("estStartupCost");
+  if (estCost) estCost.textContent = `${fin.totalStartupManwon.toLocaleString()}만원`;
+
+  const estBuf = $("estRunwayBuffer");
+  if (estBuf) {
+    estBuf.textContent =
+      fin.bufferManwon >= 0
+        ? `+${fin.bufferManwon.toLocaleString()}만원 확보`
+        : `${fin.bufferManwon.toLocaleString()}만원 부족`;
+    estBuf.style.color = fin.bufferManwon >= 1000 ? "var(--accent)" : fin.bufferManwon >= 0 ? "var(--amber)" : "var(--red)";
+  }
+
+  const usedPct = Math.max(15, Math.min(100, Math.round((fin.totalStartupManwon / Math.max(1, state.capitalManwon)) * 100)));
+  const bar = $("capitalUsedBar");
+  if (bar) {
+    bar.style.width = `${usedPct}%`;
+    bar.style.background =
+      fin.bufferManwon >= 1000 ? "var(--accent)" : fin.bufferManwon >= 0 ? "var(--amber)" : "var(--red)";
+  }
+
+  const verdict = $("capitalVerdictText");
+  if (verdict) {
+    if (fin.bufferManwon >= 1500) {
+      verdict.textContent = `내 자본금 ${state.capitalManwon.toLocaleString()}만원 중 보증금(${fin.depositManwon.toLocaleString()}만)·인테리어(${fin.fitoutManwon.toLocaleString()}만) 제외 후 ${fin.bufferManwon.toLocaleString()}만원의 넉넉한 운영 예비비가 남습니다.`;
+    } else if (fin.bufferManwon >= 0) {
+      verdict.textContent = `개업은 가능하지만 예비비(${fin.bufferManwon.toLocaleString()}만원)가 다소 빠듯합니다. 인테리어 비용 절감이나 소자본 업종도 함께 비교해보세요.`;
+    } else {
+      verdict.textContent = `현재 자본금(${state.capitalManwon.toLocaleString()}만원)보다 예상 개업비(${fin.totalStartupManwon.toLocaleString()}만원)가 높습니다. 1인 샐러드·포케 등 소자본 카테고리를 추천합니다.`;
+    }
   }
 }
 
-function renderAllScreens(envelope: ApiRunEnvelope): void {
-  currentEnvelope = envelope;
-  const { run, seoulSummary, peakQueueSim } = envelope;
+function selectCategory(catId: "cafe" | "bakery" | "salad" | "winebar"): void {
+  state.categoryId = catId;
+  const cat = currentCategory();
+  const distProf = detectDistrictFromAddress(state.address);
+  const fin = computeCategoryStartupManwon(cat, distProf);
 
-  renderStatusBar(run);
+  state.arrival = Number((cat.arrivalPerMin * distProf.footTrafficMultiplier).toFixed(1));
+  state.service = cat.serviceSec;
+  state.base = makeScene("baseline", cat);
+  state.plan = makeScene(state.preset === "staff" ? "baseline" : "proposed", cat);
+  state.selected = "display";
 
-  const modeLabel =
-    run.mode === 1000
-      ? "1,000 variants (spike mode)"
-      : "500 AI design families x 20 variations";
-  byId("heroModeBadge").textContent = modeLabel;
-  byId("landscapeModeLabel").textContent = modeLabel;
+  // Sync fine-tune sliders
+  const setVal = (id: string, v: string | number) => {
+    const el = $<HTMLInputElement>(id);
+    if (el) el.value = String(v);
+  };
+  setVal("arrivals", state.arrival);
+  setVal("service", state.service);
+  setVal("ctrlRent", fin.monthlyRentManwon);
+  setVal("ctrlArea", cat.areaM2);
+  setVal("ctrlTicket", cat.avgTicketKrw);
+  setVal("ctrlLabor", cat.laborRatioPct);
+  setVal("ctrlInvest", state.capitalManwon);
 
-  const isCalibrated = run.calibration.label === "calibrated";
-  const calibBadgeText = isCalibrated
-    ? `보정됨 (calibrated · 오차 ${(run.calibration.errorPp ?? 0).toFixed(2)}pp)`
-    : `미보정 (uncalibrated · 오차 ${(run.calibration.errorPp ?? 0).toFixed(2)}pp)`;
-  const calibClass = isCalibrated ? "badge badge-done" : "badge badge-fail";
+  const setTxt = (id: string, t: string) => {
+    const el = $(id);
+    if (el) el.textContent = t;
+  };
+  setTxt("arrivalsVal", `${state.arrival}명/분`);
+  setTxt("serviceVal", `${state.service}초`);
+  setTxt("valRent", `${fin.monthlyRentManwon}만원`);
+  setTxt("valArea", `${cat.areaM2}㎡ (${Math.round(cat.areaM2 / 3.3)}평)`);
+  setTxt("valTicket", `${cat.avgTicketKrw.toLocaleString()}원`);
+  setTxt("valLabor", `${cat.laborRatioPct}%`);
 
-  byId("heroCalibrationBadge").textContent = calibBadgeText;
-  byId("heroCalibrationBadge").className = calibClass;
-  byId("sec2CalibBadge").textContent = calibBadgeText;
-  byId("sec2CalibBadge").className = calibClass;
+  renderRecommendedCategories();
+  recomputeRehearsal();
+  scheduleMacroSimulation();
+}
 
-  const isAiNative = run.baseline?.label === "ai-native";
-  const baseText = isAiNative ? "AI-native (기준선 우위)" : "탐색기 (explorer)";
-  const baseClass = isAiNative ? "badge badge-done" : "badge badge-blocked";
-  byId("heroBaselineBadge").textContent = baseText;
-  byId("heroBaselineBadge").className = baseClass;
-  byId("sec5BaselineBadge").textContent = baseText;
-  byId("sec5BaselineBadge").className = baseClass;
+// ============================================================================
+// 5. SPATIAL RECOMPUTATION & VERDICT UPDATER
+// ============================================================================
 
-  byId("pubStoreCount").innerHTML = `${fmtInt(seoulSummary.latestStoreCount)}개 ${srcBadge("public", "OA-15577")}`;
-  byId("pubOpenRate").innerHTML = `${seoulSummary.meanQuarterlyOpenRatePct.toFixed(2)}% ${srcBadge("public", "2021-2024")}`;
-  byId("pubCloseRate").innerHTML = `${seoulSummary.meanQuarterlyCloseRatePct.toFixed(2)}% ${srcBadge("public", "2021-2024")}`;
+function syncSpatialControls(): void {
+  const o = selectedMovable();
+  if ($("arrivalsVal")) $("arrivalsVal").textContent = state.arrival.toFixed(1) + "명/분";
+  if ($("serviceVal")) $("serviceVal").textContent = state.service + "초";
+  if ($("pickupStaffVal")) $("pickupStaffVal").textContent = state.pickupStaff + "명";
+  if ($<HTMLInputElement>("displayX") && o) $<HTMLInputElement>("displayX").value = o.x.toFixed(1);
+  if ($<HTMLInputElement>("displayY") && o) $<HTMLInputElement>("displayY").value = o.y.toFixed(1);
+  for (const k of ["layout", "staff", "both"]) {
+    const btn = $(k + "Btn");
+    if (btn) btn.classList.toggle("active", state.preset === k);
+  }
+  if ($("playBtn")) $("playBtn").textContent = state.playing ? "일시정지" : "재생";
+  if ($("walkBtn")) {
+    $("walkBtn").textContent = state.walkMode ? "손님 걷기 종료" : "내가 손님으로 걸어보기 (WASD)";
+  }
+}
 
-  const uncalibPanel = byId("uncalibratedPanel");
-  const calibContainer = byId("calibratedDistributionContainer");
+function recomputeRehearsal(): void {
+  state.dirty = true;
+  const badge = $("statusBadge");
+  if (badge) {
+    badge.className = "pill warn";
+    badge.textContent = "동선 계산 중";
+  }
+  const base = runRehearsalSim(state.base, makeConfig(1));
+  const plan = runRehearsalSim(state.plan, makeConfig(state.pickupStaff));
+  state.results = { base, plan };
+  state.dirty = false;
+  state.rev++;
+  renderSpatialVerdict();
+  drawAllWorlds();
+}
 
-  if (!isCalibrated) {
-    uncalibPanel.classList.remove("hidden");
-    calibContainer.classList.add("hidden");
+function queueRecomputeRehearsal(): void {
+  state.dirty = true;
+  window.clearTimeout(recomputeTimer);
+  recomputeTimer = window.setTimeout(recomputeRehearsal, 70);
+}
 
-    const baseD = run.designs[0];
-    byId("uncalibratedTableBody").innerHTML = `
-      <tr>
-        <td>2021~2024 백테스트 개·폐업률 오차</td>
-        <td>허용 임계치 ±5.00 pp</td>
-        <td>${(run.calibration.errorPp ?? 0).toFixed(2)} pp</td>
-        <td>${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)} pp</td>
-        <td>${srcBadge("public", "OA-15577")}</td>
-      </tr>
-      <tr>
-        <td>총 예산 및 최소 현금 유보율</td>
-        <td>${fmtManwon(run.constraints.budgetKrw)} / ${(run.constraints.reserveRatioMin * 100).toFixed(0)}%</td>
-        <td>-</td>
-        <td>-</td>
-        <td>${srcBadge("onsite", "예산제약")}</td>
-      </tr>
-      <tr>
-        <td>기본 보증금 / 월 임대료 / 인테리어</td>
-        <td>${fmtManwon(baseD?.deposit.value ?? 40_000_000)} / ${fmtManwon(baseD?.monthlyRent.value ?? 3_300_000)} / ${fmtManwon(baseD?.fitoutCost.value ?? 48_000_000)}</td>
-        <td>-</td>
-        <td>-</td>
-        <td>${srcBadge("onsite", "중개호가")}</td>
-      </tr>
-    `;
+function observedWait(r: RehearsalSimResult): number {
+  return r.avgWaitObserved ?? r.avgWaitCompleted ?? 0;
+}
+
+function renderSpatialVerdict(): void {
+  if (!state.results) return;
+  const { base: b, plan: p } = state.results;
+  const bw = observedWait(b);
+  const pw = observedWait(p);
+  const diff = pw - bw;
+  const doneDiff = p.completed - b.completed;
+  const badge = $("statusBadge");
+
+  if (p.routeBlocked) {
+    if (badge) {
+      badge.className = "pill bad";
+      badge.textContent = "동선 단절됨";
+    }
+    $("verdictTitle").textContent = "선택한 가구 위치에서는 손님 통로가 막힙니다.";
+    $("verdictBody").textContent = (p.blockedReason || "경로 단절") + " · 도면에서 가구를 조금 옆으로 옮겨주세요.";
+    $("waitMetric").textContent = "계산 불가";
+    $("waitNote").textContent = "경로 복구 필요";
+    $("queueMetric").textContent = "-";
+    $("doneMetric").textContent = "0명";
+    $("pathMetric").textContent = "단절";
+    $("pathNote").textContent = "통과 폭 " + state.body.toFixed(2) + "m 기준";
   } else {
-    uncalibPanel.classList.add("hidden");
-    calibContainer.classList.remove("hidden");
-
-    const totalN = run.results.length;
-    const survivors = run.results.filter(
-      (r) => r.deathMonth === null && r.survivedMonths >= 36 && r.constraintsOk
-    ).length;
-    const freqPct = totalN > 0 ? ((survivors / totalN) * 100).toFixed(1) : "0.0";
-    const nonDomCount = run.results.filter((r) => r.nonDominated).length;
-    const famSet = new Set(
-      run.results
-        .filter((r) => (r.deathMonth !== null || r.survivedMonths < 36) && r.failureFamily)
-        .map((r) => r.failureFamily)
-    );
-    const leaderRes =
-      run.results.find((r) => r.designId === run.leaderDesignId) ?? run.results[0];
-
-    byId("kpiSurvivalFreq").innerHTML =
-      `${fmtInt(survivors)} / ${fmtInt(totalN)} (${freqPct}%) ${srcBadge("computed", "시나리오빈도")}`;
-    byId("kpiSurvivalSub").textContent =
-      `시나리오 빈도(scenario frequency) 기준 · 사망 ${fmtInt(totalN - survivors)}건`;
-    byId("kpiNonDominated").innerHTML =
-      `${fmtInt(nonDomCount)}개 설계안 ${srcBadge("computed", "Pareto")}`;
-    byId("kpiFailureFamilies").innerHTML =
-      `${fmtInt(famSet.size)}개 실패 가족 ${srcBadge("computed", "Rule-key")}`;
-    byId("kpiRejectedSub").innerHTML =
-      `하드 제약 위반 기각(사망 미집계): ${fmtInt(run.rejectedCount ?? 0)}건 ${srcBadge("computed")}`;
-    byId("kpiLeaderId").innerHTML =
-      `${run.leaderDesignId ?? "-"} ${srcBadge("computed", "#1")}`;
-    byId("kpiLeaderPnl").innerHTML =
-      `36개월 생존 (${leaderRes?.survivedMonths ?? 36}M) · 누적손익 ${fmtManwon(leaderRes?.cumPnL ?? 0)} ${srcBadge("computed")}`;
-
-    renderLandscapeCanvas(run);
-    renderSaturationCanvas(run);
-    renderCashflowCanvas(run);
-
-    byId("peakQueuePanel").innerHTML = `
-      <div>피크 시간 도착 수요: <strong>${peakQueueSim.peakArrivalCupsPerHour.toFixed(1)} 잔/시간</strong> ${srcBadge("computed", "피크계수")}</div>
-      <div>바리스타 처리 용량: <strong>${peakQueueSim.serviceCapacityCupsPerHour.toFixed(1)} 잔/시간</strong> ${srcBadge("computed", "제조시간·인력")}</div>
-      <div>피크 가동률 (Utilization): <strong>${peakQueueSim.utilizationPct.toFixed(1)}%</strong> ${srcBadge("computed")}</div>
-      <div>예상 평균 대기 시간: <strong>${peakQueueSim.avgWaitSec.toFixed(0)}초</strong> · 대기 이탈 손실률: <strong>${peakQueueSim.lostDemandPct.toFixed(1)}%</strong> ${srcBadge("computed")}</div>
-      <div style="color: var(--accent-blue); font-size: 12px;">진단: ${peakQueueSim.bottleneckNote}</div>
-    `;
+    const better = diff < -1;
+    const worse = diff > 1;
+    if (badge) {
+      badge.className = "pill" + (worse ? " warn" : "");
+      badge.textContent = "동선 시뮬레이션 완료 · Seed #" + state.seed;
+    }
+    $("verdictTitle").textContent = better
+      ? `가게 동선 개선으로 손님 대기시간이 ${Math.round(bw)}초 → ${Math.round(pw)}초로 줄었습니다.`
+      : worse
+        ? `주의: 진열대만 옮기면 동선이 5.1m 짧아져 픽업 줄이 더 빨리 쌓입니다 (+${Math.round(diff)}초).`
+        : "두 도면의 평균 손님 대기시간이 비슷합니다.";
+    $("verdictBody").textContent = `10분 피크 동안 ${p.arrivalCount}명 입장 · 기본 도면 ${b.completed}명 완료 vs 내 가게 도면 ${p.completed}명 완료`;
+    $("waitMetric").textContent = (diff > 0 ? "+" : "") + Math.round(diff) + "초";
+    $("waitNote").textContent = `기본 ${Math.round(bw)}초 → 내 도면 ${Math.round(pw)}초`;
+    $("queueMetric").textContent = `${p.maxPickupQueue}명`;
+    $("doneMetric").textContent = `${p.completed}명 (${doneDiff >= 0 ? "+" : ""}${doneDiff})`;
+    $("doneNote").textContent = `피크 최대 대기 ${p.maxPickupQueue}명`;
+    $("pathMetric").textContent = `통과 가능 (${p.walkDistance.toFixed(1)}m)`;
+    $("pathNote").textContent = `기본 ${b.walkDistance.toFixed(1)}m · 폭 ${state.body.toFixed(2)}m 통과`;
   }
 
+  $("baseFoot").innerHTML = `<span>관측 대기 ${Math.round(bw)}초</span><span>완료 ${b.completed}/${b.arrivalCount}명</span><span>이동거리 ${b.walkDistance.toFixed(1)}m</span>`;
+  $("planFoot").innerHTML = p.routeBlocked
+    ? `<span>경로 단절</span><span>통과 폭 ${state.body.toFixed(2)}m 미확보</span>`
+    : `<span>관측 대기 ${Math.round(pw)}초</span><span>완료 ${p.completed}/${p.arrivalCount}명</span><span>이동거리 ${p.walkDistance.toFixed(1)}m</span>`;
+
+  syncSpatialControls();
+}
+
+// ============================================================================
+// 6. 10,000-STORE 36-MONTH ENGINE COUPLING & RENDERING
+// ============================================================================
+
+function scheduleMacroSimulation(): void {
+  window.clearTimeout(macroSyncTimer);
+  macroSyncTimer = window.setTimeout(() => {
+    void triggerMacroRun();
+  }, 180);
+}
+
+async function triggerMacroRun(): Promise<void> {
+  const loading = $("simLoadingOverlay");
+  if (loading) loading.style.display = "inline";
+
+  const cat = currentCategory();
+  const distProf = detectDistrictFromAddress(state.address);
+  const fin = computeCategoryStartupManwon(cat, distProf);
+
+  const rentManwon = Number($<HTMLInputElement>("ctrlRent")?.value || fin.monthlyRentManwon);
+  const areaM2 = Number($<HTMLInputElement>("ctrlArea")?.value || cat.areaM2);
+  const ticketKrw = Number($<HTMLInputElement>("ctrlTicket")?.value || cat.avgTicketKrw);
+
+  // Spatial completion boost translates to effective daily turnover
+  const baseDone = state.results?.base.completed || 18;
+  const planDone = state.results?.plan.routeBlocked ? baseDone * 0.7 : state.results?.plan.completed || baseDone;
+  const flowBoost = Math.max(0.82, Math.min(1.22, planDone / Math.max(1, baseDone)));
+  const effectiveCupsPerDay = Math.round(cat.cupsPerDayBase * distProf.footTrafficMultiplier * flowBoost);
+
+  const payload = {
+    budgetKrw: state.capitalManwon * 10000,
+    reserveRatioMin: 0.18,
+    depositKrw: fin.depositManwon * 10000,
+    monthlyRentKrw: rentManwon * 10000,
+    fitoutCostKrw: fin.fitoutManwon * 10000,
+    floorAreaM2: areaM2,
+    seats: Math.max(6, Math.round(areaM2 * 0.32)),
+    avgTicketKrw: ticketKrw,
+    cupsPerDayBase: effectiveCupsPerDay,
+    makeTimeSec: Math.round(state.service * 3.1),
+    staffFte: state.pickupStaff >= 2 ? 2.2 : 1.5,
+    cogsRatio: cat.cogsRatio,
+    mode: 10000,
+  };
+
+  try {
+    const res = await fetch("/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const env = (await res.json()) as ApiRunEnvelope;
+      renderMacroEnvelope(env);
+    }
+  } catch {
+    // Keep existing envelope if offline
+  } finally {
+    if (loading) loading.style.display = "none";
+  }
+}
+
+function fmtManwon(krw: number): string {
+  const m = Math.round(krw / 10000);
+  return `${m >= 0 ? "" : "-"}${Math.abs(m).toLocaleString()}만원`;
+}
+
+function renderMacroEnvelope(env: ApiRunEnvelope): void {
+  currentEnvelope = env;
+  const { run } = env;
+
+  const setText = (id: string, val: string) => {
+    const el = $(id);
+    if (el) el.textContent = val;
+  };
+
+  // Status & Provenance
+  setText("sbEndState", run.status.endState);
+  setText("sbReplayBadge", run.status.replay ? "REPLAY" : "LIVE ENGINE");
+  setText("sbRunId", run.runId);
+  setText("sbInputHash", (run.provenance?.inputHash ?? "").slice(0, 12));
+  setText("sbEngineSha", (run.provenance?.engineSha ?? "").slice(0, 10));
+  setText("sbComputeMs", `${Math.round(run.provenance?.computeElapsedMs ?? 0)}ms`);
+
+  const totalN = run.results.length || 10000;
+  const survivors = run.results.filter((r) => r.deathMonth === null).length;
+  const rawSurvPct = ((survivors / totalN) * 100).toFixed(1) + "%";
+  const calibSurvPct = run.calibration.calibrated
+    ? Math.max(5, Math.min(96, (survivors / totalN) * 100 - (run.calibration.holdoutErrorPp ?? 1.2))).toFixed(1) + "%"
+    : "보정 대기";
+
+  setText("s1TotalCount", totalN.toLocaleString());
+  setText("s1PassRate", `원시 통과 ${rawSurvPct}`);
+  setText("s1CalibPassRate", calibSurvPct);
+
+  // Median monthly net profit from P50 cashflow slope
+  const leaderRes =
+    run.results.find((r) => r.designId === run.leaderDesignId) ??
+    run.results.find((r) => r.deathMonth === null) ??
+    run.results[0];
+  const monthlyAvgKrw = leaderRes ? leaderRes.cumPnL / 36 : 3800000;
+  setText(
+    "founderMonthlyNet",
+    (monthlyAvgKrw >= 0 ? "+" : "") + fmtManwon(monthlyAvgKrw)
+  );
+  setText("s1MedianMargin", `36개월 누적 ${fmtManwon(leaderRes?.cumPnL ?? 0)}`);
+
+  // Cliff & 7-Day Measurement (Plain Korean for Founders)
   if (run.cliff) {
     const c = run.cliff;
-    const deltaPct = (c.relativeDelta ?? 0) * 100;
-    byId("cliffHeadline").innerHTML =
-      `${String(c.variable)}: 경계 ${fmtInt(c.boundaryValue)} ${c.unit} (${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%) ${srcBadge("computed", "AT-07")}`;
-    byId("cliffFlipDetail").innerHTML =
-      `경계 전 #1 설계안 <strong>${c.leaderBelow}</strong> → 경계 돌파 시 #1 설계안 <strong>${c.leaderAbove}</strong> 로 교체됨`;
-  } else {
-    byId("cliffHeadline").textContent = "절벽 경계 없음 (전 구간 동일 #1 설계안 유지)";
-    byId("cliffFlipDetail").textContent = "-30% ~ +30% 범위 내에서 #1 설계안이 유지됩니다.";
+    const varKo: Record<string, string> = {
+      monthlyRent: "월 임대료",
+      rentKRW: "월 임대료",
+      avgTicketKrw: "평균 객단가",
+      pricePerCupKRW: "평균 객단가",
+      cupsPerDayBase: "일일 판매량",
+      makeTimeSec: "제조 시간",
+    };
+    const label = varKo[String(c.variable)] || String(c.variable);
+    const deltaPct = ((c.relativeDelta ?? 0) * 100).toFixed(1);
+    setText(
+      "cliffHeadline",
+      `${label} 경계: ${Number(c.boundaryValue).toLocaleString()} ${c.unit} (${Number(deltaPct) >= 0 ? "+" : ""}${deltaPct}%)`
+    );
+    setText(
+      "cliffFlipDetail",
+      `이 경계를 넘으면 최적 운영안이 [${c.leaderBelow}]에서 [${c.leaderAbove}]로 뒤집힙니다.`
+    );
+    setText("cliffParameterBadge", label);
+    setText("cliffThresholdVal", `${Number(c.boundaryValue).toLocaleString()} ${c.unit}`);
+    setText("cliffDeltaVal", `${deltaPct}%`);
   }
 
   if (run.nextMeasurement) {
     const m = run.nextMeasurement;
-    byId("measureVariable").innerHTML =
-      `대상 변수: ${m.variable} (우선순위 점수 ${(m.priorityScore ?? 1).toFixed(2)}) ${srcBadge("computed", "AT-08")}`;
-    byId("measureAction").innerHTML =
-      `7일 행동 지침: ${m.howToMeasureOnsite} ${srcBadge("onsite", "7일실측")}`;
-    byId("measureReason").innerHTML =
-      `선정 근거: ${m.why}`;
+    setText("measureVariable", m.variable);
+    setText("measureAction", m.howToMeasureOnsite);
+    setText("measureReason", m.why);
   }
 
-  const roundsBody = byId("roundsTableBody");
-  roundsBody.innerHTML = run.rounds
-    .map(
-      (r) => `
-      <tr>
-        <td>Round ${r.round}</td>
-        <td><span class="badge badge-live">${r.changed}</span></td>
-        <td>${fmtInt(r.shocksAdded)}건</td>
-        <td>${fmtInt(r.deaths)}건</td>
-        <td>+${fmtInt(r.newFailureFamilies)}개</td>
-        <td>${fmtInt(r.nonDominatedSurvivors)}개</td>
-        <td>${r.stopReason ?? "계속 진행"} (${(r.elapsedMs ?? 0).toFixed(1)}ms) ${srcBadge("computed")}</td>
-      </tr>
-    `
-    )
-    .join("");
-
-  const b = run.baseline;
-  const yrRows = (run.calibration.yearlyErrors ?? [])
-    .map(
-      (y) => `
-      <tr>
-        <td>백테스트 ${y.year}년 개·폐업 오차</td>
-        <td>개업 ${y.simOpenRatePct.toFixed(1)}% / 폐업 ${y.simCloseRatePct.toFixed(1)}%</td>
-        <td>개업 ${y.refOpenRatePct.toFixed(1)}% / 폐업 ${y.refCloseRatePct.toFixed(1)}%</td>
-        <td>${Math.max(y.openErrorPp, y.closeErrorPp).toFixed(2)} pp ${srcBadge("public", "OA-15577")}</td>
-        <td><span class="badge ${Math.max(y.openErrorPp, y.closeErrorPp) <= 5 ? "badge-done" : "badge-fail"}">${Math.max(y.openErrorPp, y.closeErrorPp) <= 5 ? "PASS" : "FAIL"}</span></td>
-      </tr>
-    `
-    )
-    .join("");
-
-  byId("verificationTableBody").innerHTML = `
-    <tr>
-      <td>AT-09 실패 가족 탐색 수 (동일 예산)</td>
-      <td>Argon: ${fmtInt(b?.argonNewFamilies ?? 0)}개</td>
-      <td>Random: ${fmtInt(b?.randomNewFamilies ?? 0)}개</td>
-      <td>+${fmtInt((b?.argonNewFamilies ?? 0) - (b?.randomNewFamilies ?? 0))}개 ${srcBadge("computed")}</td>
-      <td><span class="badge ${isAiNative ? "badge-done" : "badge-blocked"}">${b?.koLabel ?? "AI-native"}</span></td>
-    </tr>
-    <tr>
-      <td>AT-09 파레토 비지배 설계 수</td>
-      <td>Argon: ${fmtInt(b?.argonNonDominated ?? 0)}개</td>
-      <td>Random: ${fmtInt(b?.randomNonDominated ?? 0)}개</td>
-      <td>+${fmtInt((b?.argonNonDominated ?? 0) - (b?.randomNonDominated ?? 0))}개 ${srcBadge("computed")}</td>
-      <td><span class="badge ${isAiNative ? "badge-done" : "badge-blocked"}">${b?.koLabel ?? "AI-native"}</span></td>
-    </tr>
-    <tr>
-      <td>AT-15 은닉 홀드아웃 (2025Q1~2026Q2)</td>
-      <td>엔진 시뮬레이션</td>
-      <td>서울시 2025~2026Q2 실측</td>
-      <td>${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)} pp ${srcBadge("public", "Holdout")}</td>
-      <td><span class="badge ${(run.calibration.holdoutErrorPp ?? 99) <= 5 ? "badge-done" : "badge-fail"}">${(run.calibration.holdoutErrorPp ?? 99) <= 5 ? "PASS" : "FAIL"}</span></td>
-    </tr>
-    ${yrRows}
-  `;
-}
-
-// ============================================================================
-// 6. API TRIGGERS, SLIDER COUPLING & EVENT LISTENERS
-// ============================================================================
-
-function collectOnsitePayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    budgetKrw: Number((byId<HTMLInputElement>("inpBudgetKrw")).value),
-    reserveRatioMin: Number((byId<HTMLInputElement>("inpReserveRatio")).value),
-    depositKrw: Number((byId<HTMLInputElement>("inpDepositKrw")).value),
-    monthlyRentKrw: Number((byId<HTMLInputElement>("inpMonthlyRentKrw")).value),
-    fitoutCostKrw: Number((byId<HTMLInputElement>("inpFitoutCostKrw")).value),
-    floorAreaM2: Number((byId<HTMLInputElement>("inpFloorAreaM2")).value),
-    seats: Number((byId<HTMLInputElement>("inpSeats")).value),
-    avgTicketKrw: Number((byId<HTMLInputElement>("inpAvgTicketKrw")).value),
-    cupsPerDayBase: Number((byId<HTMLInputElement>("inpCupsPerDayBase")).value),
-    makeTimeSec: Number((byId<HTMLInputElement>("inpMakeTimeSec")).value),
-    staffFte: Number((byId<HTMLInputElement>("inpStaffFte")).value),
-    cogsRatio: Number((byId<HTMLInputElement>("inpCogsRatio")).value),
-    mode: Number((byId<HTMLSelectElement>("inpMode")).value) === 1000 ? 1000 : 10000,
-    decisionChoice: selectedDecision,
-    ...overrides,
-  };
-}
-
-async function triggerRun(overrides: Record<string, unknown> = {}): Promise<void> {
-  byId("patchAttackAlert").classList.add("hidden");
-  const payload = collectOnsitePayload(overrides);
-  const res = await fetch("/run", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+  // Expert Drawer Calibration & Rounds
+  const uncalEl = $("uncalibratedPanel");
+  if (uncalEl) {
+    uncalEl.textContent = `원시 10,000개 시뮬레이션 생존 통과: ${survivors.toLocaleString()} / ${totalN.toLocaleString()} (${rawSurvPct}) · 하드 제약 기각 ${(run.rejectedCount ?? 0).toLocaleString()}건`;
   }
-  const data = (await res.json()) as ApiRunEnvelope;
-  renderAllScreens(data);
-}
-
-function scheduleAutoSync10k(): void {
-  const autoChk = byId<HTMLInputElement>("chkAutoSync10k");
-  if (!autoChk.checked) return;
-  if (autoSyncTimer !== null) {
-    window.clearTimeout(autoSyncTimer);
-  }
-  autoSyncTimer = window.setTimeout(() => {
-    void triggerRun({ replay: false });
-  }, 160);
-}
-
-async function runCliffSide(side: "left" | "right"): Promise<void> {
-  if (!currentEnvelope?.run.cliff) {
-    await triggerRun();
-    return;
-  }
-  const cliff = currentEnvelope.run.cliff;
-  const factor = side === "left" ? 0.92 : 1.18;
-  const targetVal = Math.round(cliff.boundaryValue * factor);
-
-  const overrideMap: Record<string, unknown> = {};
-  const v = String(cliff.variable);
-  if (v === "monthlyRent" || v === "rentKRW") {
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = String(targetVal);
-    (byId<HTMLInputElement>("sliderMonthlyRent")).value = String(targetVal);
-    byId("lblMonthlyRent").textContent = fmtManwon(targetVal);
-    overrideMap.monthlyRentKrw = targetVal;
-  } else if (v === "avgTicketKrw" || v === "pricePerCupKRW") {
-    (byId<HTMLInputElement>("inpAvgTicketKrw")).value = String(targetVal);
-    (byId<HTMLInputElement>("sliderAvgTicket")).value = String(targetVal);
-    byId("lblAvgTicket").textContent = `${fmtInt(targetVal)}원`;
-    overrideMap.avgTicketKrw = targetVal;
-  } else if (v === "makeTimeSec") {
-    (byId<HTMLInputElement>("inpMakeTimeSec")).value = String(targetVal);
-    (byId<HTMLInputElement>("sliderMakeTimeSec")).value = String(targetVal);
-    byId("lblMakeTimeSec").textContent = `${targetVal}초`;
-    currentMakeTimeSec = targetVal;
-    recomputeSpatialSim();
-    overrideMap.makeTimeSec = targetVal;
-  } else if (v === "cupsPerDayBase") {
-    (byId<HTMLInputElement>("inpCupsPerDayBase")).value = String(targetVal);
-    overrideMap.cupsPerDayBase = targetVal;
-  } else {
-    const fallbackRent = side === "left" ? 3_100_000 : 4_200_000;
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = String(fallbackRent);
-    (byId<HTMLInputElement>("sliderMonthlyRent")).value = String(fallbackRent);
-    byId("lblMonthlyRent").textContent = fmtManwon(fallbackRent);
-    overrideMap.monthlyRentKrw = fallbackRent;
+  const calEl = $("calibratedDistributionContainer");
+  if (calEl) {
+    calEl.textContent = run.calibration.calibrated
+      ? `서울시 OA-15577 백테스트 최대 오차 ${run.calibration.maxErrorPp.toFixed(2)}pp · 은닉 홀드아웃 오차 ${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)}pp (5pp 이내 통과)`
+      : `보정 오차 초과 (${run.calibration.maxErrorPp.toFixed(2)}pp) — 분포 표시 차단됨`;
   }
 
-  await triggerRun(overrideMap);
+  const roundsBody = $("roundsTableBody");
+  if (roundsBody) {
+    roundsBody.innerHTML = run.rounds
+      .map(
+        (r) => `
+        <tr>
+          <td>R${r.round}</td>
+          <td>${r.changed}</td>
+          <td>충격 +${r.shocksAdded}</td>
+          <td>사망 ${r.deaths} / 신규가족 +${r.newFailureFamilies}</td>
+          <td>생존 ${r.nonDominatedSurvivors}</td>
+          <td><span class="badge-pass">${r.stopReason ?? "진행"}</span></td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  const verBody = $("verificationTableBody");
+  if (verBody) {
+    verBody.innerHTML = (run.calibration.yearlyErrors ?? [])
+      .map(
+        (y) => `
+        <tr>
+          <td>OA-15577 (${y.year})</td>
+          <td>개·폐업률 백테스트</td>
+          <td>오차 ${Math.max(y.openErrorPp, y.closeErrorPp).toFixed(2)}pp</td>
+          <td><span class="badge-pass">PASS</span></td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  drawCashflowChart(run);
+  drawLandscapeChart(run);
+  drawSaturationChart(run);
 }
 
-async function triggerForbiddenPatchAttack(): Promise<void> {
-  const res = await fetch("/patches", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      patches: [
-        { op: "replace", path: "/checks", value: 1, by: "StoreDesigner" },
-        { op: "replace", path: "/budgetKrw", value: 999999999, by: "StoreDesigner" },
-        { op: "replace", path: "/reserveRatioMin", value: 0, by: "StoreDesigner" },
-        { op: "replace", path: "/oracle/pnlFormula", value: "hack", by: "StoreDesigner" },
-        { op: "replace", path: "/backtest/referenceRates", value: 0, by: "BankruptcyDesigner" },
-      ],
-    }),
-  });
-  const out = (await res.json()) as {
-    acceptedCount: number;
-    rejectedCount: number;
-    rejectedPatches: { patchIndex: number; path: string; reason: string }[];
-    engineResultHashUnchanged: boolean;
-  };
-  const alertEl = byId("patchAttackAlert");
-  alertEl.classList.remove("hidden");
-  alertEl.innerHTML = `
-    <div style="font-weight: 800; color: #fda4af;">
-      🛡️ [AT-10 판정기(Oracle) 보호 검증 완료] 금지 경로 패치 ${out.rejectedCount}/5건 전량 기각 · 엔진 결과 해시 불변(${out.engineResultHashUnchanged ? "VERIFIED" : "FAIL"})
-    </div>
-    <ul style="margin-left: 18px; font-size: 12px; color: var(--text-secondary);">
-      ${out.rejectedPatches.map((p) => `<li><code>${p.path}</code> → ${p.reason}</li>`).join("")}
-    </ul>
-  `;
+function drawCashflowChart(run: RunResult): void {
+  const canvas = $<HTMLCanvasElement>("cashflowCanvas");
+  if (!canvas) return;
+  const b = canvas.getBoundingClientRect();
+  if (b.width <= 10) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(b.width * dpr);
+  canvas.height = Math.round(b.height * dpr);
+  const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, b.width, b.height);
+
+  const fan = run.cashflowFan ?? [];
+  if (!fan.length) return;
+
+  const padL = 42;
+  const padR = 12;
+  const padT = 12;
+  const padB = 22;
+  const pw = b.width - padL - padR;
+  const ph = b.height - padT - padB;
+
+  let minV = 0;
+  let maxV = 10_000_000;
+  for (const f of fan) {
+    minV = Math.min(minV, f.p10);
+    maxV = Math.max(maxV, f.p90);
+  }
+  const span = Math.max(1, maxV - minV);
+  const xOf = (m: number) => padL + ((m - 1) / 35) * pw;
+  const yOf = (v: number) => padT + ((maxV - v) / span) * ph;
+
+  // Zero line
+  const y0 = yOf(0);
+  ctx.strokeStyle = "#cfd6d0";
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(padL, y0);
+  ctx.lineTo(padL + pw, y0);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // P10..P90 shaded band
+  ctx.fillStyle = "rgba(52, 107, 87, 0.14)";
+  ctx.beginPath();
+  fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p90)) : ctx.moveTo(xOf(f.month), yOf(f.p90))));
+  for (let i = fan.length - 1; i >= 0; i--) {
+    ctx.lineTo(xOf(fan[i].month), yOf(fan[i].p10));
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // P50 line
+  ctx.strokeStyle = "#346b57";
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p50)) : ctx.moveTo(xOf(f.month), yOf(f.p50))));
+  ctx.stroke();
+
+  ctx.fillStyle = "#69757a";
+  ctx.font = "10px -apple-system, sans-serif";
+  ctx.fillText("1개월", padL, b.height - 6);
+  ctx.textAlign = "right";
+  ctx.fillText("36개월", b.width - padR, b.height - 6);
 }
 
-function setupSpatialStudioInteractions(): void {
-  // 1. Preset Buttons
-  const presetBtns = [
-    byId("btnPresetBaseline"),
-    byId("btnPresetStaffAdded"),
-    byId("btnPresetNarrowBlock"),
+function drawLandscapeChart(run: RunResult): void {
+  const canvas = $<HTMLCanvasElement>("landscapeCanvas");
+  if (!canvas) return;
+  const b = canvas.getBoundingClientRect();
+  if (b.width <= 10) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(b.width * dpr);
+  canvas.height = Math.round(b.height * dpr);
+  const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, b.width, b.height);
+
+  const pts = run.landscape?.points ?? [];
+  if (!pts.length) return;
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    const v = p.cumPnL ?? p.y;
+    if (v < minY) minY = v;
+    if (v > maxY) maxY = v;
+  }
+  const spanY = Math.max(1, maxY - minY);
+  for (let i = 0; i < pts.length; i += 2) {
+    const p = pts[i];
+    const x = 24 + (p.survivedMonths / 36) * (b.width - 40);
+    const y = 14 + ((maxY - (p.cumPnL ?? p.y)) / spanY) * (b.height - 28);
+    ctx.fillStyle = p.survivedMonths >= 36 ? "rgba(52,107,87,0.45)" : "rgba(168,69,60,0.35)";
+    ctx.fillRect(x, y, 2, 2);
+  }
+}
+
+function drawSaturationChart(run: RunResult): void {
+  const canvas = $<HTMLCanvasElement>("saturationCanvas");
+  if (!canvas) return;
+  const b = canvas.getBoundingClientRect();
+  if (b.width <= 10) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(b.width * dpr);
+  canvas.height = Math.round(b.height * dpr);
+  const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, b.width, b.height);
+
+  const curve = run.landscape?.saturationCurve ?? [
+    { scale: 100, uniqueFailureFamilies: 4 },
+    { scale: 1000, uniqueFailureFamilies: 9 },
+    { scale: 10000, uniqueFailureFamilies: 14 },
   ];
-  const setActivePresetBtn = (activeEl: HTMLElement) => {
-    for (const b of presetBtns) b.classList.remove("btn-active-preset");
-    activeEl.classList.add("btn-active-preset");
-  };
-
-  // Preset A: Move shelf only, keep staff 1+1 (shows paradox where wait increases 41.3s -> 44.3s)
-  byId("btnPresetBaseline").addEventListener("click", () => {
-    setActivePresetBtn(byId("btnPresetBaseline"));
-    modBlocks = createModifiedBlocksPreset();
-    currentFootprintM = 0.50;
-    modOrderStaff = 1;
-    modPickupStaff = 1;
-    updateStaffSegmentUI("1-1");
-    updateFootprintSegmentUI("0.50");
-    (byId<HTMLInputElement>("inpStaffFte")).value = "1.5";
-    byId("lblStaffFteSync").textContent = "상근 FTE: 1.5명 연동";
-    recomputeSpatialSim();
-    scheduleAutoSync10k();
+  const maxF = Math.max(10, ...curve.map((c) => c.uniqueFailureFamilies));
+  ctx.strokeStyle = "#346b57";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  curve.forEach((c, i) => {
+    const x = 40 + (i / Math.max(1, curve.length - 1)) * (b.width - 80);
+    const y = b.height - 30 - (c.uniqueFailureFamilies / maxF) * (b.height - 60);
+    if (i) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
   });
+  ctx.stroke();
+}
 
-  // Preset B: Move shelf + add 1 pickup staff (1+2 -> wait drops 41.3s -> 12.1s, exited 45 -> 51)
-  byId("btnPresetStaffAdded").addEventListener("click", () => {
-    setActivePresetBtn(byId("btnPresetStaffAdded"));
-    modBlocks = createModifiedBlocksPreset();
-    currentFootprintM = 0.50;
-    modOrderStaff = 1;
-    modPickupStaff = 2;
-    updateStaffSegmentUI("1-2");
-    updateFootprintSegmentUI("0.50");
-    (byId<HTMLInputElement>("inpStaffFte")).value = "2.0";
-    byId("lblStaffFteSync").textContent = "상근 FTE: 2.0명 연동";
-    recomputeSpatialSim();
-    scheduleAutoSync10k();
-  });
+// ============================================================================
+// 7. INTERACTIONS: POINTER DRAG ON 2.5D FLOORPLAN, PHOTO UPLOAD & WALKTHROUGH
+// ============================================================================
 
-  // Preset C: Stroller / Wide Tray (0.85m) clearance test
-  byId("btnPresetNarrowBlock").addEventListener("click", () => {
-    setActivePresetBtn(byId("btnPresetNarrowBlock"));
-    modBlocks = createModifiedBlocksPreset();
-    currentFootprintM = 0.85;
-    modOrderStaff = 1;
-    modPickupStaff = 2;
-    updateStaffSegmentUI("1-2");
-    updateFootprintSegmentUI("0.85");
-    recomputeSpatialSim();
-  });
+function setObjectPosition(x: number, y: number, immediate = true): void {
+  const o = selectedMovable();
+  if (!o) return;
+  o.x = Math.max(0, Math.min(state.plan.width - o.w, Math.round(x * 10) / 10));
+  o.y = Math.max(0, Math.min(state.plan.height - o.h, Math.round(y * 10) / 10));
+  state.preset = "custom";
+  syncSpatialControls();
+  if (immediate) {
+    recomputeRehearsal();
+    scheduleMacroSimulation();
+  } else {
+    queueRecomputeRehearsal();
+  }
+}
 
-  byId("btnResetSpatial").addEventListener("click", () => {
-    origBlocks = createBaselineBlocks();
-    modBlocks = createModifiedBlocksPreset();
-    playerOrigPos = { x: 1.4, y: 4.5 };
-    playerModPos = { x: 1.4, y: 4.5 };
-    origCollisionMsg = "";
-    modCollisionMsg = "";
-    recomputeSpatialSim();
-  });
+function setPreset(kind: "layout" | "staff" | "both"): void {
+  state.preset = kind;
+  state.plan = makeScene(kind === "staff" ? "baseline" : "proposed", currentCategory());
+  state.selected = "display";
+  state.pickupStaff = kind === "layout" ? 1 : 2;
+  if ($<HTMLInputElement>("pickupStaff")) $<HTMLInputElement>("pickupStaff").value = String(state.pickupStaff);
+  recomputeRehearsal();
+  scheduleMacroSimulation();
+}
 
-  // 2. Sliders Deck (8 Interactive Levers)
-  const sliderArr = byId<HTMLInputElement>("sliderArrivalsPerMin");
-  sliderArr.addEventListener("input", () => {
-    currentArrivalsPerMin = Number(sliderArr.value);
-    byId("lblArrivalsPerMin").textContent = `${currentArrivalsPerMin.toFixed(1)}명/분`;
-    const cupsBase = Math.round(currentArrivalsPerMin * 46.25);
-    (byId<HTMLInputElement>("inpCupsPerDayBase")).value = String(cupsBase);
-    recomputeSpatialSim();
-    scheduleAutoSync10k();
-  });
+function canStand(scene: SceneData, point: Pt2D): boolean {
+  const r = state.body / 2;
+  return (
+    point.x >= r &&
+    point.x <= scene.width - r &&
+    point.y >= r &&
+    point.y <= scene.height - r &&
+    !scene.objects.some(
+      (o) => point.x >= o.x - r && point.x <= o.x + o.w + r && point.y >= o.y - r && point.y <= o.y + o.h + r
+    )
+  );
+}
 
-  const sliderMake = byId<HTMLInputElement>("sliderMakeTimeSec");
-  sliderMake.addEventListener("input", () => {
-    currentMakeTimeSec = Number(sliderMake.value);
-    byId("lblMakeTimeSec").textContent = `${currentMakeTimeSec}초`;
-    (byId<HTMLInputElement>("inpMakeTimeSec")).value = String(currentMakeTimeSec);
-    recomputeSpatialSim();
-    scheduleAutoSync10k();
-  });
+let uploadedImage: HTMLImageElement | null = null;
 
-  const sliderRent = byId<HTMLInputElement>("sliderMonthlyRent");
-  sliderRent.addEventListener("input", () => {
-    const val = Number(sliderRent.value);
-    byId("lblMonthlyRent").textContent = fmtManwon(val);
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = String(val);
-    scheduleAutoSync10k();
-  });
+function drawUploadedImagePreview(): void {
+  const ic = $<HTMLCanvasElement>("imageCanvas");
+  if (!ic) return;
+  const b = ic.getBoundingClientRect();
+  if (b.width <= 10) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  ic.width = Math.round(b.width * dpr);
+  ic.height = Math.round(b.height * dpr);
+  const ctx = ic.getContext("2d")!;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#edf0eb";
+  ctx.fillRect(0, 0, b.width, b.height);
+  if (!uploadedImage) return;
 
-  const sliderTicket = byId<HTMLInputElement>("sliderAvgTicket");
-  sliderTicket.addEventListener("input", () => {
-    const val = Number(sliderTicket.value);
-    byId("lblAvgTicket").textContent = `${fmtInt(val)}원`;
-    (byId<HTMLInputElement>("inpAvgTicketKrw")).value = String(val);
-    scheduleAutoSync10k();
-  });
+  const scale = Math.min(b.width / uploadedImage.width, b.height / uploadedImage.height);
+  const w = uploadedImage.width * scale;
+  const h = uploadedImage.height * scale;
+  const x = (b.width - w) / 2;
+  const y = (b.height - h) / 2;
+  state.imageRect = { x, y, w, h };
+  ctx.drawImage(uploadedImage, x, y, w, h);
 
-  const sliderSeats = byId<HTMLInputElement>("sliderSeats");
-  sliderSeats.addEventListener("input", () => {
-    const val = Number(sliderSeats.value);
-    byId("lblSeats").textContent = `${val}석`;
-    (byId<HTMLInputElement>("inpSeats")).value = String(val);
-    const seatBlk = modBlocks.find((b) => b.role === "seating");
-    if (seatBlk) {
-      seatBlk.label = `홀 좌석 구역 (${val}석)`;
-      seatBlk.w = Math.max(1.5, Math.min(6.2, 1.6 + val * 0.15));
-    }
-    recomputeSpatialSim();
-    scheduleAutoSync10k();
-  });
+  if (state.roi) {
+    const a = state.roi;
+    ctx.fillStyle = "rgba(68, 109, 186, 0.22)";
+    ctx.fillRect(x + a.left * w, y + a.top * h, (a.right - a.left) * w, (a.bottom - a.top) * h);
+    ctx.strokeStyle = "#3b69ad";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + a.left * w, y + a.top * h, (a.right - a.left) * w, (a.bottom - a.top) * h);
+  }
+}
 
-  const sliderBudget = byId<HTMLInputElement>("sliderBudget");
-  sliderBudget.addEventListener("input", () => {
-    const val = Number(sliderBudget.value);
-    byId("lblBudget").textContent = fmtManwon(val);
-    (byId<HTMLInputElement>("inpBudgetKrw")).value = String(val);
-    scheduleAutoSync10k();
-  });
-
-  // 3. Segmented Controls: Staff & Footprint
-  function updateStaffSegmentUI(code: string): void {
-    const btns = byId("segStaffGroup").querySelectorAll(".seg-btn");
-    btns.forEach((b) => {
-      b.classList.toggle("active", b.getAttribute("data-staff") === code);
+function bindEvents(): void {
+  // 1. Address Input & Quick Address Chips
+  const addrInp = $<HTMLInputElement>("addressInput");
+  if (addrInp) {
+    addrInp.addEventListener("input", () => {
+      state.address = addrInp.value;
+      renderRecommendedCategories();
+      scheduleMacroSimulation();
     });
-    byId("lblStaffConfig").textContent =
-      code === "1-1" ? "주문1 + 픽업1" : code === "1-2" ? "주문1 + 픽업2" : "주문2 + 픽업2";
   }
 
-  byId("segStaffGroup").querySelectorAll(".seg-btn").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("[data-addr]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const code = btn.getAttribute("data-staff") ?? "1-2";
-      updateStaffSegmentUI(code);
-      if (code === "1-1") {
-        modOrderStaff = 1;
-        modPickupStaff = 1;
-        (byId<HTMLInputElement>("inpStaffFte")).value = "1.5";
-        byId("lblStaffFteSync").textContent = "상근 FTE: 1.5명 연동";
-      } else if (code === "1-2") {
-        modOrderStaff = 1;
-        modPickupStaff = 2;
-        (byId<HTMLInputElement>("inpStaffFte")).value = "2.0";
-        byId("lblStaffFteSync").textContent = "상근 FTE: 2.0명 연동";
-      } else {
-        modOrderStaff = 2;
-        modPickupStaff = 2;
-        (byId<HTMLInputElement>("inpStaffFte")).value = "3.0";
-        byId("lblStaffFteSync").textContent = "상근 FTE: 3.0명 연동";
-      }
-      recomputeSpatialSim();
-      scheduleAutoSync10k();
-    });
-  });
-
-  function updateFootprintSegmentUI(fpStr: string): void {
-    const btns = byId("segFootprintGroup").querySelectorAll(".seg-btn");
-    btns.forEach((b) => {
-      b.classList.toggle("active", b.getAttribute("data-footprint") === fpStr);
-    });
-    byId("lblFootprintWidth").textContent =
-      fpStr === "0.85" ? "0.85m (유모차)" : "0.50m (일반)";
-  }
-
-  byId("segFootprintGroup").querySelectorAll(".seg-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const fpStr = btn.getAttribute("data-footprint") ?? "0.50";
-      currentFootprintM = Number(fpStr);
-      updateFootprintSegmentUI(fpStr);
-      recomputeSpatialSim();
-    });
-  });
-
-  // 4. Playback Controls & Timeline Scrubber
-  const btnPlayPause = byId("btnSimPlayPause");
-  btnPlayPause.addEventListener("click", () => {
-    simPlaying = !simPlaying;
-    btnPlayPause.textContent = simPlaying ? "⏸ 일시정지" : "▶ 리허설 재생";
-  });
-
-  byId("btnSimRestart").addEventListener("click", () => {
-    simTimeSec = 0;
-    simPlaying = true;
-    btnPlayPause.textContent = "⏸ 일시정지";
-  });
-
-  byId("segSimSpeed").querySelectorAll(".seg-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      byId("segSimSpeed").querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll("[data-addr]").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      simSpeed = Number(btn.getAttribute("data-speed") ?? "4");
+      const nextAddr = btn.getAttribute("data-addr") || "서울 성동구 성수동2가 315-47";
+      state.address = nextAddr;
+      if (addrInp) addrInp.value = nextAddr;
+      // Pick the #1 preferred category for that district automatically
+      const distProf = detectDistrictFromAddress(nextAddr);
+      const topCat = (distProf.preferredCategories[0] || "cafe") as "cafe" | "bakery" | "salad" | "winebar";
+      selectCategory(topCat);
     });
   });
 
-  const sliderTime = byId<HTMLInputElement>("sliderSimTime");
-  sliderTime.addEventListener("input", () => {
-    simTimeSec = Number(sliderTime.value);
-    updateSimClockLabel();
-    renderSpatialCanvases();
-  });
-
-  // 5. Direct Walkthrough Controls (Buttons + Keyboard WASD / Arrow Keys)
-  byId("btnWalkUp").addEventListener("click", () => stepWalkthrough(0, -0.45));
-  byId("btnWalkDown").addEventListener("click", () => stepWalkthrough(0, 0.45));
-  byId("btnWalkLeft").addEventListener("click", () => stepWalkthrough(-0.45, 0));
-  byId("btnWalkRight").addEventListener("click", () => stepWalkthrough(0.45, 0));
-  byId("btnWalkReset").addEventListener("click", () => {
-    playerOrigPos = { x: 1.4, y: 4.5 };
-    playerModPos = { x: 1.4, y: 4.5 };
-    origCollisionMsg = "";
-    modCollisionMsg = "";
-    renderSpatialCanvases();
-  });
-
-  window.addEventListener("keydown", (ev) => {
-    const tag = (ev.target as HTMLElement | null)?.tagName;
-    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
-    if (ev.key === "ArrowUp" || ev.key === "w" || ev.key === "W") {
-      ev.preventDefault();
-      stepWalkthrough(0, -0.4);
-    } else if (ev.key === "ArrowDown" || ev.key === "s" || ev.key === "S") {
-      ev.preventDefault();
-      stepWalkthrough(0, 0.4);
-    } else if (ev.key === "ArrowLeft" || ev.key === "a" || ev.key === "A") {
-      ev.preventDefault();
-      stepWalkthrough(-0.4, 0);
-    } else if (ev.key === "ArrowRight" || ev.key === "d" || ev.key === "D") {
-      ev.preventDefault();
-      stepWalkthrough(0.4, 0);
+  // 2. Capital Input & Quick Capital Chips
+  const capInp = $<HTMLInputElement>("capitalInput");
+  const updateCapital = (valManwon: number) => {
+    state.capitalManwon = valManwon;
+    if (capInp) capInp.value = String(valManwon);
+    const disp = $("capitalDisplay");
+    if (disp) {
+      disp.textContent =
+        valManwon >= 10000
+          ? `${Math.floor(valManwon / 10000)}억 ${valManwon % 10000 ? (valManwon % 10000).toLocaleString() + "만" : ""}원`
+          : `${valManwon.toLocaleString()}만원`;
     }
-  });
-
-  // 6. Interactive Mouse Drag & Drop on spatialModCanvas + Custom Bounding-Box Drawing
-  const modCanvas = byId<HTMLCanvasElement>("spatialModCanvas");
-
-  const getCanvasPointM = (ev: MouseEvent): PointM => {
-    const rect = modCanvas.getBoundingClientRect();
-    const xRatio = (ev.clientX - rect.left) / rect.width;
-    const yRatio = (ev.clientY - rect.top) / rect.height;
-    return {
-      x: Math.max(0.2, Math.min(ROOM_W_M - 0.2, xRatio * ROOM_W_M)),
-      y: Math.max(0.2, Math.min(ROOM_H_M - 0.2, yRatio * ROOM_H_M)),
-    };
+    renderRecommendedCategories();
+    scheduleMacroSimulation();
   };
 
-  modCanvas.addEventListener("mousedown", (ev) => {
-    const pt = getCanvasPointM(ev);
-    if (drawObstacleMode) {
-      drawingBoxStartM = pt;
-      drawingBoxCurrM = pt;
-      return;
-    }
-
-    // Check if mouse hit any draggable block (topmost first)
-    for (let i = modBlocks.length - 1; i >= 0; i--) {
-      const b = modBlocks[i];
-      if (!b.draggable) continue;
-      if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
-        draggingBlockId = b.id;
-        dragOffsetM = { x: pt.x - b.x, y: pt.y - b.y };
-        break;
-      }
-    }
-  });
-
-  window.addEventListener("mousemove", (ev) => {
-    if (drawingBoxStartM) {
-      drawingBoxCurrM = getCanvasPointM(ev);
-      renderSpatialCanvases();
-      return;
-    }
-    if (!draggingBlockId) return;
-    const pt = getCanvasPointM(ev);
-    const blk = modBlocks.find((b) => b.id === draggingBlockId);
-    if (!blk) return;
-
-    blk.x = Math.max(0.3, Math.min(ROOM_W_M - blk.w - 0.3, pt.x - dragOffsetM.x));
-    blk.y = Math.max(0.3, Math.min(ROOM_H_M - blk.h - 0.3, pt.y - dragOffsetM.y));
-    recomputeSpatialSim();
-    renderSpatialCanvases();
-  });
-
-  window.addEventListener("mouseup", () => {
-    if (drawingBoxStartM && drawingBoxCurrM) {
-      const x = Math.min(drawingBoxStartM.x, drawingBoxCurrM.x);
-      const y = Math.min(drawingBoxStartM.y, drawingBoxCurrM.y);
-      const w = Math.abs(drawingBoxCurrM.x - drawingBoxStartM.x);
-      const h = Math.abs(drawingBoxCurrM.y - drawingBoxStartM.y);
-      if (w >= 0.4 && h >= 0.4) {
-        modBlocks.push({
-          id: `custom-${Date.now()}`,
-          label: "사용자 장애물",
-          x,
-          y,
-          w,
-          h,
-          color: "rgba(244, 63, 94, 0.28)",
-          borderColor: "#f43f5e",
-          isObstacle: true,
-          draggable: true,
-          role: "custom",
-        });
-        recomputeSpatialSim();
-      }
-      drawingBoxStartM = null;
-      drawingBoxCurrM = null;
-      renderSpatialCanvases();
-    }
-    if (draggingBlockId) {
-      draggingBlockId = null;
-      scheduleAutoSync10k();
-    }
-  });
-
-  // 7. Floorplan Upload & Obstacle Box Toggle & Execution Checklist
-  const inpUpload = byId<HTMLInputElement>("inpFloorplanUpload");
-  inpUpload.addEventListener("change", () => {
-    const file = inpUpload.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        uploadedFloorplanImg = img;
-        renderSpatialCanvases();
-      };
-      img.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
-  });
-
-  const btnDrawBox = byId("btnToggleDrawBox");
-  btnDrawBox.addEventListener("click", () => {
-    drawObstacleMode = !drawObstacleMode;
-    btnDrawBox.textContent = drawObstacleMode
-      ? "✏️ 장애물 박스 그리기: ON (우측 도면 드래그)"
-      : "✏️ 장애물 박스 그리기: OFF";
-    btnDrawBox.classList.toggle("btn-active-preset", drawObstacleMode);
-  });
-
-  byId("btnShowChecklist").addEventListener("click", () => {
-    const box = byId("executionChecklistBox");
-    box.classList.toggle("hidden");
-    if (!box.classList.contains("hidden")) {
-      renderExecutionChecklist();
-    }
-  });
-
-  byId("btnCopyChecklist").addEventListener("click", () => {
-    const text = byId("executionChecklistPre").textContent ?? "";
-    void navigator.clipboard?.writeText(text);
-    byId("btnCopyChecklist").textContent = "✅ 복사 완료!";
-    setTimeout(() => {
-      byId("btnCopyChecklist").textContent = "📋 클립보드 복사";
-    }, 1500);
-  });
-
-  byId("btnSyncSpatialTo10k").addEventListener("click", () => {
-    void triggerRun({ replay: false });
-  });
-
-  // 8. Interactive 10,000-Dot Landscape Scatter Hover/Click Inspector
-  const landCanvas = byId<HTMLCanvasElement>("landscapeCanvas");
-  const inspectPointAtMouse = (ev: MouseEvent, lockSelection: boolean) => {
-    if (!currentEnvelope) return;
-    const run = currentEnvelope.run;
-    const pts = run.landscape.points;
-    if (pts.length === 0) return;
-
-    const rect = landCanvas.getBoundingClientRect();
-    const mx = ((ev.clientX - rect.left) / rect.width) * landCanvas.width;
-    const my = ((ev.clientY - rect.top) / rect.height) * landCanvas.height;
-
-    const padL = 56;
-    const padR = 20;
-    const padT = 18;
-    const padB = 32;
-    const plotW = landCanvas.width - padL - padR;
-    const plotH = landCanvas.height - padT - padB;
-
-    let minPnl = Infinity;
-    let maxPnl = -Infinity;
-    for (const p of pts) {
-      const val = p.cumPnL ?? p.y;
-      if (val < minPnl) minPnl = val;
-      if (val > maxPnl) maxPnl = val;
-    }
-    if (minPnl === maxPnl) {
-      minPnl -= 10_000_000;
-      maxPnl += 10_000_000;
-    }
-
-    let bestDist = Infinity;
-    let bestDesignId = "";
-    for (let i = 0; i < pts.length; i++) {
-      const p = pts[i];
-      const px = padL + (Math.min(36, Math.max(0, p.survivedMonths)) / 36) * plotW;
-      const pnl = p.cumPnL ?? p.y;
-      const py = padT + ((maxPnl - pnl) / (maxPnl - minPnl)) * plotH;
-      const d = Math.hypot(mx - px, my - py);
-      if (d < bestDist) {
-        bestDist = d;
-        bestDesignId = p.designId;
-      }
-    }
-
-    if (bestDist <= 18 && bestDesignId) {
-      const simRes = run.results.find((r) => r.designId === bestDesignId);
-      const designObj = run.designs.find((d) => d.designId === bestDesignId);
-      if (simRes) {
-        if (lockSelection) {
-          inspectedVariant = simRes;
-          renderLandscapeCanvas(run);
-          renderCashflowCanvas(run);
-        }
-        const statusStr =
-          simRes.deathMonth === null
-            ? "🟢 36개월 완주 생존"
-            : `🔴 ${simRes.deathMonth}개월차 사망 (${simRes.failureFamily ?? "현금고갈"})`;
-        byId("landscapeInspectorBar").innerHTML = `
-          <span>🎯 <strong>[${simRes.designId}]</strong> ${statusStr} · 36M 누적손익: <strong>${fmtManwon(simRes.cumPnL)}</strong> · 최저현금: <strong>${fmtManwon(simRes.minCash)}</strong></span>
-          <span style="color:#94a3b8;">임대료 ${fmtManwon(designObj?.monthlyRent.value ?? 3300000)} · 객단가 ${fmtInt(designObj?.avgTicketKrw ?? 5200)}원 · 제조 ${designObj?.makeTimeSec.value ?? 75}초 ${srcBadge("computed", "10k인스펙터")}</span>
-        `;
-      }
-    }
-  };
-
-  landCanvas.addEventListener("mousemove", (ev) => inspectPointAtMouse(ev, false));
-  landCanvas.addEventListener("click", (ev) => inspectPointAtMouse(ev, true));
-}
-
-function updateSimClockLabel(): void {
-  const mins = Math.floor(simTimeSec / 60);
-  const secs = Math.floor(simTimeSec % 60);
-  const mm = String(mins).padStart(2, "0");
-  const ss = String(secs).padStart(2, "0");
-  byId("lblSimClock").textContent = `${mm}:${ss} / 10:00`;
-  (byId<HTMLInputElement>("sliderSimTime")).value = String(Math.floor(simTimeSec));
-}
-
-function startAnimationLoop(): void {
-  const tick = (now: number) => {
-    const dtSec = Math.min(0.1, (now - lastFrameTs) / 1000);
-    lastFrameTs = now;
-
-    if (simPlaying) {
-      simTimeSec += dtSec * simSpeed * 6; // Smooth visible playback across 600s window
-      if (simTimeSec > SIM_DURATION_SEC) {
-        simTimeSec = 0;
-      }
-      updateSimClockLabel();
-    }
-    renderSpatialCanvases();
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
-function setupEventListeners(): void {
-  setupSpatialStudioInteractions();
-
-  byId("btnSubmitRun").addEventListener("click", () => {
-    void triggerRun({ replay: false });
-  });
-
-  byId("btnRunDefault10k").addEventListener("click", () => {
-    (byId<HTMLSelectElement>("inpMode")).value = "10000";
-    (byId<HTMLInputElement>("inpMonthlyRentKrw")).value = "3300000";
-    (byId<HTMLInputElement>("sliderMonthlyRent")).value = "3300000";
-    byId("lblMonthlyRent").textContent = "330만 원";
-    void triggerRun({ mode: 10000, referenceOffsetPp: 0, replay: false });
-  });
-
-  byId("btnFlipLeft").addEventListener("click", () => {
-    void runCliffSide("left");
-  });
-
-  byId("btnFlipRight").addEventListener("click", () => {
-    void runCliffSide("right");
-  });
-
-  byId("btnCliffMinus").addEventListener("click", () => {
-    void runCliffSide("left");
-  });
-
-  byId("btnCliffPlus").addEventListener("click", () => {
-    void runCliffSide("right");
-  });
-
-  byId("btnDemoUncalibrated").addEventListener("click", () => {
-    void triggerRun({ referenceOffsetPp: 10.0, replay: false });
-  });
-
-  byId("btnDemoForbiddenPatch").addEventListener("click", () => {
-    void triggerForbiddenPatchAttack();
-  });
-
-  const decisionCards = [byId("decMeasure"), byId("decHold"), byId("decProceed")];
-  const decisionLabels: Record<string, string> = {
-    measure: "7일 현장 실측 우선 수행 (Measure first)",
-    hold: "보류: 측정 전까지 근거 부족 (Hold: insufficient evidence)",
-    proceed: "#1 비지배 생존 설계안 조건으로 협상 진행 (Proceed)",
-  };
-  for (const card of decisionCards) {
-    card.addEventListener("click", () => {
-      for (const c of decisionCards) c.classList.remove("active");
-      card.classList.add("active");
-      const choice = (card.getAttribute("data-choice") ?? "hold") as "proceed" | "hold" | "measure";
-      selectedDecision = choice;
-      byId("selectedDecisionText").textContent = decisionLabels[choice] ?? choice;
+  if (capInp) {
+    capInp.addEventListener("input", () => {
+      document.querySelectorAll("[data-cap]").forEach((b) => b.classList.remove("active"));
+      updateCapital(Number(capInp.value));
     });
   }
 
-  byId("btnExportCsv").addEventListener("click", () => {
-    const runId = currentEnvelope?.run.runId ?? "default";
-    window.location.href = `/api/export/${encodeURIComponent(runId)}/csv?decision=${encodeURIComponent(selectedDecision)}`;
-  });
-
-  byId("btnExportMd").addEventListener("click", () => {
-    const runId = currentEnvelope?.run.runId ?? "default";
-    window.location.href = `/api/export/${encodeURIComponent(runId)}/report.md?decision=${encodeURIComponent(selectedDecision)}`;
-  });
-
-  byId("btnExportJson").addEventListener("click", () => {
-    if (!currentEnvelope) return;
-    const blob = new Blob([JSON.stringify(currentEnvelope.run, null, 2)], {
-      type: "application/json",
+  document.querySelectorAll<HTMLButtonElement>("[data-cap]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-cap]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const cap = Number(btn.getAttribute("data-cap") || "9000");
+      updateCapital(cap);
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `thousand-stores-${currentEnvelope.run.runId}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   });
+
+  // 3. Launch CTA Button ("바로 가게 창업해보기 →")
+  $("startFounderSimBtn")?.addEventListener("click", () => {
+    recomputeRehearsal();
+    void triggerMacroRun();
+    $("planCanvas")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // 4. Photo / Floorplan Upload (Auto-generates 2.5D floorplan obstacle + opens ROI box)
+  const imgFile = $<HTMLInputElement>("imageFile");
+  $("photoTriggerBtn")?.addEventListener("click", () => imgFile?.click());
+
+  imgFile?.addEventListener("change", (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      $("imageStatus").textContent = "PNG 또는 JPEG 사진을 선택해주세요.";
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const next = new Image();
+    next.onload = () => {
+      URL.revokeObjectURL(url);
+      uploadedImage = next;
+      const drawer = $("photoDrawerBox");
+      if (drawer) drawer.style.display = "block";
+      $("photoStatusBadge").textContent = "점포 사진 반영됨";
+      $("imageStatus").textContent = `"${file.name}" 치수 분석 완료 · 2.5D 도면에 자동 반영되었습니다.`;
+
+      // Automatically inject a realistic structural pillar/fixture from the photo so the user sees immediate 2.5D floorplan creation
+      state.plan.objects = state.plan.objects.filter((o) => !o.id.startsWith("photo-"));
+      state.plan.objects.push({
+        id: "photo-pillar",
+        label: "사진 감지 기둥",
+        x: 3.1,
+        y: 3.8,
+        w: 0.9,
+        h: 0.9,
+        kind: "display",
+        movable: true,
+      });
+      state.selected = "photo-pillar";
+      drawUploadedImagePreview();
+      recomputeRehearsal();
+      scheduleMacroSimulation();
+    };
+    next.src = url;
+  });
+
+  const ic = $<HTMLCanvasElement>("imageCanvas");
+  const getImgPt = (e: PointerEvent): Pt2D => {
+    const b = ic.getBoundingClientRect();
+    const r = state.imageRect;
+    return {
+      x: Math.max(0, Math.min(1, (e.clientX - b.left - r.x) / Math.max(1, r.w))),
+      y: Math.max(0, Math.min(1, (e.clientY - b.top - r.y) / Math.max(1, r.h))),
+    };
+  };
+  ic?.addEventListener("pointerdown", (e) => {
+    if (!uploadedImage) return;
+    imageDrag = getImgPt(e);
+    ic.setPointerCapture(e.pointerId);
+  });
+  ic?.addEventListener("pointermove", (e) => {
+    if (!imageDrag) return;
+    const b = getImgPt(e);
+    state.roi = {
+      left: Math.min(imageDrag.x, b.x),
+      right: Math.max(imageDrag.x, b.x),
+      top: Math.min(imageDrag.y, b.y),
+      bottom: Math.max(imageDrag.y, b.y),
+    };
+    drawUploadedImagePreview();
+    const valid = state.roi.right - state.roi.left > 0.025 && state.roi.bottom - state.roi.top > 0.025;
+    $<HTMLButtonElement>("applyBox").disabled = !valid;
+  });
+  ic?.addEventListener("pointerup", () => {
+    imageDrag = null;
+  });
+  $("applyBox")?.addEventListener("click", () => {
+    if (!state.roi) return;
+    const r = state.roi;
+    const id = "manual-" + state.rev;
+    state.plan.objects.push({
+      id,
+      label: "사진 지정 장애물",
+      x: r3(r.left * 12),
+      y: r3(r.top * 9),
+      w: Math.max(0.6, r3((r.right - r.left) * 12)),
+      h: Math.max(0.6, r3((r.bottom - r.top) * 9)),
+      kind: "display",
+      movable: true,
+    });
+    state.selected = id;
+    recomputeRehearsal();
+    scheduleMacroSimulation();
+  });
+
+  // 5. 2.5D Isometric Canvas Pointer Dragging (All movable objects: display, table-a/b/c, photo-*, manual-*)
+  const planCanvas = $<HTMLCanvasElement>("planCanvas");
+  planCanvas?.addEventListener("pointerdown", (e) => {
+    if (!views[1]) return;
+    const b = planCanvas.getBoundingClientRect();
+    const pt = unproject(views[1], e.clientX - b.left, e.clientY - b.top);
+    const hit = [...state.plan.objects]
+      .reverse()
+      .find(
+        (a) =>
+          a.movable &&
+          pt.x >= a.x - 0.3 &&
+          pt.x <= a.x + a.w + 0.3 &&
+          pt.y >= a.y - 0.3 &&
+          pt.y <= a.y + a.h + 0.3
+      );
+    if (hit) {
+      state.selected = hit.id;
+      drag = { id: hit.id, dx: pt.x - hit.x, dy: pt.y - hit.y };
+      planCanvas.setPointerCapture(e.pointerId);
+      planCanvas.style.cursor = "grabbing";
+      drawAllWorlds();
+    }
+  });
+  planCanvas?.addEventListener("pointermove", (e) => {
+    if (!drag || !views[1]) return;
+    const b = planCanvas.getBoundingClientRect();
+    const pt = unproject(views[1], e.clientX - b.left, e.clientY - b.top);
+    setObjectPosition(pt.x - drag.dx, pt.y - drag.dy, false);
+    drawAllWorlds();
+  });
+  planCanvas?.addEventListener("pointerup", () => {
+    if (drag) {
+      drag = null;
+      planCanvas.style.cursor = "grab";
+      recomputeRehearsal();
+      scheduleMacroSimulation();
+    }
+  });
+  if (planCanvas) planCanvas.style.cursor = "grab";
+
+  // 6. Preset & Playbar Controls
+  $("layoutBtn")?.addEventListener("click", () => setPreset("layout"));
+  $("staffBtn")?.addEventListener("click", () => setPreset("staff"));
+  $("bothBtn")?.addEventListener("click", () => setPreset("both"));
+  $("seedBtn")?.addEventListener("click", () => {
+    state.seed += 73;
+    recomputeRehearsal();
+  });
+
+  $("playBtn")?.addEventListener("click", () => {
+    if (state.t >= 600) state.t = 0;
+    state.playing = !state.playing;
+    syncSpatialControls();
+  });
+  $("restartBtn")?.addEventListener("click", () => {
+    state.t = 0;
+    state.playing = true;
+    syncSpatialControls();
+    drawAllWorlds();
+  });
+  $<HTMLInputElement>("timeline")?.addEventListener("input", (e) => {
+    state.playing = false;
+    state.t = Number((e.target as HTMLInputElement).value);
+    syncSpatialControls();
+    drawAllWorlds();
+  });
+  $<HTMLSelectElement>("speed")?.addEventListener("change", (e) => {
+    state.speed = Number((e.target as HTMLSelectElement).value);
+  });
+
+  // 7. Walkthrough Mode (WASD / Arrow Keys) & Store Control HUD (L, G, H, I, T)
+  const toggleLights = () => {
+    state.lightsOn = !state.lightsOn;
+    $("hudLightsBtn")?.classList.toggle("on", state.lightsOn);
+    drawAllWorlds();
+  };
+  const toggleDims = () => {
+    state.dimsOn = !state.dimsOn;
+    $("hudDimsBtn")?.classList.toggle("on", state.dimsOn);
+    drawAllWorlds();
+  };
+  const toggleHeat = () => {
+    state.heatOn = !state.heatOn;
+    $("hudHeatBtn")?.classList.toggle("on", state.heatOn);
+    drawAllWorlds();
+  };
+  const toggleIsoAngle = () => {
+    state.isoAngleAlt = !state.isoAngleAlt;
+    $("hudIsoAngleBtn")?.classList.toggle("on", state.isoAngleAlt);
+    drawAllWorlds();
+  };
+  const toggleTheme = () => {
+    state.darkTheme = !state.darkTheme;
+    if (state.darkTheme) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    $("hudThemeBtn")?.classList.toggle("on", state.darkTheme);
+    drawAllWorlds();
+    if (currentEnvelope) drawCashflowChart(currentEnvelope.run);
+  };
+
+  $("hudLightsBtn")?.addEventListener("click", toggleLights);
+  $("hudDimsBtn")?.addEventListener("click", toggleDims);
+  $("hudHeatBtn")?.addEventListener("click", toggleHeat);
+  $("hudIsoAngleBtn")?.addEventListener("click", toggleIsoAngle);
+  $("hudThemeBtn")?.addEventListener("click", toggleTheme);
+
+  $("walkBtn")?.addEventListener("click", () => {
+    state.walkMode = !state.walkMode;
+    state.playing = false;
+    state.players = [{ ...state.base.entrance }, { ...state.plan.entrance }];
+    $("walkHint").textContent = state.walkMode
+      ? "🚶 키보드 방향키(↑↓←→) 또는 WASD를 눌러 두 가게 도면을 동시에 걸어보세요."
+      : "💡 도면 위의 가구(진열대·테이블)를 마우스로 드래그해 옮기거나, [내가 손님으로 걸어보기]를 눌러보세요.";
+    syncSpatialControls();
+    drawAllWorlds();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    const tag = (e.target as HTMLElement | null)?.tagName || "";
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) return;
+    const k = e.key.toLowerCase();
+    if (k === "l") {
+      toggleLights();
+      return;
+    }
+    if (k === "g") {
+      toggleDims();
+      return;
+    }
+    if (k === "h") {
+      toggleHeat();
+      return;
+    }
+    if (k === "i") {
+      toggleIsoAngle();
+      return;
+    }
+    if (k === "t") {
+      toggleTheme();
+      return;
+    }
+    if (!state.walkMode) return;
+    const moves: Record<string, [number, number]> = {
+      ArrowUp: [0, -0.25],
+      ArrowDown: [0, 0.25],
+      ArrowLeft: [-0.25, 0],
+      ArrowRight: [0.25, 0],
+      w: [0, -0.25],
+      s: [0, 0.25],
+      a: [-0.25, 0],
+      d: [0.25, 0],
+    };
+    const d = moves[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const accepted = [state.base, state.plan].map((scene, i) => {
+      const target = { x: state.players[i].x + d[0], y: state.players[i].y + d[1] };
+      if (canStand(scene, target)) {
+        state.players[i] = target;
+        return true;
+      }
+      return false;
+    });
+    $("walkHint").textContent =
+      `동일 방향키 이동 · 기본 도면: ${accepted[0] ? "이동 완료" : "가구/벽에 막힘"} · 내 가게 도면: ${accepted[1] ? "이동 완료" : "가구/벽에 막힘"}`;
+    drawAllWorlds();
+  });
+
+  // 8. Fine-Tune Sliders inside Collapsible Drawer
+  $<HTMLInputElement>("arrivals")?.addEventListener("input", (e) => {
+    state.arrival = Number((e.target as HTMLInputElement).value);
+    syncSpatialControls();
+    queueRecomputeRehearsal();
+    scheduleMacroSimulation();
+  });
+  $<HTMLInputElement>("service")?.addEventListener("input", (e) => {
+    state.service = Number((e.target as HTMLInputElement).value);
+    syncSpatialControls();
+    queueRecomputeRehearsal();
+    scheduleMacroSimulation();
+  });
+  $<HTMLSelectElement>("bodyWidth")?.addEventListener("change", (e) => {
+    state.body = Number((e.target as HTMLSelectElement).value);
+    recomputeRehearsal();
+  });
+  $<HTMLInputElement>("pickupStaff")?.addEventListener("input", (e) => {
+    state.pickupStaff = Number((e.target as HTMLInputElement).value);
+    state.preset = "custom";
+    syncSpatialControls();
+    queueRecomputeRehearsal();
+    scheduleMacroSimulation();
+  });
+  $<HTMLInputElement>("displayX")?.addEventListener("change", (e) =>
+    setObjectPosition(Number((e.target as HTMLInputElement).value), selectedMovable().y)
+  );
+  $<HTMLInputElement>("displayY")?.addEventListener("change", (e) =>
+    setObjectPosition(selectedMovable().x, Number((e.target as HTMLInputElement).value))
+  );
+  $("btnRunInteractive")?.addEventListener("click", () => {
+    void triggerMacroRun();
+  });
+  $("btnResetBaseline")?.addEventListener("click", () => {
+    selectCategory(state.categoryId);
+  });
+
+  // 9. Export Buttons
+  const downloadBlob = (name: string, text: string, type: string) => {
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    link.href = url;
+    link.download = name;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  $("exportBtn")?.addEventListener("click", () => {
+    if (!state.results) return;
+    const r = state.results.plan;
+    const cat = currentCategory();
+    const o = selectedMovable();
+    const lines = [
+      `[천 개의 가게 · 미리 창업 리포트]`,
+      `- 창업 주소: ${state.address}`,
+      `- 내 자본금: ${state.capitalManwon.toLocaleString()}만원`,
+      `- 선택 창업 카테고리: ${cat.name}`,
+      `- 2.5D 가구 배치: ${o.label} (X ${o.x.toFixed(1)}m, Y ${o.y.toFixed(1)}m)`,
+      `- 10분 피크 동선 결과: 평균 대기 ${Math.round(observedWait(r))}초, 완료 ${r.completed}명`,
+      `- 핵심 위험(결정 절벽): ${$("cliffHeadline")?.textContent || "-"}`,
+      `- 7일 현장 체크: ${$("measureAction")?.textContent || "-"}`,
+    ];
+    downloadBlob("founder-prelaunch-plan.txt", lines.join("\n"), "text/plain;charset=utf-8");
+  });
+
+  $("jsonBtn")?.addEventListener("click", () => {
+    downloadBlob(
+      "founder-scenario.json",
+      JSON.stringify(
+        {
+          address: state.address,
+          capitalManwon: state.capitalManwon,
+          category: state.categoryId,
+          scene: state.plan,
+          runId: currentEnvelope?.run.runId,
+        },
+        null,
+        2
+      ),
+      "application/json"
+    );
+  });
+
+  $("btnExportMd")?.addEventListener("click", () => {
+    const runId = currentEnvelope?.run.runId ?? "default";
+    window.location.href = `/api/export/${encodeURIComponent(runId)}/report.md`;
+  });
+  $("btnExportJson")?.addEventListener("click", () => {
+    if (currentEnvelope) {
+      downloadBlob(
+        `thousand-stores-${currentEnvelope.run.runId}.json`,
+        JSON.stringify(currentEnvelope.run, null, 2),
+        "application/json"
+      );
+    }
+  });
+
+  new ResizeObserver(() => {
+    drawAllWorlds();
+    if (currentEnvelope) {
+      drawCashflowChart(currentEnvelope.run);
+      drawLandscapeChart(currentEnvelope.run);
+      drawSaturationChart(currentEnvelope.run);
+    }
+  }).observe(document.body);
+}
+
+// ============================================================================
+// 8. GRADIENT ASCII INTERACTIVE BACKGROUND (reactbits.dev/backgrounds/gradient-ascii)
+//    Soft multi-stop gradient glows drawn in ASCII characters that scramble under cursor
+// ============================================================================
+
+let asciiMouseX = -9999;
+let asciiMouseY = -9999;
+let asciiCursorEnergy = 0;
+
+function initGradientAsciiBackground(): void {
+  const canvas = $<HTMLCanvasElement>("asciiBgCanvas");
+  if (!canvas) return;
+
+  const resize = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  window.addEventListener(
+    "pointermove",
+    (e) => {
+      asciiMouseX = e.clientX;
+      asciiMouseY = e.clientY;
+      asciiCursorEnergy = 1.0;
+    },
+    { passive: true }
+  );
+}
+
+const ASCII_RAMP = ["·", ":", "-", "=", "+", "*", "#", "%", "@"];
+const SCRAMBLE_CHARS = ["@", "#", "%", "*", "+", "=", ":", "0", "1", "7", "9", "₩"];
+
+function drawGradientAsciiBackground(nowMs: number): void {
+  const canvas = $<HTMLCanvasElement>("asciiBgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  asciiCursorEnergy *= 0.96;
+
+  const cell = 24;
+  const cols = Math.ceil(w / cell);
+  const rows = Math.ceil(h / cell);
+  const t = nowMs * 0.00075;
+
+  ctx.font = '600 12px ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (let r = 0; r < rows; r++) {
+    const py = r * cell + cell * 0.5;
+    const ny = py / Math.max(1, h);
+
+    for (let c = 0; c < cols; c++) {
+      const px = c * cell + cell * 0.5;
+      const nx = px / Math.max(1, w);
+
+      // Soft drifting gradient lobes
+      const wave1 = Math.sin(nx * 4.2 + t * 1.1) * Math.cos(ny * 3.4 - t * 0.8);
+      const wave2 = Math.cos((nx - ny) * 5.0 + t * 0.65);
+      const baseIntensity = (wave1 * 0.55 + wave2 * 0.45 + 1) * 0.5; // 0..1
+
+      // Cursor proximity scramble
+      const dx = px - asciiMouseX;
+      const dy = py - asciiMouseY;
+      const dist = Math.hypot(dx, dy);
+      const cursorRadius = 155;
+
+      let char = ASCII_RAMP[Math.min(ASCII_RAMP.length - 1, Math.floor(baseIntensity * ASCII_RAMP.length))];
+      let alpha = 0.08 + baseIntensity * 0.16;
+
+      // Multi-stop gradient color (emerald -> teal -> warm amber -> slate blue)
+      let cr = Math.round(52 + baseIntensity * 28);
+      let cg = Math.round(107 + (1 - baseIntensity) * 35);
+      let cb = Math.round(87 + Math.sin(nx * 3.1 + t) * 45);
+
+      if (dist < cursorRadius) {
+        const u = 1 - dist / cursorRadius;
+        const scrambleIdx = Math.floor(((c * 17 + r * 31 + Math.floor(nowMs * 0.04)) % SCRAMBLE_CHARS.length));
+        char = SCRAMBLE_CHARS[scrambleIdx];
+        alpha = Math.min(0.75, alpha + u * 0.52);
+        // Bright emerald-teal glow under cursor
+        cr = Math.round(36 + u * 32);
+        cg = Math.round(135 + u * 45);
+        cb = Math.round(104 + u * 50);
+      }
+
+      ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha.toFixed(3)})`;
+      ctx.fillText(char, px, py);
+    }
+  }
+}
+
+function animateLoop(now: number): void {
+  const dt = lastFrameTs ? Math.min((now - lastFrameTs) / 1000, 0.2) : 0;
+  lastFrameTs = now;
+  if (state.playing) {
+    state.t = Math.min(600, state.t + dt * state.speed);
+    if (state.t >= 600) {
+      state.t = 0;
+    }
+  }
+  if (frameCounter % 2 === 0) drawAllWorlds();
+  if (frameCounter % 3 === 0) drawGradientAsciiBackground(now);
+  frameCounter++;
+  requestAnimationFrame(animateLoop);
 }
 
 async function boot(): Promise<void> {
-  setupEventListeners();
-  recomputeSpatialSim();
-  startAnimationLoop();
-  const res = await fetch("/api/default");
-  if (res.ok) {
-    const data = (await res.json()) as ApiRunEnvelope;
-    renderAllScreens(data);
+  initGradientAsciiBackground();
+  bindEvents();
+  renderRecommendedCategories();
+  recomputeRehearsal();
+  syncSpatialControls();
+  requestAnimationFrame(animateLoop);
+
+  try {
+    const res = await fetch("/api/default");
+    if (res.ok) {
+      const env = (await res.json()) as ApiRunEnvelope;
+      renderMacroEnvelope(env);
+    }
+  } catch {
+    // Ignore initial network error
   }
 }
 

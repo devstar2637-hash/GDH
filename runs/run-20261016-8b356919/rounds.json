@@ -1,0 +1,105 @@
+{
+  "runId": "run-20261016-8b356919",
+  "seed": 20261016,
+  "mode": 1000,
+  "modeLabel": "1,000 variants",
+  "rounds": [
+    {
+      "round": 1,
+      "shocksAdded": 2,
+      "shocks": [
+        {
+          "id": "adv-r1-offseason",
+          "kind": "offseason",
+          "startMonth": 2,
+          "durationMonths": 3,
+          "magnitude": 0.18,
+          "note": "Round 1: 한파·장마 비수기 매출 18% 하락"
+        },
+        {
+          "id": "adv-r1-rent",
+          "kind": "rent_increase",
+          "startMonth": 13,
+          "durationMonths": 24,
+          "magnitude": 0.08,
+          "note": "Round 1: 2년차 환산보증금/임대료 8% 인상"
+        }
+      ],
+      "deaths": 16,
+      "newFailureFamilies": 2,
+      "nonDominatedSurvivors": 24,
+      "changed": "P",
+      "elapsedMs": 0.62
+    },
+    {
+      "round": 2,
+      "shocksAdded": 2,
+      "shocks": [
+        {
+          "id": "adv-r2-franchise",
+          "kind": "franchise_entry",
+          "startMonth": 6,
+          "durationMonths": 30,
+          "magnitude": 0.16,
+          "note": "Round 2: 반경 150m 내 저가 대형 프랜차이즈 입점"
+        },
+        {
+          "id": "adv-r2-supply",
+          "kind": "supplyCostUp",
+          "startMonth": 4,
+          "durationMonths": 32,
+          "magnitude": 0.05,
+          "note": "Round 2: 원두·우유 원가율 5%p 상승"
+        }
+      ],
+      "deaths": 33,
+      "newFailureFamilies": 1,
+      "nonDominatedSurvivors": 24,
+      "changed": "P",
+      "elapsedMs": 0.54
+    },
+    {
+      "round": 3,
+      "shocksAdded": 2,
+      "shocks": [
+        {
+          "id": "adv-r3-maketime",
+          "kind": "make_time_drift",
+          "startMonth": 3,
+          "durationMonths": 18,
+          "magnitude": 0.22,
+          "note": "Round 3: 숙련 스태프 이탈로 피크 제조시간 22% 지연"
+        },
+        {
+          "id": "adv-r3-fitout",
+          "kind": "fitout_delay",
+          "startMonth": 1,
+          "durationMonths": 1,
+          "magnitude": 0.5,
+          "note": "Round 3: 인테리어 준공 지연으로 첫 달 영업일수 50% 감소"
+        }
+      ],
+      "deaths": 36,
+      "newFailureFamilies": 0,
+      "nonDominatedSurvivors": 24,
+      "changed": "P",
+      "stopReason": "roundCap",
+      "elapsedMs": 0.63
+    }
+  ],
+  "oracleHashesBefore": {
+    "shared/types.ts": "40ec98520866cef8fa8a2b8a963d54c553ddc03339abaf1d7bd87cbd9cabdb68",
+    "shared/forbidden-paths.json": "d2b05aba2a3b031948d60e3ca3772a8c8d092e82374cbd7dcadc5908412f3a73",
+    "engine/constraints.ts": "366bc9ed20e863178e0196b536ffc878b858abb91ca211190ff036e983d8d25f",
+    "engine/simulator.ts": "9302e330d1ac6655685d5c10526e34deec45c6d71aa60e2eab3f6e2ad39146c1",
+    "engine/independentPnl.ts": "03ef5aaf3ec1c16244e8ce0a6d1f6d0a9a851dbe14d8e18e62ad01fb488cf847"
+  },
+  "oracleHashesAfter": {
+    "shared/types.ts": "40ec98520866cef8fa8a2b8a963d54c553ddc03339abaf1d7bd87cbd9cabdb68",
+    "shared/forbidden-paths.json": "d2b05aba2a3b031948d60e3ca3772a8c8d092e82374cbd7dcadc5908412f3a73",
+    "engine/constraints.ts": "366bc9ed20e863178e0196b536ffc878b858abb91ca211190ff036e983d8d25f",
+    "engine/simulator.ts": "9302e330d1ac6655685d5c10526e34deec45c6d71aa60e2eab3f6e2ad39146c1",
+    "engine/independentPnl.ts": "03ef5aaf3ec1c16244e8ce0a6d1f6d0a9a851dbe14d8e18e62ad01fb488cf847"
+  },
+  "oracleUnchanged": true
+}

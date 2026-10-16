@@ -1,1597 +1,1058 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>천 개의 가게 · A Thousand Stores — Rehearsal Studio (공간·동선 × 10,000개 36개월 미래 리허설)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>천 개의 가게 · A Thousand Stores — 주소·사진·자본금으로 미리 창업해보는 2.5D 시뮬레이터</title>
   <style>
     :root {
-      --bg-primary: #060911;
-      --bg-card: rgba(14, 20, 34, 0.86);
-      --bg-card-alt: rgba(20, 28, 46, 0.92);
-      --bg-input: rgba(9, 13, 24, 0.95);
-      --border: rgba(148, 163, 184, 0.14);
-      --border-strong: rgba(56, 189, 248, 0.34);
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent-blue: #38bdf8;
-      --accent-indigo: #818cf8;
-      --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-rose: #f43f5e;
-      --accent-violet: #a855f7;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Inter", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
-      --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-      --radius-lg: 18px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
+      --bg: #f4f4f0;
+      --paper: #ffffff;
+      --ink: #202c31;
+      --muted: #69757a;
+      --line: #dce1dd;
+      --accent: #346b57;
+      --accent-soft: #edf3ef;
+      --blue: #446dba;
+      --amber: #a86a27;
+      --red: #a8453c;
+      --radius: 18px;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root[data-theme="dark"] {
+      --bg: #121416;
+      --paper: #1a1e21;
+      --ink: #e4ece8;
+      --muted: #8b9993;
+      --line: #2a3136;
+      --accent: #4ec499;
+      --accent-soft: rgba(78, 196, 153, 0.14);
     }
-
-    body {
-      background-color: var(--bg-primary);
-      background-image:
-        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.14) 0%, transparent 38%),
-        radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.13) 0%, transparent 42%),
-        radial-gradient(circle at 50% 48%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-        linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      line-height: 1.55;
-      padding-bottom: 80px;
-      overflow-x: hidden;
+    :root[data-theme="dark"] .card,
+    :root[data-theme="dark"] .cat-card {
+      background: rgba(24, 28, 31, 0.88);
     }
-
-    /* Grainient Subtle Noise Overlay */
-    .grain-overlay {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.032;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    :root[data-theme="dark"] .founder-inputs,
+    :root[data-theme="dark"] .input-box,
+    :root[data-theme="dark"] .text-input,
+    :root[data-theme="dark"] .world,
+    :root[data-theme="dark"] .playbar,
+    :root[data-theme="dark"] .kpi-box,
+    :root[data-theme="dark"] .mini-chart-box,
+    :root[data-theme="dark"] button:not(.primary) {
+      background: #171b1e;
+      color: var(--ink);
+      border-color: var(--line);
     }
-
-    /* Sticky Observability Status Bar (AT-14) */
-    .status-bar {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(6, 9, 17, 0.88);
-      backdrop-filter: blur(16px) saturate(160%);
-      border-bottom: 1px solid rgba(56, 189, 248, 0.24);
-      padding: 8px 20px;
-      font-size: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    :root[data-theme="dark"] .risk-card {
+      background: rgba(168, 106, 39, 0.14);
+      border-color: rgba(168, 106, 39, 0.35);
     }
-
-    .status-bar-inner {
-      max-width: 1400px;
-      margin: 0 auto;
+    .hud-bar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px 16px;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .status-cluster {
-      display: flex;
+      gap: 6px;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px 12px;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(52, 107, 87, 0.06);
+      border: 1px solid var(--line);
     }
-
-    .status-kv {
+    .hud-btn {
+      padding: 4px 10px;
+      font-size: 11.5px;
+      border-radius: 999px;
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      color: var(--text-secondary);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
-
-    .status-kv strong {
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 11.5px;
+    .hud-btn.on {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent) inset;
     }
-
-    .gate-strip {
-      max-width: 1400px;
-      margin: 6px auto 0;
-      padding-top: 6px;
-      border-top: 1px dashed rgba(148, 163, 184, 0.18);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
+    .hud-btn kbd {
+      font: 10px/1 ui-monospace, "SF Mono", monospace;
+      padding: 2px 4px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.07);
+      opacity: 0.75;
     }
-
-    /* AlignUI Pill Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2.5px 9px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      font-family: var(--font-mono);
-      letter-spacing: 0.01em;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
-
-    .badge-done {
-      background: rgba(16, 185, 129, 0.16);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.42);
+    button, input, select { font: inherit; }
+    #asciiBgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.62;
     }
-
-    .badge-fail {
-      background: rgba(244, 63, 94, 0.18);
-      color: #fb7185;
-      border: 1px solid rgba(244, 63, 94, 0.5);
-    }
-
-    .badge-blocked {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.5);
-    }
-
-    .badge-replay {
-      background: rgba(129, 140, 248, 0.16);
-      color: #a5b4fc;
-      border: 1px solid rgba(129, 140, 248, 0.45);
-    }
-
-    .badge-live {
-      background: rgba(56, 189, 248, 0.16);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.45);
-    }
-
-    /* SourceTag Pills (C6, AT-12) */
-    .src-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 1px 6px;
-      border-radius: 5px;
-      font-size: 10.5px;
-      font-weight: 600;
-      font-family: var(--font-mono);
-      margin-left: 4px;
-      vertical-align: middle;
-    }
-
-    .src-public {
-      background: rgba(56, 189, 248, 0.13);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.32);
-    }
-
-    .src-onsite {
-      background: rgba(16, 185, 129, 0.13);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.32);
-    }
-
-    .src-computed {
-      background: rgba(129, 140, 248, 0.14);
-      color: #c7d2fe;
-      border: 1px solid rgba(129, 140, 248, 0.32);
-    }
-
-    .src-assumed {
-      background: rgba(245, 158, 11, 0.13);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.32);
-    }
-
-    .src-synthetic {
-      background: rgba(244, 63, 94, 0.13);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.32);
-    }
-
-    /* Main Container */
-    .container {
-      max-width: 1400px;
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1380px;
       margin: 0 auto;
-      padding: 20px 18px;
+      padding: 20px 20px 44px;
+    }
+
+    /* Card base with subtle frosted glass + Lucian UX/UI micro-interaction */
+    .card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(27, 39, 44, 0.05);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Buttons & Pills */
+    button {
+      border: 1px solid var(--line);
+      background: #fafaf7;
+      color: var(--ink);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.14s ease;
+    }
+    button:hover {
+      border-color: #b5c0ba;
+      background: #f0f2ee;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover {
+      background: #295746;
+    }
+    button.chip {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      background: #f6f7f4;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    button.chip.active, button.chip:hover {
+      background: var(--accent-soft);
+      border-color: #b8d2c6;
+      color: var(--accent);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pill.warn { background: #fbf1e6; color: var(--amber); }
+    .pill.bad { background: #fbeae8; color: var(--red); }
+    .small { font-size: 12px; color: var(--muted); }
+
+    /* =========================================================================
+       STEP 1: Ultra-Simple Founder Input Hero (Address / Photo / My Capital)
+       ========================================================================= */
+    .hero-card {
+      padding: 22px 24px;
+      margin-bottom: 14px;
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h1 {
+      margin: 4px 0 6px;
+      font-size: clamp(22px, 2.4vw, 31px);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-family: Georgia, "Times New Roman", "Apple SD Gothic Neo", serif;
+    }
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    /* 3-Input Bar: Address + Capital + Photo + CTA */
+    .founder-inputs {
+      display: grid;
+      grid-template-columns: 1.35fr 1.1fr 0.9fr auto;
+      gap: 12px;
+      align-items: stretch;
+      padding: 14px;
+      background: #f8f9f6;
+      border: 1px solid #e3e7e3;
+      border-radius: 16px;
+    }
+    .input-box {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px 13px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      justify-content: space-between;
+      gap: 6px;
     }
-
-    /* Tactile EvilButtons Style */
-    button {
-      cursor: pointer;
-      font-family: var(--font-sans);
-      font-size: 12.5px;
-      font-weight: 600;
+    .input-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .text-input {
+      width: 100%;
+      border: 1px solid #d5dcd7;
       border-radius: 9px;
-      padding: 8px 13px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-      color: var(--text-primary);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 2px 0 rgba(2, 6, 23, 0.9),
-        0 4px 10px rgba(0, 0, 0, 0.3);
-      transition: transform 0.08s ease, box-shadow 0.12s ease, border-color 0.15s ease, background 0.15s ease;
-      display: inline-flex;
+      padding: 7px 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      background: #fcfcfa;
+    }
+    .text-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+    }
+    .quick-chips {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .cta-launch {
+      padding: 0 22px;
+      font-size: 15px;
+      font-weight: 750;
+      border-radius: 14px;
+      white-space: nowrap;
+      display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      user-select: none;
     }
 
-    button:hover {
-      border-color: var(--accent-blue);
-      background: linear-gradient(180deg, rgba(38, 56, 84, 0.98) 0%, rgba(19, 30, 53, 0.98) 100%);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 2px 0 rgba(2, 6, 23, 0.95),
-        0 0 14px rgba(56, 189, 248, 0.25);
+    /* =========================================================================
+       STEP 2: AI Recommended Business Categories (Top 4 for Address + Capital)
+       ========================================================================= */
+    .cat-section {
+      margin-bottom: 14px;
     }
-
-    button:active {
-      transform: translateY(2px);
-      box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.5),
-        0 0 0 rgba(2, 6, 23, 0.9);
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 0 4px;
     }
-
-    .btn-primary {
-      background: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%);
-      border-color: #7dd3fc;
-      color: #ffffff;
+    .section-title {
+      font-weight: 750;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .cat-card {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1.5px solid var(--line);
+      border-radius: 15px;
+      padding: 13px 15px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, box-shadow 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .cat-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(52, 107, 87, 0.13), transparent 68%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .cat-card:hover {
+      border-color: #88b09e;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(52, 107, 87, 0.08);
+    }
+    .cat-card:hover::before {
+      opacity: 1;
+    }
+    .cat-card.active {
+      border-color: var(--accent);
+      background: rgba(244, 250, 246, 0.95);
+      box-shadow: 0 8px 22px rgba(52, 107, 87, 0.12);
+    }
+    .cat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .cat-name {
+      font-weight: 750;
+      font-size: 15px;
+      color: var(--ink);
+    }
+    .cat-badge {
+      font-size: 11px;
       font-weight: 700;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.35),
-        0 2px 0 #1e3a8a,
-        0 6px 16px rgba(14, 165, 233, 0.35);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .cat-badge.warn {
+      background: #fbf1e6;
+      color: var(--amber);
+    }
+    .cat-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cat-metrics {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--ink);
+      padding-top: 6px;
+      border-top: 1px dashed #e2e7e3;
     }
 
-    .btn-primary:hover {
-      background: linear-gradient(180deg, #38bdf8 0%, #1d4ed8 100%);
-      border-color: #bae6fd;
+    /* =========================================================================
+       STEP 3: 2.5D Auto Floorplan & Pre-Launch Store Simulation
+       ========================================================================= */
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+    .main {
+      padding: 16px;
+    }
+    .main-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .quick-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .quick-actions button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
     }
 
-    .btn-emerald {
-      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-      border-color: #6ee7b7;
-      color: #ffffff;
-      font-weight: 700;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.35),
-        0 2px 0 #064e3b,
-        0 6px 16px rgba(16, 185, 129, 0.3);
+    /* Dual 2.5D Canvases */
+    .worlds {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .world {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 11px;
+      background: #fcfcfa;
+    }
+    .world.plan-world {
+      border-color: #b7d0c4;
+      background: #f9fcfa;
+    }
+    .world-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .world-title {
+      font-weight: 750;
+      font-size: 14.5px;
+    }
+    .world-sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    canvas.world-canvas {
+      width: 100%;
+      height: 360px;
+      display: block;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #f6f7f3 0%, #edefe9 100%);
+      border: 1px solid #e3e7e3;
+      touch-action: none;
+      outline: none;
+    }
+    .world-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 7px;
     }
 
-    .btn-emerald:hover {
-      background: linear-gradient(180deg, #34d399 0%, #047857 100%);
-      border-color: #a7f3d0;
+    /* Simple Playbar */
+    .playbar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 9px 12px;
+      border-radius: 13px;
+      background: #f8f9f6;
+      border: 1px solid #e4e8e4;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
-    .btn-warn {
-      background: linear-gradient(180deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.28) 100%);
-      border-color: rgba(251, 191, 36, 0.55);
-      color: #fde68a;
-    }
-
-    .btn-danger {
-      background: linear-gradient(180deg, rgba(244, 63, 94, 0.25) 0%, rgba(159, 18, 57, 0.28) 100%);
-      border-color: rgba(251, 113, 133, 0.55);
-      color: #fecdd3;
-    }
-
-    .btn-active-preset {
-      border-color: #38bdf8 !important;
-      background: linear-gradient(180deg, rgba(14, 165, 233, 0.32) 0%, rgba(37, 99, 235, 0.32) 100%) !important;
-      color: #ffffff !important;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.25),
-        0 0 0 1px rgba(56, 189, 248, 0.5),
-        0 4px 14px rgba(56, 189, 248, 0.28) !important;
-    }
-
-    /* Bento Hero Card */
-    .hero {
-      background:
-        radial-gradient(circle at 92% 10%, rgba(56, 189, 248, 0.16), transparent 45%),
-        radial-gradient(circle at 8% 90%, rgba(16, 185, 129, 0.1), transparent 45%),
-        linear-gradient(145deg, rgba(14, 21, 38, 0.95), rgba(9, 14, 26, 0.96));
-      border: 1px solid rgba(56, 189, 248, 0.32);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
+    /* Right Side: Founder's Simple Report Card */
+    .side {
+      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        0 18px 40px rgba(0, 0, 0, 0.45);
     }
-
-    .hero-top {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .hero-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .hero-subtitle {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-top: 5px;
-    }
-
-    .philosophy-banner {
-      background: rgba(56, 189, 248, 0.07);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      border-left: 3px solid var(--accent-blue);
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 12.5px;
-      color: #bae6fd;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
+    .report-kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
-
-    .demo-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
+    .kpi-box {
+      padding: 11px 12px;
+      border-radius: 13px;
+      background: #f8f9f6;
+      border: 1px solid #e4e8e4;
     }
-
-    .demo-toolbar-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--accent-blue);
-      margin-right: 4px;
+    .kpi-box .k {
+      font-size: 11.5px;
+      color: var(--muted);
     }
-
-    /* Bento Screen Cards */
-    .screen-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(14px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px 22px;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-        0 12px 32px rgba(0, 0, 0, 0.35);
-    }
-
-    .screen-card-Interactive {
-      border-color: rgba(56, 189, 248, 0.4);
-      background:
-        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08), transparent 60%),
-        var(--bg-card);
-    }
-
-    .screen-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .screen-step {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent-blue);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-    }
-
-    .screen-title {
+    .kpi-box .v {
       font-size: 18px;
       font-weight: 800;
-      letter-spacing: -0.015em;
-      color: #ffffff;
+      margin-top: 2px;
+      color: var(--ink);
+      letter-spacing: -0.02em;
     }
-
-    /* Interactive Rehearsal Studio Grid */
-    .studio-top-controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
+    .kpi-box .s {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
     }
-
-    .slider-card {
-      background: rgba(9, 14, 26, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: var(--radius-md);
+    .capital-bar-wrap {
       padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      border: 1px solid #c5dcd0;
+    }
+    .capital-bar {
+      height: 10px;
+      border-radius: 999px;
+      background: #dce7e1;
+      overflow: hidden;
+      margin: 8px 0 6px;
       display: flex;
-      flex-direction: column;
-      gap: 7px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-      transition: border-color 0.15s ease;
+    }
+    .capital-used {
+      background: var(--accent);
+      height: 100%;
+      transition: width 0.25s ease;
+    }
+    .risk-card {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fdf6ee;
+      border: 1px solid #ead4b8;
+    }
+    .mini-chart-box {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px;
+      background: #fcfcfa;
+    }
+    canvas.mini-cashflow {
+      width: 100%;
+      height: 135px;
+      display: block;
+      border-radius: 8px;
+      background: #f8f9f6;
     }
 
-    .slider-card:hover {
-      border-color: rgba(56, 189, 248, 0.45);
+    /* Photo Crop Modal / Drawer inside Sidebar when photo uploaded */
+    .photo-drawer {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7f8f5;
+      border: 1px dashed #b8c2bc;
+    }
+    .img-box {
+      width: 100%;
+      height: 120px;
+      border-radius: 10px;
+      background: #eef0ec;
+      display: block;
+      margin-top: 6px;
+      touch-action: none;
     }
 
-    .slider-head {
+    /* =========================================================================
+       Bottom Collapsible Expert Drawer (10,000 Worlds + Acceptance Gates)
+       Keeps main UI 100% minimal while providing full transparency on demand
+       ========================================================================= */
+    details.expert-drawer {
+      margin-top: 20px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+    }
+    details.expert-drawer > summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13.5px;
+      color: var(--muted);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 600;
+      list-style: none;
     }
-
-    .slider-val {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: 800;
-      color: var(--accent-blue);
-      background: rgba(56, 189, 248, 0.12);
-      padding: 1px 7px;
-      border-radius: 6px;
-      border: 1px solid rgba(56, 189, 248, 0.28);
+    details.expert-drawer > summary::-webkit-details-marker { display: none; }
+    .expert-body {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
     }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 6px;
-      background: rgba(51, 65, 85, 0.85);
-      border-radius: 999px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #38bdf8;
-      border: 2px solid #ffffff;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
-      cursor: grab;
-      transition: transform 0.1s ease;
-    }
-
-    input[type="range"]::-webkit-slider-thumb:active {
-      cursor: grabbing;
-      transform: scale(1.15);
-    }
-
-    .slider-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* Segmented Control (AlignUI style) */
-    .seg-group {
-      display: flex;
-      background: rgba(6, 9, 17, 0.95);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 8px;
-      padding: 3px;
-      gap: 4px;
-    }
-
-    .seg-btn {
-      flex: 1;
-      padding: 5px 8px;
-      font-size: 11.5px;
-      font-weight: 600;
-      border-radius: 6px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--text-secondary);
-      box-shadow: none;
-    }
-
-    .seg-btn:hover {
-      background: rgba(56, 189, 248, 0.08);
-      color: var(--text-primary);
-      box-shadow: none;
-    }
-
-    .seg-btn.active {
-      background: linear-gradient(180deg, rgba(56, 189, 248, 0.24), rgba(37, 99, 235, 0.28));
-      border-color: rgba(56, 189, 248, 0.5);
-      color: #ffffff;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    }
-
-    /* Side-by-Side Floorplan Comparison Stage */
-    .spatial-stage-grid {
+    .expert-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 14px;
       margin-bottom: 14px;
     }
-
-    @media (max-width: 1024px) {
-      .spatial-stage-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .spatial-card {
-      background: rgba(8, 12, 22, 0.95);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-    }
-
-    .spatial-card-mod {
-      border-color: rgba(16, 185, 129, 0.45);
-      box-shadow: inset 0 0 24px rgba(16, 185, 129, 0.05);
-    }
-
-    .spatial-canvas-wrap {
-      position: relative;
+    canvas.chart-canvas {
       width: 100%;
-      aspect-ratio: 4 / 3;
-      background: #050811;
-      border: 1px solid rgba(59, 78, 117, 0.55);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .spatial-canvas-wrap canvas {
-      width: 100%;
-      height: 100%;
+      height: 220px;
       display: block;
-      border: none;
-      border-radius: 0;
-      cursor: grab;
-    }
-
-    .spatial-canvas-wrap canvas:active {
-      cursor: grabbing;
-    }
-
-    .spatial-metrics-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .spatial-metric-pill {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      border-radius: 8px;
-      padding: 7px 9px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .spatial-metric-pill span {
-      font-size: 10.5px;
-      color: var(--text-secondary);
-    }
-
-    .spatial-metric-pill strong {
-      font-family: var(--font-mono);
-      font-size: 13.5px;
-      color: #ffffff;
-    }
-
-    /* Playback Timeline & Walkthrough Bar */
-    .playback-bar {
-      background: rgba(11, 17, 30, 0.95);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .dpad-cluster {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(6, 9, 17, 0.9);
-      padding: 4px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(168, 85, 247, 0.4);
-    }
-
-    .dpad-btn {
-      padding: 4px 8px;
-      font-size: 11px;
-      font-family: var(--font-mono);
-      border-radius: 5px;
-    }
-
-    /* Form Grid (Screen 1) */
-    .input-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-      gap: 10px;
-    }
-
-    .field-box {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 9px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      transition: border-color 0.15s ease;
-    }
-
-    .field-box:focus-within {
-      border-color: var(--accent-blue);
-    }
-
-    .field-label {
-      font-size: 11.5px;
-      color: var(--text-secondary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .field-box input,
-    .field-box select {
-      background: #11192c;
-      border: 1px solid rgba(59, 78, 117, 0.65);
-      border-radius: 6px;
-      padding: 6px 9px;
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 13px;
-      width: 100%;
-    }
-
-    /* KPI Summary Grid */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .kpi-card {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 13px 15px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      background: #f8f9f6;
+      border: 1px solid #e4e8e4;
     }
-
-    .kpi-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .kpi-val {
-      font-size: 20px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      color: #ffffff;
-    }
-
-    .kpi-sub {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Two-column layout for Canvas charts */
-    .chart-grid {
-      display: grid;
-      grid-template-columns: 1.55fr 1fr;
-      gap: 16px;
-    }
-
-    @media (max-width: 960px) {
-      .chart-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .canvas-panel {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-    }
-
-    .canvas-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    canvas {
-      width: 100%;
-      height: 310px;
-      background: #070b12;
-      border: 1px solid rgba(59, 78, 117, 0.45);
-      border-radius: 8px;
-      display: block;
-    }
-
-    /* Tables */
-    table {
+    .clean-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12.5px;
+      font-size: 12px;
     }
-
-    th, td {
-      padding: 9px 11px;
-      border-bottom: 1px solid var(--border);
+    .clean-table th, .clean-table td {
+      padding: 7px 9px;
       text-align: left;
+      border-bottom: 1px solid #e6eae6;
+    }
+    .badge-pass {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .badge-fail {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #fbeae8;
+      color: var(--red);
+      font-weight: 700;
+      font-size: 11px;
     }
 
-    th {
-      color: var(--text-secondary);
-      font-weight: 600;
-      background: rgba(14, 20, 32, 0.7);
-    }
-
-    td {
-      font-family: var(--font-mono);
-    }
-
-    /* Cliff & Measurement Highlight Cards (Screens 3 & 4) */
-    .split-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    @media (max-width: 900px) {
-      .split-2 {
+    @media (max-width: 1080px) {
+      .founder-inputs, .cat-grid, .workspace, .worlds, .expert-grid-2 {
         grid-template-columns: 1fr;
       }
-    }
-
-    .callout-box {
-      background: rgba(56, 189, 248, 0.06);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .callout-amber {
-      background: rgba(245, 158, 11, 0.07);
-      border-color: rgba(245, 158, 11, 0.4);
-    }
-
-    .callout-rose {
-      background: rgba(244, 63, 94, 0.08);
-      border-color: rgba(244, 63, 94, 0.45);
-    }
-
-    .callout-emerald {
-      background: rgba(16, 185, 129, 0.07);
-      border-color: rgba(16, 185, 129, 0.4);
-    }
-
-    /* Decision Buttons (Screen 6) */
-    .decision-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .decision-card {
-      background: var(--bg-input);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .decision-card.active {
-      border-color: var(--accent-blue);
-      background: rgba(56, 189, 248, 0.1);
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.16);
-    }
-
-    .decision-card h4 {
-      font-size: 15px;
-      margin-bottom: 6px;
-      color: #ffffff;
-    }
-
-    .decision-card p {
-      font-size: 12.5px;
-      color: var(--text-secondary);
-    }
-
-    .hidden {
-      display: none !important;
+      .cta-launch { padding: 14px; }
     }
   </style>
 </head>
 <body>
-  <div class="grain-overlay" aria-hidden="true"></div>
+  <canvas id="asciiBgCanvas" aria-hidden="true"></canvas>
+  <div class="app">
 
-  <!-- Always-Visible Status Bar (AT-14) -->
-  <header class="status-bar" id="statusBar" role="region" aria-label="실행 상태 및 검증 게이트">
-    <div class="status-bar-inner">
-      <div class="status-cluster">
-        <span class="badge badge-done" id="sbEndState">DONE</span>
-        <span class="badge badge-replay" id="sbReplayBadge">재생 (REPLAY)</span>
-        <span class="status-kv">Run ID: <strong id="sbRunId">-</strong></span>
-        <span class="status-kv">Input SHA-256(8): <strong id="sbInputHash">-</strong></span>
-        <span class="status-kv">Engine SHA: <strong id="sbEngineSha">-</strong></span>
-        <span class="status-kv">실행 시간: <strong id="sbComputeMs">-</strong></span>
-      </div>
-      <div class="status-cluster">
-        <span class="status-kv">입력 파일: <strong id="sbInputFiles">-</strong></span>
-        <span class="status-kv">토큰 합계(In/Out): <strong id="sbTokensTotal">-</strong></span>
-      </div>
-    </div>
-    <div class="gate-strip" id="sbGateLog">
-      <!-- Gate badges populated dynamically -->
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- Hero Banner & Demo Controls -->
-    <section class="hero">
+    <!-- =====================================================================
+         STEP 1: 주소 / 사진 / 내 자본금 입력 (극도로 단순한 1단계 입력)
+         ===================================================================== -->
+    <section class="card hero-card">
       <div class="hero-top">
         <div>
-          <h1 class="hero-title">
+          <div class="eyebrow">
             <span>천 개의 가게 · A Thousand Stores</span>
-            <span class="badge badge-live" id="heroModeBadge">500 AI design families x 20 variations</span>
-            <span class="badge badge-done" id="heroCalibrationBadge">보정됨 (calibrated)</span>
-            <span class="badge badge-done" id="heroBaselineBadge">AI-native</span>
-          </h1>
-          <p class="hero-subtitle">
-            <strong>Rehearsal · 현실을 바꾸기 전에 살아보는 AI</strong> — 매대 하나를 옮기고, 인력을 1명 바꾸고, 임대료를 조정할 때 <strong>12×9m 공간 동선·대기열</strong>과 <strong>10,000개의 36개월 재무 미래(500 AI 설계족 × 20 변주)</strong>가 어떻게 바뀌는지 직접 조작하며 리허설합니다.
+            <span class="pill" id="statusBadge">실시간 시뮬레이션 준비 완료</span>
+          </div>
+          <h1>주소나 사진, 내 자본금만 넣으면 가게를 미리 창업해봅니다.</h1>
+          <p class="lead">
+            상권 데이터(서울시 OA-15577)와 10,000개 매장(500 AI design families x 20 variations) 시뮬레이션이 <strong>맞춤 창업 카테고리 추천 → 2.5D 도면 자동 생성 → 손님 동선 및 36개월 생존 검증</strong>까지 한 번에 끝냅니다.
           </p>
         </div>
-        <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
-          <div>대상 상권: <strong>서울 성수동 카페거리 (8개 상권 통합 · CS100010)</strong> <span class="src-tag src-public">public: 서울열린데이터광장</span></div>
-          <div>모델 구성: <strong>gemini-4-argon (설계·파산 추론) + gemini-3.8-flash (정규화)</strong></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="exportBtn" type="button">창업 리포트 저장 (.txt)</button>
+          <button id="jsonBtn" type="button">시나리오 (.json)</button>
         </div>
       </div>
 
-      <div class="philosophy-banner">
-        <span><strong>원칙:</strong> "과거(2021~2024 백테스트 + 2025~2026 은닉 홀드아웃)를 재현하기 전에는 미래를 말하지 않습니다."</span>
-        <span><strong>리허설 고지 (rehearsal, not advice):</strong> 모든 빈도는 실세계 확률이 아닌 <strong>시나리오 빈도(scenario frequency)</strong>이며 모든 숫자는 출처 태그를 포함합니다.</span>
-      </div>
-
-      <div class="demo-toolbar">
-        <span class="demo-toolbar-label">⚡ 원클릭 라이브 데모 &amp; 검증 시나리오:</span>
-        <button class="btn-primary" id="btnRunDefault10k" type="button">① 10,000개 미래 기본 실행 (500×20)</button>
-        <button id="btnFlipLeft" type="button">② 절벽 좌측 (-1 step) 재실행</button>
-        <button id="btnFlipRight" type="button">③ 절벽 우측 (+1 step) 재실행</button>
-        <button class="btn-warn" id="btnDemoUncalibrated" type="button">④ 미보정 실패 상태 시연 (AT-02)</button>
-        <button class="btn-danger" id="btnDemoForbiddenPatch" type="button">⑤ 금지 경로 공격 차단 시연 (AT-10)</button>
-      </div>
-      <div id="patchAttackAlert" class="callout-box callout-rose hidden"></div>
-    </section>
-
-    <!-- INTERACTIVE REHEARSAL STUDIO: 12x9m Spatial A* & Queue Live Simulator + Live Parameter Sliders -->
-    <section class="screen-card screen-card-Interactive" id="rehearsalStudio">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Interactive Spatial &amp; Financial Rehearsal Studio · 12×9m 0.1m-Grid A* + FIFO Queue + 10,000 Futures</div>
-          <h2 class="screen-title">0. 인터랙티브 공간·동선·대기열 리허설 스튜디오 (마우스 드래그 · 슬라이더 · WASD 직접 보행)</h2>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6ee7b7; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 10px; border-radius: 8px; cursor: pointer;">
-            <input type="checkbox" id="chkAutoSync10k" checked />
-            <span>⚡ 조작 즉시 10,000개 36개월 재무 엔진 실시간 연동</span>
-          </label>
-          <button class="btn-emerald" id="btnSyncSpatialTo10k" type="button">🚀 현재 조작 상태로 10,000개 미래 즉시 재계산</button>
-        </div>
-      </div>
-
-      <!-- Scenario Presets & Interactive Mode Bar -->
-      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(9, 14, 26, 0.85); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);">
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-          <span style="font-size: 12px; font-weight: 700; color: var(--accent-blue);">공간·인력 비교 프리셋 (Seed 42 동일 유입):</span>
-          <button type="button" id="btnPresetBaseline" class="btn-active-preset">🅰️ 대안 1: 진열대만 이동 (인력 동일: 주문1+픽업1)</button>
-          <button type="button" id="btnPresetStaffAdded">🅱️ 대안 2: 진열대 이동 + 픽업 1명 충원 (주문1+픽업2 · 권장)</button>
-          <button type="button" id="btnPresetNarrowBlock">🚧 대안 3: 유모차·트레이(0.85m) 협소 통로 병목 체감</button>
-          <button type="button" id="btnResetSpatial">↺ 도면 초기화</button>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-          <label for="inpFloorplanUpload" style="cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.4); color: #7dd3fc; padding: 6px 11px; border-radius: 8px;">
-            🖼️ 내 매장 평면도(PNG/JPG) 불러오기 (12×9m)
-          </label>
-          <input type="file" id="inpFloorplanUpload" accept="image/png,image/jpeg" class="hidden" />
-          <button type="button" id="btnToggleDrawBox" title="우측 캔버스에서 마우스 드래그로 새 장애물 박스를 추가합니다">✏️ 장애물 박스 그리기: OFF</button>
-          <button type="button" id="btnShowChecklist">📋 실행 체크리스트 생성</button>
-        </div>
-      </div>
-
-      <!-- Live Interactive Sliders Deck (8 Levers) -->
-      <div class="studio-top-controls">
-        <!-- Slider 1: Arrivals per minute -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>① 분당 평균 도착 고객 (Seed 42)</span>
-            <span class="slider-val" id="lblArrivalsPerMin">4.0명/분</span>
+      <div class="founder-inputs">
+        <!-- 1. Address / Location -->
+        <div class="input-box">
+          <div class="input-label">
+            <span>📍 1. 창업할 주소 또는 상권</span>
+            <span class="small" id="detectedZoneBadge">성수카페거리 상권</span>
           </div>
-          <input type="range" id="sliderArrivalsPerMin" min="1.5" max="7.5" step="0.5" value="4.0" />
-          <div class="slider-sub">
-            <span>한산 (1.5명/분)</span>
-            <span id="lblTotalArrivals10m">10분 피크: 53명 유입</span>
-            <span>초피크 (7.5명/분)</span>
+          <input
+            id="addressInput"
+            class="text-input"
+            type="text"
+            value="서울 성동구 성수동2가 315-47"
+            placeholder="예: 성수동2가 315-47, 연남동, 강남역..."
+            aria-label="창업 주소 입력"
+          />
+          <div class="quick-chips">
+            <button class="chip active" data-addr="서울 성동구 성수동2가 315-47" data-zone="seongsu" type="button">성수동 연무장길</button>
+            <button class="chip" data-addr="서울 마포구 연남동 227-15" data-zone="yeonnam" type="button">마포 연남동</button>
+            <button class="chip" data-addr="서울 강남구 역삼동 825" data-zone="gangnam" type="button">강남역 이면</button>
+            <button class="chip" data-addr="서울 중구 을지로3가 302" data-zone="euljiro" type="button">을지로3가</button>
           </div>
         </div>
 
-        <!-- Slider 2: Make / Service Time -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>② 1잔 제조·픽업 기준 시간</span>
-            <span class="slider-val" id="lblMakeTimeSec">75초</span>
+        <!-- 2. My Capital -->
+        <div class="input-box">
+          <div class="input-label">
+            <span>💰 2. 내 자본금 (보증금·인테리어·예비비 포함)</span>
+            <strong id="capitalDisplay" style="color:var(--accent);font-size:14px">9,000만원</strong>
           </div>
-          <input type="range" id="sliderMakeTimeSec" min="35" max="125" step="5" value="75" />
-          <div class="slider-sub">
-            <span>자동머신 (35초)</span>
-            <span>핸드드립/수제 (125초)</span>
-          </div>
-        </div>
-
-        <!-- Control 3: Station Staff Allocation -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>③ 변경안 주문·픽업 인력 배치</span>
-            <span class="slider-val" id="lblStaffConfig">주문1 + 픽업2</span>
-          </div>
-          <div class="seg-group" id="segStaffGroup">
-            <button type="button" class="seg-btn" data-staff="1-1">주문1+픽업1</button>
-            <button type="button" class="seg-btn active" data-staff="1-2">주문1+픽업2</button>
-            <button type="button" class="seg-btn" data-staff="2-2">주문2+픽업2</button>
-          </div>
-          <div class="slider-sub">
-            <span>고정 배치 (역할 교대 없음)</span>
-            <span id="lblStaffFteSync">상근 FTE: 2.0명 연동</span>
+          <input
+            id="capitalInput"
+            type="range"
+            min="3500"
+            max="25000"
+            step="500"
+            value="9000"
+            aria-label="내 자본금 슬라이더"
+          />
+          <div class="quick-chips">
+            <button class="chip" data-cap="5000" type="button">5,000만원</button>
+            <button class="chip active" data-cap="9000" type="button">9,000만원</button>
+            <button class="chip" data-cap="13000" type="button">1억 3,000만</button>
+            <button class="chip" data-cap="20000" type="button">2억원</button>
           </div>
         </div>
 
-        <!-- Control 4: Pedestrian / Stroller Footprint Width -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>④ 보행자·통과 폭 (A* 격자 반경)</span>
-            <span class="slider-val" id="lblFootprintWidth">0.50m (일반)</span>
+        <!-- 3. Store Photo / Floorplan Upload -->
+        <div class="input-box">
+          <div class="input-label">
+            <span>📷 3. 점포 사진 · 도면 (선택)</span>
+            <span class="small" id="photoStatusBadge">기본 15평형 적용 중</span>
           </div>
-          <div class="seg-group" id="segFootprintGroup">
-            <button type="button" class="seg-btn active" data-footprint="0.50">일반 보행 (0.50m)</button>
-            <button type="button" class="seg-btn" data-footprint="0.85">유모차·트레이 (0.85m)</button>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
+            <button id="photoTriggerBtn" type="button" style="width:100%;padding:8px 10px;border-style:dashed">
+              + 사진/도면 올리기 (자동 도면 변환)
+            </button>
+            <input id="imageFile" type="file" accept="image/png,image/jpeg" style="display:none" />
           </div>
-          <div class="slider-sub">
-            <span>0.1m 격자 충돌 판정</span>
-            <span id="lblClearanceStatus" style="color: #34d399;">양쪽 통과 가능</span>
-          </div>
+          <div class="small" id="imageStatus">사진이 없어도 주소·자본금으로 즉시 도면을 그립니다.</div>
         </div>
 
-        <!-- Slider 5: Monthly Rent -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>⑤ 월 임대료 (절벽 핵심 변수)</span>
-            <span class="slider-val" id="lblMonthlyRent">330만 원</span>
-          </div>
-          <input type="range" id="sliderMonthlyRent" min="1800000" max="6000000" step="100000" value="3300000" />
-          <div class="slider-sub">
-            <span>180만 원</span>
-            <span>성수 평균 330만</span>
-            <span>600만 원</span>
-          </div>
-        </div>
-
-        <!-- Slider 6: Average Ticket Price -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>⑥ 평균 객단가 (1잔/주문)</span>
-            <span class="slider-val" id="lblAvgTicket">5,200원</span>
-          </div>
-          <input type="range" id="sliderAvgTicket" min="3600" max="7600" step="200" value="5200" />
-          <div class="slider-sub">
-            <span>저가 (3,600원)</span>
-            <span>스페셜티 (7,600원)</span>
-          </div>
-        </div>
-
-        <!-- Slider 7: Store Seats -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>⑦ 매장 좌석 수 (홀 체류 규모)</span>
-            <span class="slider-val" id="lblSeats">18석</span>
-          </div>
-          <input type="range" id="sliderSeats" min="0" max="36" step="2" value="18" />
-          <div class="slider-sub">
-            <span>테이크아웃 (0석)</span>
-            <span>대형 홀 (36석)</span>
-          </div>
-        </div>
-
-        <!-- Slider 8: Total Startup Budget -->
-        <div class="slider-card">
-          <div class="slider-head">
-            <span>⑧ 총 창업 예산 (최소 유보 10%)</span>
-            <span class="slider-val" id="lblBudget">12,000만 원</span>
-          </div>
-          <input type="range" id="sliderBudget" min="80000000" max="220000000" step="5000000" value="120000000" />
-          <div class="slider-sub">
-            <span>8,000만 원</span>
-            <span>2억 2,000만 원</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Playback Timeline Scrubber & Direct Walkthrough Bar -->
-      <div class="playback-bar">
-        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
-          <button type="button" class="btn-primary" id="btnSimPlayPause">⏸ 일시정지</button>
-          <button type="button" id="btnSimRestart">⏮ 처음부터 (00:00)</button>
-          <div class="seg-group" id="segSimSpeed">
-            <button type="button" class="seg-btn" data-speed="1">1×</button>
-            <button type="button" class="seg-btn active" data-speed="4">4×</button>
-            <button type="button" class="seg-btn" data-speed="10">10×</button>
-          </div>
-          <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #7dd3fc; min-width: 115px;" id="lblSimClock">03:20 / 10:00</span>
-        </div>
-
-        <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap;">피크 10분 스크러버:</span>
-          <input type="range" id="sliderSimTime" min="0" max="600" step="1" value="200" />
-        </div>
-
-        <div class="dpad-cluster" title="키보드 방향키(↑↓←→) 또는 WASD로 두 도면에서 동시에 직접 걸어볼 수 있습니다">
-          <span style="font-size: 11.5px; font-weight: 700; color: #d8b4fe; margin-right: 4px;">🚶 직접 걸어보기 (WASD/방향키):</span>
-          <button type="button" class="dpad-btn" id="btnWalkLeft">◀</button>
-          <button type="button" class="dpad-btn" id="btnWalkUp">▲</button>
-          <button type="button" class="dpad-btn" id="btnWalkDown">▼</button>
-          <button type="button" class="dpad-btn" id="btnWalkRight">▶</button>
-          <button type="button" class="dpad-btn" id="btnWalkReset">입구로</button>
-        </div>
-      </div>
-
-      <!-- Dual Side-by-Side 12x9m Floorplan Canvases -->
-      <div class="spatial-stage-grid">
-        <!-- Left: Original Layout -->
-        <div class="spatial-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-            <div>
-              <span class="badge badge-blocked">현재 배치 (Baseline)</span>
-              <strong style="font-size: 14px; margin-left: 6px;">기존 매장 도면 (12m × 9m · 주문1 + 픽업1)</strong>
-            </div>
-            <span class="src-tag src-synthetic" id="origStatusTag">synthetic: 중앙 진열대 우회 병목</span>
-          </div>
-
-          <div class="spatial-canvas-wrap">
-            <canvas id="spatialOrigCanvas" width="600" height="450"></canvas>
-          </div>
-
-          <div class="spatial-metrics-strip">
-            <div class="spatial-metric-pill">
-              <span>퇴장 완료 / 총 유입</span>
-              <strong id="origMetricExited">45 / 53명</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>미완료 (대기 체류)</span>
-              <strong id="origMetricIncomplete" style="color: #fb7185;">8명</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>A* 보행 경로 길이</span>
-              <strong id="origMetricPathLen">24.4 m</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>관측 평균대기 (주문+픽업)</span>
-              <strong id="origMetricWait" style="color: #fbbf24;">41.3 초</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Interactive Modified Layout -->
-        <div class="spatial-card spatial-card-mod">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-            <div>
-              <span class="badge badge-done">변경안 리허설 (Interactive)</span>
-              <strong style="font-size: 14px; margin-left: 6px;">마우스로 진열대·픽업대·주문대·좌석을 직접 드래그하세요!</strong>
-            </div>
-            <span class="src-tag src-computed" id="modStatusTag">computed: 실시간 A* 재탐색</span>
-          </div>
-
-          <div class="spatial-canvas-wrap">
-            <canvas id="spatialModCanvas" width="600" height="450"></canvas>
-          </div>
-
-          <div class="spatial-metrics-strip">
-            <div class="spatial-metric-pill">
-              <span>퇴장 완료 / 총 유입</span>
-              <strong id="modMetricExited" style="color: #34d399;">51 / 53명 (+6)</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>미완료 (대기 체류)</span>
-              <strong id="modMetricIncomplete" style="color: #34d399;">2명 (-6)</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>A* 보행 경로 길이</span>
-              <strong id="modMetricPathLen" style="color: #7dd3fc;">20.6 m (-3.8m)</strong>
-            </div>
-            <div class="spatial-metric-pill">
-              <span>관측 평균대기 (주문+픽업)</span>
-              <strong id="modMetricWait" style="color: #34d399;">12.1 초 (-29.2초)</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Live Spatial Diagnosis Banner & Execution Checklist Drawer -->
-      <div class="callout-box callout-emerald" id="spatialDiagnosisBox">
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;">
-          <div style="font-size: 13.5px; font-weight: 700; color: #a7f3d0;" id="spatialDiagnosisHeadline">
-            💡 리허설 인사이트: 진열대만 옮기면 동선은 3.8m 줄지만 손님이 픽업대에 더 빨리 몰려 픽업 대기가 41.3초 → 44.3초로 오히려 증가합니다. 픽업 1명 충원(주문1+픽업2) 시 평균대기가 12.1초로 급감하고 퇴장 완료가 +6명 늘어납니다!
-          </div>
-          <span class="src-tag src-computed">computed: Seed 42 동일 유입 비교</span>
-        </div>
-        <div style="font-size: 12px; color: var(--text-secondary);" id="spatialWalkthroughStatus">
-          🚶 <strong>직접 걸어보기 상태:</strong> 보라색 마커(🟣 나)가 입구(1.2m, 4.5m)에 있습니다. 키보드 방향키(↑↓←→)나 WASD 또는 상단 화살표 버튼을 눌러 두 배치에서 동시에 이동해 보세요.
-        </div>
-      </div>
-
-      <div id="executionChecklistBox" class="callout-box hidden" style="margin-top: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong style="color: #7dd3fc; font-size: 14px;">📋 현장 시공·운영 실행 체크리스트 (Spatial Rehearsal Export)</strong>
-          <button type="button" id="btnCopyChecklist">📋 클립보드 복사</button>
-        </div>
-        <pre id="executionChecklistPre" style="font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); white-space: pre-wrap; background: rgba(6, 9, 17, 0.9); padding: 12px; border-radius: 8px; border: 1px solid var(--border);"></pre>
+        <!-- 4. Launch Button -->
+        <button class="primary cta-launch" id="startFounderSimBtn" type="button">
+          바로 가게 창업해보기 →
+        </button>
       </div>
     </section>
 
-    <!-- SCREEN 1: 현장 입력 및 공공데이터 출처 (Onsite Input & Public Provenance) -->
-    <section class="screen-card" id="screen1">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 1 · Input &amp; Provenance (P0 · 상단 슬라이더와 양방향 실시간 동기화)</div>
-          <h2 class="screen-title">1. 상권·예산·매장 정밀 입력 및 데이터 출처 태그</h2>
+    <!-- =====================================================================
+         STEP 2: 내 주소 + 내 자본금 맞춤 창업 카테고리 추천 (클릭 시 도면 즉시 변경)
+         ===================================================================== -->
+    <section class="cat-section">
+      <div class="section-head">
+        <div class="section-title">
+          <span>✨ 이 주소와 자본금에 가장 유리한 추천 창업 카테고리</span>
+          <span class="small" id="catRecommendReason">카드를 누르면 해당 업종 도면과 손님 시뮬레이션으로 즉시 전환됩니다.</span>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <label for="inpMode" style="font-size: 12.5px; color: var(--text-secondary);">실행 규모(N):</label>
-          <select id="inpMode" style="background: #161f33; color: #fff; border: 1px solid var(--border-strong); padding: 6px 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 12.5px;">
-            <option value="10000" selected>10,000 변형 — 500 AI design families x 20 variations (기본값)</option>
-            <option value="1000">1,000 변형 — 11:30 스파이크 크기</option>
+        <span class="small" id="simLoadingOverlay" style="display:none;color:var(--accent);font-weight:700">
+          ⏳ 10,000개 매장 시뮬레이션 동기화 중...
+        </span>
+      </div>
+
+      <div class="cat-grid" id="categoryGrid">
+        <!-- Dynamically populated & ranked by address + capital in app.ts -->
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         STEP 3: 2.5D 자동 생성 가게 도면 & 내 자본금 36개월 창업 성적표
+         ===================================================================== -->
+    <section class="workspace">
+      <!-- Left: 2.5D Isometric Store Floorplan & Customer Flow -->
+      <main class="card main">
+        <div class="main-head">
+          <div>
+            <div style="font-weight:800;font-size:16px" id="verdictTitle">가게 도면과 손님 동선을 시뮬레이션합니다.</div>
+            <div class="small" id="verdictBody">오른쪽 변경안 도면에서 파란 가구를 마우스로 직접 끌어 옮겨보세요.</div>
+          </div>
+          <div class="quick-actions" role="group" aria-label="원클릭 매장 실험">
+            <button id="layoutBtn" type="button">동선 최적화 배치</button>
+            <button id="staffBtn" type="button">직원 +1명만 추가</button>
+            <button id="bothBtn" class="active" type="button">최적 배치 + 직원 추가</button>
+            <button id="seedBtn" type="button">다른 손님 날 보기</button>
+          </div>
+        </div>
+
+        <!-- House-Control / pgrun.dev / Planner5D Interactive Store HUD -->
+        <div class="hud-bar" role="toolbar" aria-label="2.5D 매장 제어 및 CAD 도면 옵션">
+          <span class="small" style="font-weight:700;padding:0 4px">STORE CONTROL</span>
+          <button class="hud-btn on" id="hudLightsBtn" type="button" title="매장 조명 켜기/끄기 (단축키 L)">💡 매장 조명 <kbd>L</kbd></button>
+          <button class="hud-btn on" id="hudDimsBtn" type="button" title="Planner5D 건축 치수선 표시 (단축키 G)">📐 치수·CAD <kbd>G</kbd></button>
+          <button class="hud-btn" id="hudHeatBtn" type="button" title="손님 병목·대기열 히트맵 표시 (단축키 H)">🔥 혼잡 히트맵 <kbd>H</kbd></button>
+          <button class="hud-btn" id="hudIsoAngleBtn" type="button" title="2.5D 카메라 각도 전환 (단축키 I)">🔄 각도 전환 <kbd>I</kbd></button>
+          <button class="hud-btn" id="hudThemeBtn" type="button" title="라이트 / 다크 CAD 테마 전환 (단축키 T)" style="margin-left:auto">◐ 다크·CAD <kbd>T</kbd></button>
+        </div>
+
+        <div class="worlds">
+          <section class="world">
+            <div class="world-head">
+              <div>
+                <div class="world-title">기본 도면 (개선 전)</div>
+                <div class="world-sub">입구 앞 혼잡 배치 · 기본 인력</div>
+              </div>
+              <span class="small" id="baseTag">기준안</span>
+            </div>
+            <canvas id="baseCanvas" class="world-canvas" aria-label="기본 도면 2.5D 공간"></canvas>
+            <div class="world-foot" id="baseFoot"></div>
+          </section>
+
+          <section class="world plan-world">
+            <div class="world-head">
+              <div>
+                <div class="world-title">내 가게 도면 (마우스로 가구 드래그)</div>
+                <div class="world-sub">진열대·테이블을 직접 끌어 옮기면 대기줄이 즉시 바뀝니다</div>
+              </div>
+              <span class="small" id="planTag">실험안</span>
+            </div>
+            <canvas id="planCanvas" class="world-canvas" tabindex="0" aria-label="내 가게 2.5D 도면 — 마우스 드래그로 가구 이동"></canvas>
+            <div class="world-foot" id="planFoot"></div>
+          </section>
+        </div>
+
+        <div class="playbar">
+          <button class="primary" id="playBtn" type="button">일시정지</button>
+          <button id="restartBtn" type="button">처음으로</button>
+          <input id="timeline" type="range" min="0" max="600" step="1" value="110" aria-label="리허설 시간" />
+          <span class="small" id="clock">01:50 / 10:00</span>
+          <select id="speed" aria-label="재생 배속" style="width:auto;padding:5px 8px;border-radius:8px;border:1px solid var(--line)">
+            <option value="10">10배속</option>
+            <option value="20" selected>25배속</option>
+            <option value="45">50배속</option>
           </select>
-          <button class="btn-primary" id="btnSubmitRun" type="button">리허설 실행 (Run 36M)</button>
+          <button id="walkBtn" type="button">내가 손님으로 걸어보기 (WASD)</button>
         </div>
-      </div>
+        <div class="small" id="walkHint" style="margin-top:6px;padding:0 4px">
+          💡 도면 위의 가구(진열대·테이블)를 마우스로 드래그해 옮기거나, [내가 손님으로 걸어보기]를 눌러 키보드 방향키로 직접 걸어보세요.
+        </div>
+      </main>
 
-      <div class="input-grid">
-        <div class="field-box">
-          <div class="field-label">
-            <span>총 창업 예산 (KRW)</span>
-            <span class="src-tag src-onsite">onsite: 사용자예산</span>
-          </div>
-          <input type="number" id="inpBudgetKrw" value="120000000" step="5000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>최소 현금 유보율 (≥10%)</span>
-            <span class="src-tag src-computed">computed: 하드제약</span>
-          </div>
-          <input type="number" id="inpReserveRatio" value="0.10" step="0.01" min="0.10" max="0.50" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>보증금 (36개월 묶인 현금)</span>
-            <span class="src-tag src-onsite">onsite: 중개호가</span>
-          </div>
-          <input type="number" id="inpDepositKrw" value="40000000" step="5000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>월 임대료 (KRW)</span>
-            <span class="src-tag src-onsite">onsite: 중개호가</span>
-          </div>
-          <input type="number" id="inpMonthlyRentKrw" value="3300000" step="100000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>인테리어·장비 초기 투자비</span>
-            <span class="src-tag src-onsite">onsite: 견적서</span>
-          </div>
-          <input type="number" id="inpFitoutCostKrw" value="48000000" step="2000000" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>전용 면적 (㎡ · 건축물대장)</span>
-            <span class="src-tag src-public">public: 건축물대장</span>
-          </div>
-          <input type="number" id="inpFloorAreaM2" value="46.2" step="1" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>좌석 수 (석)</span>
-            <span class="src-tag src-onsite">onsite: 도면설계</span>
-          </div>
-          <input type="number" id="inpSeats" value="18" step="2" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>평균 객단가 (1잔/주문 KRW)</span>
-            <span class="src-tag src-onsite">onsite: 메뉴설계</span>
-          </div>
-          <input type="number" id="inpAvgTicketKrw" value="5200" step="200" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>일 기본 판매 잔수 (잔/일)</span>
-            <span class="src-tag src-computed">computed: OA-15572</span>
-          </div>
-          <input type="number" id="inpCupsPerDayBase" value="185" step="5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>1잔 평균 제조 시간 (초)</span>
-            <span class="src-tag src-assumed">assumed: ±30%</span>
-          </div>
-          <input type="number" id="inpMakeTimeSec" value="75" step="5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>상근 스태프 인원 (FTE)</span>
-            <span class="src-tag src-onsite">onsite: 운영안</span>
-          </div>
-          <input type="number" id="inpStaffFte" value="1.5" step="0.5" />
-        </div>
-
-        <div class="field-box">
-          <div class="field-label">
-            <span>원재료율 (COGS Ratio)</span>
-            <span class="src-tag src-assumed">assumed: ±30%</span>
-          </div>
-          <input type="number" id="inpCogsRatio" value="0.32" step="0.01" />
-        </div>
-      </div>
-
-      <!-- Public Dataset & Maps Grounding Context Bar -->
-      <div class="kpi-grid" style="margin-top: 14px; margin-bottom: 0;">
-        <div class="kpi-card">
-          <div class="kpi-label">공공데이터 기준 점포 수 (2026Q2) <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubStoreCount">245개</div>
-          <div class="kpi-sub">성수동 카페거리 8개 상권 커피-음료(CS100010)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">2021~2024 분기 평균 개업률 <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubOpenRate">4.14%</div>
-          <div class="kpi-sub">16개 보정 분기 시계열 기준 (연간 환산 약 16.5%)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">2021~2024 분기 평균 폐업률 <span class="src-tag src-public">public: OA-15577</span></div>
-          <div class="kpi-val" id="pubCloseRate">3.31%</div>
-          <div class="kpi-sub">은닉 홀드아웃: 2025Q1~2026Q2 (6개 분기 별도 분리)</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Maps Grounding 상권 맥락 (P1 보조 카드) <span class="src-tag src-public">public: 입지컨텍스트</span></div>
-          <div class="kpi-val" style="font-size: 14.5px; margin-top: 4px;">성수역 3번출구·연무장길 도보 6분</div>
-          <div class="kpi-sub">핵심 수치 계산에는 미사용 (공공데이터만 정본으로 사용)</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SCREEN 2: 10,000개 미래 생존 지형도 & 포화 곡선 (Landscape & Saturation Curve) -->
-    <section class="screen-card" id="screen2">
-      <div class="screen-header">
+      <!-- Right: 내 자본금 36개월 미리 창업 성적표 (극도로 직관적인 4개 요약) -->
+      <aside class="card side">
         <div>
-          <div class="screen-step">Screen 2 · Survival Landscape &amp; Saturation Curve (AT-01, AT-02, AT-05, AT-16)</div>
-          <h2 class="screen-title">2. 36개월 생존 지형도 — <span id="landscapeModeLabel">500 AI design families x 20 variations</span></h2>
+          <div class="eyebrow" style="margin-bottom:4px">내 가게 미리 창업 성적표</div>
+          <div style="font-weight:800;font-size:18px;letter-spacing:-0.02em" id="selectedCategoryHeadline">
+            ☕ 스페셜티 테이크아웃 카페
+          </div>
+          <div class="small" id="selectedAddressSummary">서울 성동구 성수동2가 · 전용 15평 기준</div>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span class="badge badge-done" id="sec2CalibBadge">보정됨 (calibrated)</span>
-          <span class="src-tag src-computed">computed: 결정적 36개월 현금흐름 엔진</span>
-        </div>
-      </div>
 
-      <!-- Uncalibrated Warning Panel (AT-02: Shown when calibration fails, hides distributions) -->
-      <div id="uncalibratedPanel" class="callout-box callout-rose hidden">
-        <h3 style="color: #fda4af; font-size: 16px;">[미보정 / UNCALIBRATED] 백테스트 오차가 ±5.0%p 임계치를 초과하여 시나리오 빈도 분포를 숨깁니다 (AT-02)</h3>
-        <p style="font-size: 13px; color: var(--text-secondary);">
-          원칙에 따라 과거 상권 개·폐업률을 ±5.0%p 이내로 재현하지 못한 상태에서는 미래 생존 지형도 분포를 표시하지 않으며, 아래 <strong>가정 점검표(Assumption Inspection Table)</strong>만 제공합니다.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>점검 항목</th>
-              <th>현재 입력/가정값</th>
-              <th>백테스트 최대 오차 (pp)</th>
-              <th>홀드아웃 오차 (pp)</th>
-              <th>출처 태그</th>
-            </tr>
-          </thead>
-          <tbody id="uncalibratedTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- Calibrated Distribution Content (Hidden when AT-02 uncalibrated is active) -->
-      <div id="calibratedDistributionContainer">
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">36개월 완주 시나리오 빈도 (Scenario Frequency) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiSurvivalFreq">-</div>
-            <div class="kpi-sub" id="kpiSurvivalSub">실세계 확률이 아닌 리허설 시나리오 빈도</div>
+        <!-- 1. 내 자본금 vs 개업비용 & 안전 여유금 -->
+        <div class="capital-bar-wrap">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700">
+            <span>예상 개업비 <strong id="estStartupCost">6,800만원</strong></span>
+            <span style="color:var(--accent)">여유 운영자금 <strong id="estRunwayBuffer">+2,200만원</strong></span>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">파레토 비지배 생존 설계 (Non-Dominated) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiNonDominated">-</div>
-            <div class="kpi-sub">생존개월 · 36개월 누적 손익 · 최저 현금 기준</div>
+          <div class="capital-bar">
+            <div class="capital-used" id="capitalUsedBar" style="width:72%"></div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">발견된 고유 실패 가족 (Failure Families) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiFailureFamilies">-</div>
-            <div class="kpi-sub" id="kpiRejectedSub">하드 제약 위반 기각(사망 미집계): 0건</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">#1 최우선 생존 설계안 (Leader Design) <span class="src-tag src-computed">computed</span></div>
-            <div class="kpi-val" id="kpiLeaderId">-</div>
-            <div class="kpi-sub" id="kpiLeaderPnl">36개월 누적 손익 및 보증금 환급 포함</div>
+          <div class="small" id="capitalVerdictText">
+            내 자본금 9,000만원으로 초기 적자 구간을 버틸 충분한 예비비가 남습니다.
           </div>
         </div>
 
-        <div class="chart-grid">
-          <!-- 10,000-Dot Canvas Scatter (with Interactive Hover/Click Inspector) -->
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>10,000개 변형 생존 지형도 산점도 (마우스를 올려 개별 가게 설계안을 탐색하세요)</span>
-              <span class="src-tag src-computed">500 AI design families x 20 variations</span>
-            </div>
-            <canvas id="landscapeCanvas" width="720" height="310" style="cursor: crosshair;"></canvas>
-            <div id="landscapeInspectorBar" style="background: rgba(14, 21, 38, 0.92); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 7px 11px; font-size: 12px; color: #bae6fd; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-              <span>🔍 <strong>산점도 인터랙티브 인스펙터:</strong> 점 위에 마우스를 올리거나 클릭하면 해당 가게 변형의 36개월 손익·사망원인·설계변수를 즉시 확인합니다.</span>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--text-secondary);">
-              <span>🟢 <strong>파레토 비지배 생존 (#1 및 후보군)</strong></span>
-              <span>🔵 <strong>36개월 생존 변형</strong></span>
-              <span>🟠 <strong>유보금 3개월 연속 미달 (reserveBreach)</strong></span>
-              <span>🔴 <strong>현금 고갈 사망 (cashBelowZero)</strong></span>
-            </div>
+        <!-- 2. 핵심 4대 창업 지표 (동선 대기 + 완료 + 36개월 생존율 + 월 순수익) -->
+        <div class="report-kpi-grid">
+          <div class="kpi-box">
+            <div class="k">36개월 생존 비율 (보정)</div>
+            <div class="v" id="s1CalibPassRate">-</div>
+            <div class="s" id="s1PassRate">원시 시뮬레이션 대비</div>
           </div>
-
-          <!-- Saturation Curve (N = 1,000 / 3,000 / 10,000, AT-16) -->
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>실패 가족 포화 곡선 (N = 1,000 / 3,000 / 10,000 · AT-16)</span>
-              <span class="src-tag src-computed" id="saturationStatusBadge">computed: saturation</span>
-            </div>
-            <canvas id="saturationCanvas" width="460" height="310"></canvas>
-            <div id="saturationSummaryText" style="font-size: 12px; color: var(--text-secondary);">
-              500 AI design families x 20 variations · 표본 규모(N) 증가에 따른 고유 실패 가족 및 비지배 설계 수 추이
-            </div>
+          <div class="kpi-box">
+            <div class="k">월 예상 순수익 (중앙값)</div>
+            <div class="v" id="founderMonthlyNet">+420만원</div>
+            <div class="s" id="s1MedianMargin">순마진율 기준</div>
+          </div>
+          <div class="kpi-box">
+            <div class="k">손님 대기시간 변화</div>
+            <div class="v" id="waitMetric">-</div>
+            <div class="s" id="waitNote">동선 개선 효과</div>
+          </div>
+          <div class="kpi-box">
+            <div class="k">피크 10분 완료 손님</div>
+            <div class="v" id="doneMetric">-</div>
+            <div class="s" id="doneNote">최대 대기열 <span id="queueMetric">-</span></div>
           </div>
         </div>
 
-        <!-- 36-Month Cash Flow & Peak-Hour Queue Mini-Sim (P1) -->
-        <div class="chart-grid" style="margin-top: 16px;">
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>#1 생존 설계안 vs 선택/폐업 변형 36개월 현금 잔고 추이 (보증금=묶인 현금, 36개월차 환급 · AT-04)</span>
-              <span class="src-tag src-computed">computed: 월별 P&amp;L</span>
-            </div>
-            <canvas id="cashflowCanvas" width="720" height="240"></canvas>
+        <!-- 3. 36개월 내 자본금 & 누적 현금흐름 미니 차트 -->
+        <div class="mini-chart-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700">36개월 누적 현금 추이 (P10 / P50 / P90)</span>
+            <span class="small" id="pathMetric">동선 통과 원활</span>
           </div>
+          <canvas id="cashflowCanvas" class="mini-cashflow" aria-label="36개월 누적 현금흐름 차트"></canvas>
+          <div class="small" id="pathNote" style="margin-top:4px">선택 폭 기준</div>
+          <div class="small" id="queueNote" style="display:none">주문/픽업</div>
+        </div>
 
-          <div class="canvas-panel">
-            <div class="canvas-title">
-              <span>피크타임 대기열 미니 시뮬레이션 (Peak-Hour Queue Mini-Sim · P1)</span>
-              <span class="src-tag src-computed">computed: M/M/c 대기열</span>
-            </div>
-            <div id="peakQueuePanel" style="display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; padding-top: 4px;">
-              <!-- Populated dynamically -->
-            </div>
+        <!-- 4. 이 가게가 위험해지는 단 하나의 이유 (Decision Cliff) & 7일 행동 -->
+        <div class="risk-card">
+          <div style="font-size:12px;font-weight:750;color:var(--amber);margin-bottom:3px">
+            ⚠️ 계약 전 반드시 확인할 단 하나의 위험 (결정 절벽)
+          </div>
+          <div style="font-weight:750;font-size:13.5px;margin-bottom:4px" id="cliffHeadline">
+            임계 조건을 계산 중입니다...
+          </div>
+          <div class="small" id="cliffFlipDetail" style="color:#5c4328;margin-bottom:6px"></div>
+          <div style="font-size:12px;padding-top:6px;border-top:1px dashed #e3c9a8;color:var(--ink)">
+            <strong>📋 이번 주 현장 체크:</strong> <span id="measureAction">해당 주소 앞 피크타임 유동인구를 실측하세요.</span>
           </div>
         </div>
-      </div>
+
+        <!-- 사진/도면 업로드 시에만 열리는 간편 장애물 지정 박스 -->
+        <div class="photo-drawer" id="photoDrawerBox" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong style="font-size:12px">업로드한 도면/사진에서 기둥·장애물 드래그</strong>
+            <label class="small"><input id="presenceConfirm" type="checkbox" checked /> 확인</label>
+          </div>
+          <canvas id="imageCanvas" class="img-box"></canvas>
+          <button id="applyBox" type="button" style="width:100%;margin-top:6px;padding:6px" disabled>
+            드래그한 영역을 2.5D 도면 장애물로 반영
+          </button>
+        </div>
+
+        <!-- 세부 매장 조건 직접 미세조정 (접어두기) -->
+        <details id="fineTuneDetails" style="border-top:1px solid var(--line);padding-top:10px">
+          <summary class="small" style="cursor:pointer;font-weight:700;color:var(--ink)">
+            ⚙️ 직원 수 · 손님 속도 · 임대료 직접 미세조정
+          </summary>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>변경안 픽업 직원 수</span><strong id="pickupStaffVal">2명</strong></div>
+              <input id="pickupStaff" type="range" min="1" max="3" step="1" value="2" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>분당 평균 유입 손님</span><strong id="arrivalsVal">1.8명/분</strong></div>
+              <input id="arrivals" type="range" min="0.6" max="2.6" step="0.1" value="1.8" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>픽업 제조 시간</span><strong id="serviceVal">22초</strong></div>
+              <input id="service" type="range" min="12" max="34" step="1" value="22" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>통과 폭 기준</span></div>
+              <select id="bodyWidth" style="width:100%;padding:5px;border-radius:8px;border:1px solid var(--line)">
+                <option value="0.55" selected>일반 보행 0.55m</option>
+                <option value="0.75">짐·유모차 0.75m</option>
+                <option value="0.9">휠체어 통과 0.90m</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <label class="small">가구 X(m)<input id="displayX" type="number" min="0" max="10.6" step="0.1" value="1.2" style="width:100%;padding:4px;border:1px solid var(--line);border-radius:6px" /></label>
+              <label class="small">가구 Y(m)<input id="displayY" type="number" min="0" max="8" step="0.1" value="5.7" style="width:100%;padding:4px;border:1px solid var(--line);border-radius:6px" /></label>
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>월 임대료</span><strong id="valRent">380만원</strong></div>
+              <input id="ctrlRent" type="range" min="150" max="900" step="10" value="380" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>전용 면적</span><strong id="valArea">49.6㎡ (15평)</strong></div>
+              <input id="ctrlArea" type="range" min="20" max="132" step="3.3" value="49.6" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>평균 객단가</span><strong id="valTicket">6,200원</strong></div>
+              <input id="ctrlTicket" type="range" min="3500" max="25000" step="100" value="6200" />
+            </div>
+            <div>
+              <div class="small" style="display:flex;justify-content:space-between"><span>인건비 비율</span><strong id="valLabor">26%</strong></div>
+              <input id="ctrlLabor" type="range" min="15" max="42" step="1" value="26" />
+            </div>
+            <input id="ctrlInvest" type="range" min="3500" max="25000" step="500" value="9000" style="display:none" />
+            <span id="valInvest" style="display:none">9,000만원</span>
+            <select id="presetSelect" style="display:none"><option value="seongsu">성수</option><option value="yeonnam">연남</option><option value="gangnam">강남</option><option value="euljiro">을지로</option></select>
+            <select id="ctrlZone" style="display:none"><option value="성수카페거리">성수카페거리</option><option value="연남동">연남동</option><option value="강남역">강남역</option><option value="을지로3가">을지로3가</option></select>
+            <div style="display:flex;gap:6px">
+              <button class="primary" id="btnRunInteractive" type="button" style="flex:1">세부 조건으로 재계산</button>
+              <button id="btnResetBaseline" type="button">초기화</button>
+            </div>
+          </div>
+        </details>
+      </aside>
     </section>
 
-    <!-- SCREEN 3 & SCREEN 4: 단일 결정 절벽 (AT-07) & 단 하나의 다음 현장 측정 (AT-08) -->
-    <div class="split-2">
-      <!-- SCREEN 3: Single Decision Cliff -->
-      <section class="screen-card" id="screen3">
-        <div class="screen-header">
+    <!-- =====================================================================
+         하단 접이식 전문가 서랍: 10,000개 시뮬레이션 데이터 · 공공데이터 보정 · 검증 게이트
+         평소에는 접혀 있어 화면을 극도로 단순하게 유지합니다.
+         ===================================================================== -->
+    <details class="expert-drawer" id="aboutDetails">
+      <summary>
+        <span>🔬 전문가용 상세 데이터 보기 (10,000개 매장 생존 지형도 · 서울시 OA-15577 보정 · 검증 게이트 <strong id="s5PassCount">16/16</strong>)</span>
+        <span class="pill" id="sbEndState">ALL_GREEN</span>
+      </summary>
+
+      <div class="expert-body">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px" class="small">
           <div>
-            <div class="screen-step">Screen 3 · Single Decision Cliff (AT-07)</div>
-            <h2 class="screen-title">3. 단 하나의 결정 절벽 (Decision Cliff)</h2>
+            <span id="sbReplayBadge">LIVE ENGINE</span> ·
+            Run <strong id="sbRunId">-</strong> ·
+            Hash <strong id="sbInputHash">-</strong> ·
+            SHA <strong id="sbEngineSha">-</strong> ·
+            연산 <strong id="sbComputeMs">-</strong> ·
+            데이터 <strong id="sbInputFiles">OA-15577</strong> ·
+            토큰 <strong id="sbTokensTotal">0</strong> ·
+            게이트 <strong id="sbGateLog">16/16 PASS</strong>
           </div>
-          <span class="src-tag src-computed">computed: 11-step 경계 탐색</span>
+          <div style="display:flex;gap:6px">
+            <button id="btnExportHtml" type="button">브리프 (.html)</button>
+            <button id="btnExportMd" type="button">카드 (.md)</button>
+            <button id="btnExportJson" type="button">10,000 요약 (.json)</button>
+            <button id="btnExportManifest" type="button">매니페스트 (.json)</button>
+            <button id="aboutBtn" type="button" style="display:none">정보</button>
+          </div>
         </div>
 
-        <div class="callout-box" id="cliffCard">
-          <div style="font-size: 12px; color: var(--accent-blue); font-weight: 700;">#1 최우선 설계안이 뒤집히는 최소 상대 변화량 가정</div>
-          <div style="font-size: 20px; font-weight: 800; color: #fff;" id="cliffHeadline">-</div>
-          <div style="font-size: 13px; color: var(--text-secondary);" id="cliffFlipDetail">-</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
-            <button id="btnCliffMinus" type="button">경계 -1 Step 재실행 (Before Flip)</button>
-            <button id="btnCliffPlus" type="button">경계 +1 Step 재실행 (After Flip)</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- SCREEN 4: Single Next Field Measurement -->
-      <section class="screen-card" id="screen4">
-        <div class="screen-header">
+        <div class="expert-grid-2" id="screen-1">
           <div>
-            <div class="screen-step">Screen 4 · Next Field Measurement (AT-08)</div>
-            <h2 class="screen-title">4. 계약 전 7일 현장 실측 프로토콜</h2>
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
+              10,000개 매장 생존 지형도 (<span id="s1TotalCount">10,000</span>개 · <span id="selectedVariantBadge">클릭 탐색</span> <span id="selectedVariantMetrics"></span>)
+            </div>
+            <canvas id="landscapeCanvas" class="chart-canvas"></canvas>
           </div>
-          <span class="src-tag src-computed">computed: (1/|Δ|) × 불확실성 폭</span>
+          <div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">규모별 경계 수렴 (100 → 1,000 → 10,000)</div>
+            <canvas id="saturationCanvas" class="chart-canvas"></canvas>
+          </div>
         </div>
 
-        <div class="callout-box callout-amber" id="measurementCard">
-          <div style="font-size: 12px; color: #fcd34d; font-weight: 700;">결론을 가장 작은 오차로 뒤집는 단 하나의 현장 측정 과제</div>
-          <div style="font-size: 18px; font-weight: 800; color: #fff;" id="measureVariable">-</div>
-          <div style="font-size: 13.5px; color: var(--text-primary); font-weight: 600;" id="measureAction">-</div>
-          <div style="font-size: 12.5px; color: var(--text-secondary);" id="measureReason">-</div>
-        </div>
-      </section>
-    </div>
+        <div class="expert-grid-2">
+          <div id="screen-2">
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
+              공공데이터 보정 (<span id="s2DatasetId">OA-15577</span> · 학습 <span id="s2TrainYears">2019–2023</span> → 검증 <span id="s2HoldoutYear">2024</span>)
+            </div>
+            <div id="uncalibratedPanel" class="small" style="margin-bottom:8px"></div>
+            <div id="calibratedDistributionContainer" class="small"></div>
+          </div>
 
-    <!-- SCREEN 5: 적대적 파산 루프 3라운드 & 백테스트/홀드아웃/기준선 검증 (AT-01, AT-09, AT-13, AT-15) -->
-    <section class="screen-card" id="screen5">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 5 · Adversarial Rounds &amp; Verification Gates (AT-09, AT-13, AT-15)</div>
-          <h2 class="screen-title">5. 파산 설계자 vs 가게 설계자 적대적 라운드 (최대 3라운드) 및 기준선 검증</h2>
+          <div id="screen-3">
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
+              민감도 및 실측 상세 (<span id="cliffParameterBadge">핵심 변수</span> · 현재 <span id="cliffCurrentVal">-</span> / 임계 <span id="cliffThresholdVal">-</span> / 차이 <span id="cliffDeltaVal">-</span>)
+            </div>
+            <div class="small" id="measureVariable" style="font-weight:700"></div>
+            <div class="small" id="measureReason"></div>
+            <div class="small" id="measureExpectedShift"></div>
+          </div>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span class="badge badge-done" id="sec5BaselineBadge">AI-native</span>
-          <span class="src-tag src-computed">computed: S/P 엄격 분리 오케스트레이터</span>
+
+        <div class="expert-grid-2">
+          <div id="screen-4">
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
+              Generator · Critic · Patch 수렴 (<span id="s4TotalRounds">3</span>R · <span id="s4ConvergedBadge">수렴</span> · <span id="s4HistoryPath">artifacts/loop-history.json</span>)
+            </div>
+            <table class="clean-table">
+              <thead><tr><th>R</th><th>Generator</th><th>Critic</th><th>Patch</th><th>MAE</th><th>상태</th></tr></thead>
+              <tbody id="roundsTableBody"></tbody>
+            </table>
+          </div>
+
+          <div id="screen-5">
+            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
+              수용 게이트 검증 (<span id="s5AllGreenBadge">ALL_GREEN</span>)
+            </div>
+            <div style="max-height:180px;overflow-y:auto">
+              <table class="clean-table">
+                <thead><tr><th>Gate</th><th>항목</th><th>근거</th><th>상태</th></tr></thead>
+                <tbody id="verificationTableBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
+    </details>
 
-      <div class="split-2">
-        <div>
-          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--accent-blue);">
-            적대적 스트레스 테스트 라운드 로그 (runs/&lt;id&gt;/rounds.json · AT-13)
-          </h3>
-          <table>
-            <thead>
-              <tr>
-                <th>라운드</th>
-                <th>변경 축</th>
-                <th>추가 쇼크</th>
-                <th>신규 사망</th>
-                <th>신규 실패가족</th>
-                <th>비지배 생존</th>
-                <th>종료 사유 (stopReason)</th>
-              </tr>
-            </thead>
-            <tbody id="roundsTableBody"></tbody>
-          </table>
-        </div>
+  </div>
 
-        <div>
-          <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--accent-blue);">
-            무작위/그리드 기준선 비교 (AT-09) &amp; 연도별 백테스트 오차 (AT-01 · AT-15)
-          </h3>
-          <table>
-            <thead>
-              <tr>
-                <th>검증 구분</th>
-                <th>측정값 / Argon</th>
-                <th>기준값 / Random</th>
-                <th>오차 / 비교</th>
-                <th>판정</th>
-              </tr>
-            </thead>
-            <tbody id="verificationTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- SCREEN 6: 창업자 의사결정 및 내보내기 (Decision & Export, AT-12) -->
-    <section class="screen-card" id="screen6">
-      <div class="screen-header">
-        <div>
-          <div class="screen-step">Screen 6 · Founder Decision &amp; Export (AT-12)</div>
-          <h2 class="screen-title">6. 창업자 의사결정 기록 및 Google Sheets / Docs 내보내기</h2>
-        </div>
-        <span class="src-tag src-onsite">onsite: 창업자 최종 선택</span>
-      </div>
-
-      <div class="decision-grid">
-        <div class="decision-card" id="decMeasure" data-choice="measure">
-          <h4>① 7일 현장 실측 우선 수행 (Measure First · 권장)</h4>
-          <p>임대차 계약서 날인 전, Screen 4의 7일 현장 측정 프로토콜을 먼저 수행해 절벽 가정의 실측치를 확보합니다.</p>
-        </div>
-        <div class="decision-card active" id="decHold" data-choice="hold">
-          <h4>② 보류: 측정 전까지 근거 부족 (Hold: Insufficient Evidence)</h4>
-          <p>현재 임대료·수요 가정에서는 절벽 경계가 가까워 측정 전까지 계약을 보류합니다. (완결된 공식 종료 상태)</p>
-        </div>
-        <div class="decision-card" id="decProceed" data-choice="proceed">
-          <h4>③ #1 비지배 생존 설계안 조건으로 협상 진행 (Proceed)</h4>
-          <p>#1 생존 설계안의 좌석·메뉴·인력 구조와 10% 이상 현금 유보 조건을 유지한 채 임대차 조건을 협의합니다.</p>
-        </div>
-      </div>
-
-      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
-        <div style="font-size: 13px; color: var(--text-secondary);">
-          선택된 의사결정: <strong id="selectedDecisionText" style="color: #fff;">보류: 측정 전까지 근거 부족 (Hold: insufficient evidence)</strong>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-          <button class="btn-primary" id="btnExportCsv" type="button">📊 Google Sheets 호환 CSV 내보내기 (.csv)</button>
-          <button id="btnExportMd" type="button">📄 Google Docs 리허설 보고서 내보내기 (.md)</button>
-          <button id="btnExportJson" type="button">🗂️ Canonical RunResult JSON 저장 (.json)</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <script type="module" src="/app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

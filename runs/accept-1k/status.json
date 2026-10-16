@@ -1,0 +1,79 @@
+{
+  "runId": "accept-1k",
+  "inputFiles": [
+    "data/seoul/2026/seongsu_cafe_2021_2026.csv",
+    "data/seoul/manifest.json",
+    "shared/forbidden-paths.json"
+  ],
+  "inputHash": "7ab20f6e",
+  "engineSha": "183f5311",
+  "endState": "DONE",
+  "endReason": "모든 하드 게이트 통과 및 시뮬레이션 완료",
+  "replay": false,
+  "tokens": [
+    {
+      "model": "gemini-2.5-flash",
+      "call": "StoreDesigner.proposePatchBundles",
+      "inputTokens": 1840,
+      "outputTokens": 920
+    },
+    {
+      "model": "gemini-2.5-flash",
+      "call": "BankruptcyDesigner.proposeShocks",
+      "inputTokens": 1420,
+      "outputTokens": 610
+    },
+    {
+      "model": "gemini-2.5-pro",
+      "call": "ReportSummarizer.cliffAndMeasurement",
+      "inputTokens": 1150,
+      "outputTokens": 480
+    }
+  ],
+  "tokenTotal": {
+    "input": 4410,
+    "output": 2010
+  },
+  "gateLog": [
+    {
+      "gate": "backtest",
+      "passed": true,
+      "detail": "2021-2024 성수동 카페 개·폐업률 최대 오차 1.12pp (기준 <= 5.0pp) -> 보정됨",
+      "value": 1.116,
+      "threshold": 5,
+      "at": "2026-10-16T04:55:39.108Z"
+    },
+    {
+      "gate": "holdout",
+      "passed": true,
+      "detail": "2025Q1-2026Q2 홀드아웃 최대 오차 1.98pp (기준 <= 5.0pp)",
+      "value": 1.981,
+      "threshold": 5,
+      "at": "2026-10-16T04:55:39.109Z"
+    },
+    {
+      "gate": "budget_reserve",
+      "passed": true,
+      "detail": "예산(120,000,000원)·예비비(10%) 게이트: 유효 1000건, 제약 위반 기각 5건 (폐업 집계 제외)",
+      "value": 5,
+      "threshold": 0,
+      "at": "2026-10-16T04:55:39.129Z"
+    },
+    {
+      "gate": "pnl_recompute",
+      "passed": true,
+      "detail": "독립 스프레드시트 P&L 재계산 (50개 표본: 생존 25 + 폐업 25) 최대 오차 0.0000원 (기준 <= 1원)",
+      "value": 0,
+      "threshold": 1,
+      "at": "2026-10-16T04:55:39.131Z"
+    },
+    {
+      "gate": "baseline",
+      "passed": true,
+      "detail": "무작위/그리드 베이스라인 비교: 실패 가족 5 vs 0, 비지배 설계 95 vs 5 -> AI-native",
+      "value": 5,
+      "threshold": 0,
+      "at": "2026-10-16T04:55:39.156Z"
+    }
+  ]
+}
