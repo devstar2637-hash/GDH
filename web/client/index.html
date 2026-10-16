@@ -3,1603 +3,1101 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>만 개의 가게 · Ten Thousand Stores — 주소·사진·자본금으로 미리 창업해보는 2.5D 시뮬레이터</title>
+  <title>Rehearsal — 만 개의 가게 · Ten Thousand Stores (500 AI design families x 20 variations)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      color-scheme: light;
-      --bg: #f4f6f8;
-      --paper: #ffffff;
-      --ink: #20252b;
-      --muted: #5b6570;
-      --line: #e0e5e9;
-      --soft: #f4f6f8;
-      --accent: #294f82;
-      --accent-soft: #eaf0f8;
-      --emerald: #1f6f54;
-      --emerald-soft: #e8f4ef;
-      --blue: #294f82;
-      --amber: #9a5b13;
-      --red: #a8382f;
-      --radius: 12px;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Pretendard", Helvetica, Arial, sans-serif;
-      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    }
-    :root[data-theme="dark"] {
-      color-scheme: dark;
-      --bg: #0f1317;
-      --paper: #161b20;
-      --ink: #e6edf3;
-      --muted: #8b949e;
-      --line: #28313a;
-      --soft: #1c2229;
-      --accent: #689df6;
-      --accent-soft: rgba(104, 157, 246, 0.14);
-      --emerald: #3fb984;
-      --emerald-soft: rgba(63, 185, 132, 0.14);
-    }
-    :root[data-theme="dark"] .card,
-    :root[data-theme="dark"] .cat-card {
-      background: rgba(22, 27, 32, 0.94);
-    }
-    :root[data-theme="dark"] .founder-inputs,
-    :root[data-theme="dark"] .input-box,
-    :root[data-theme="dark"] .text-input,
-    :root[data-theme="dark"] .world,
-    :root[data-theme="dark"] .playbar,
-    :root[data-theme="dark"] .kpi-box,
-    :root[data-theme="dark"] .mini-chart-box,
-    :root[data-theme="dark"] .rea-evidence,
-    :root[data-theme="dark"] button:not(.primary) {
-      background: #161b20;
-      color: var(--ink);
-      border-color: var(--line);
-    }
-    :root[data-theme="dark"] .risk-card {
-      background: rgba(154, 91, 19, 0.14);
-      border-color: rgba(154, 91, 19, 0.35);
-    }
-    .hud-bar {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 7px 10px;
-      border-radius: 8px;
-      background: var(--soft);
-      border: 1px solid var(--line);
-    }
-    .hud-btn {
-      padding: 4px 9px;
-      font-size: 11.5px;
-      border-radius: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-family: var(--font-mono);
-      background: var(--paper);
-    }
-    .hud-btn.on {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent) inset;
-    }
-    .hud-btn kbd, kbd {
-      padding: 0.05rem 0.35rem;
-      border: 1px solid var(--line);
-      border-bottom-width: 2px;
-      border-radius: 3px;
-      background: var(--soft);
-      color: var(--ink);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      white-space: nowrap;
-    }
-    .rea-evidence {
-      margin-top: 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--soft);
-      padding: 11px 13px;
-    }
-    .rea-step-tabs {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-    .rea-step-btn {
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 650;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .rea-step-btn span {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--accent);
-      font-weight: 700;
-    }
-    .rea-step-btn.active {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-    .rea-terminal {
-      background: #181d23;
-      color: #e6edf3;
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      line-height: 1.5;
-      border: 1px solid #2b333d;
-    }
-    .rea-terminal .prompt-line {
-      color: #8b949e;
-      margin-bottom: 4px;
-    }
-    .rea-terminal .prompt-line strong {
-      color: #79b8ff;
-    }
-    .rea-terminal .reply-line {
-      color: #e6edf3;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font: 14px/1.55 var(--font-sans);
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
-    button, input, select { font: inherit; }
-    #asciiBgCanvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-      opacity: 0.45;
-    }
-    .app {
-      position: relative;
-      z-index: 1;
-      max-width: 1380px;
-      margin: 0 auto;
-      padding: 18px 20px 44px;
-    }
+@import "tailwindcss";
 
-    /* Card base — REA crisp 1px border & clean surface */
-    .card {
-      position: relative;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: 0 2px 10px rgba(32, 37, 43, 0.03);
-      transition: border-color 0.16s ease, box-shadow 0.16s ease;
-    }
+:root {
+  --bg-page: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-terminal: #181e29;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-light: #e2e8f0;
+  --border-mid: #cbd5e1;
+  --accent-dark: #181e29;
+  --accent-blue: #2563eb;
+  --accent-emerald: #059669;
+  --accent-red: #dc2626;
+}
 
-    /* Buttons & Pills */
-    button {
-      border: 1px solid var(--line);
-      background: var(--paper);
-      color: var(--ink);
-      padding: 7px 13px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.12s ease;
-    }
-    button:hover {
-      border-color: #b4bfc9;
-      background: var(--soft);
-    }
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    button.primary:hover {
-      background: #1f3d66;
-    }
-    button.chip {
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: 6px;
-      background: var(--soft);
-      color: var(--muted);
-      font-weight: 600;
-    }
-    button.chip.active, button.chip:hover {
-      background: var(--accent-soft);
-      border-color: #acc2e2;
-      color: var(--accent);
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 9px;
-      border-radius: 6px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 11.5px;
-      font-weight: 700;
-      font-family: var(--font-mono);
-    }
-    .pill.warn { background: #fbf1e6; color: var(--amber); }
-    .pill.bad { background: #fbeae8; color: var(--red); }
-    .small { font-size: 12px; color: var(--muted); }
+* {
+  box-sizing: border-box;
+}
 
-    /* =========================================================================
-       STEP 1: Ultra-Simple Founder Input Hero (Address / Photo / My Capital)
-       ========================================================================= */
-    .hero-card {
-      padding: 20px 22px;
-      margin-bottom: 14px;
-    }
-    .hero-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-    .eyebrow {
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 0.01em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    h1 {
-      margin: 4px 0 6px;
-      font-size: clamp(22px, 2.4vw, 30px);
-      line-height: 1.16;
-      font-weight: 650;
-      letter-spacing: -0.035em;
-      font-family: var(--font-sans);
-    }
-    .lead {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13.5px;
-    }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: "Plus Jakarta Sans", "Noto Sans KR", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
 
-    /* 3-Input Bar: Address + Capital + Photo + CTA */
-    .founder-inputs {
-      display: grid;
-      grid-template-columns: 1.35fr 1.1fr 0.9fr auto;
-      gap: 10px;
-      align-items: stretch;
-      padding: 12px;
-      background: var(--soft);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-    }
-    .input-box {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      padding: 10px 13px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 6px;
-    }
-    .input-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--ink);
-    }
-    .text-input {
-      width: 100%;
-      border: 1px solid #d5dcd7;
-      border-radius: 9px;
-      padding: 7px 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink);
-      background: #fcfcfa;
-    }
-    .text-input:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: #fff;
-    }
-    .quick-chips {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .cta-launch {
-      padding: 0 22px;
-      font-size: 15px;
-      font-weight: 750;
-      border-radius: 14px;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
+button,
+input,
+select {
+  font: inherit;
+}
 
-    /* =========================================================================
-       STEP 2: AI Recommended Business Categories (Top 4 for Address + Capital)
-       ========================================================================= */
-    .cat-section {
-      margin-bottom: 14px;
-    }
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 0 4px;
-    }
-    .section-title {
-      font-weight: 750;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .cat-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .cat-card {
-      position: relative;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.90);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1.5px solid var(--line);
-      border-radius: 15px;
-      padding: 13px 15px;
-      cursor: pointer;
-      text-align: left;
-      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, box-shadow 0.18s ease;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 6px;
-    }
-    .cat-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(52, 107, 87, 0.13), transparent 68%);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: none;
-    }
-    .cat-card:hover {
-      border-color: #88b09e;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(52, 107, 87, 0.08);
-    }
-    .cat-card:hover::before {
-      opacity: 1;
-    }
-    .cat-card.active {
-      border-color: var(--accent);
-      background: rgba(244, 250, 246, 0.95);
-      box-shadow: 0 8px 22px rgba(52, 107, 87, 0.12);
-    }
-    .cat-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
-    }
-    .cat-name {
-      font-weight: 750;
-      font-size: 15px;
-      color: var(--ink);
-    }
-    .cat-badge {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-    .cat-badge.warn {
-      background: #fbf1e6;
-      color: var(--amber);
-    }
-    .cat-desc {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .cat-metrics {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      font-weight: 650;
-      color: var(--ink);
-      padding-top: 6px;
-      border-top: 1px dashed #e2e7e3;
-    }
+button {
+  cursor: pointer;
+  transition: all 120ms ease;
+}
 
-    /* =========================================================================
-       STEP 3: 2.5D Auto Floorplan & Pre-Launch Store Simulation
-       ========================================================================= */
-    .workspace {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
-      gap: 14px;
-      align-items: start;
-    }
-    .main {
-      padding: 16px;
-    }
-    .main-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-    .quick-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .quick-actions button.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
-    /* Dual 2.5D Canvases */
-    .worlds {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .world {
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 11px;
-      background: #fcfcfa;
-    }
-    .world.plan-world {
-      border-color: #b7d0c4;
-      background: #f9fcfa;
-    }
-    .world-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 7px;
-    }
-    .world-title {
-      font-weight: 750;
-      font-size: 14.5px;
-    }
-    .world-sub {
-      color: var(--muted);
-      font-size: 12px;
-    }
-    canvas.world-canvas {
-      width: 100%;
-      height: 360px;
-      display: block;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #f6f7f3 0%, #edefe9 100%);
-      border: 1px solid #e3e7e3;
-      touch-action: none;
-      outline: none;
-    }
-    .world-foot {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 7px;
-    }
+.tabular {
+  font-family: "JetBrains Mono", "Noto Sans KR", monospace;
+  font-variant-numeric: tabular-nums;
+}
 
-    /* Simple Playbar */
-    .playbar {
-      display: grid;
-      grid-template-columns: auto auto 1fr auto auto auto;
-      gap: 8px;
-      align-items: center;
-      margin-top: 12px;
-      padding: 9px 12px;
-      border-radius: 13px;
-      background: #f8f9f6;
-      border: 1px solid #e4e8e4;
-    }
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
+.hidden {
+  display: none !important;
+}
 
-    /* Right Side: Founder's Simple Report Card */
-    .side {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .report-kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .kpi-box {
-      padding: 11px 12px;
-      border-radius: 13px;
-      background: #f8f9f6;
-      border: 1px solid #e4e8e4;
-    }
-    .kpi-box .k {
-      font-size: 11.5px;
-      color: var(--muted);
-    }
-    .kpi-box .v {
-      font-size: 18px;
-      font-weight: 800;
-      margin-top: 2px;
-      color: var(--ink);
-      letter-spacing: -0.02em;
-    }
-    .kpi-box .s {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    .capital-bar-wrap {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: var(--accent-soft);
-      border: 1px solid #c5dcd0;
-    }
-    .capital-bar {
-      height: 10px;
-      border-radius: 999px;
-      background: #dce7e1;
-      overflow: hidden;
-      margin: 8px 0 6px;
-      display: flex;
-    }
-    .capital-used {
-      background: var(--accent);
-      height: 100%;
-      transition: width 0.25s ease;
-    }
-    .risk-card {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: #fdf6ee;
-      border: 1px solid #ead4b8;
-    }
-    .mini-chart-box {
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      padding: 10px;
-      background: #fcfcfa;
-    }
-    canvas.mini-cashflow {
-      width: 100%;
-      height: 135px;
-      display: block;
-      border-radius: 8px;
-      background: #f8f9f6;
-    }
+/* 1. Top Header (exact rea.tools header) */
+.rea-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-light);
+}
 
-    /* Photo Crop Modal / Drawer inside Sidebar when photo uploaded */
-    .photo-drawer {
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: #f7f8f5;
-      border: 1px dashed #b8c2bc;
-    }
-    .img-box {
-      width: 100%;
-      height: 120px;
-      border-radius: 10px;
-      background: #eef0ec;
-      display: block;
-      margin-top: 6px;
-      touch-action: none;
-    }
+.rea-header-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
 
-    /* =========================================================================
-       Bottom Collapsible Expert Drawer (10,000 Worlds + Acceptance Gates)
-       Keeps main UI 100% minimal while providing full transparency on demand
-       ========================================================================= */
-    details.expert-drawer {
-      margin-top: 20px;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 14px 20px;
-    }
-    details.expert-drawer > summary {
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 13.5px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      list-style: none;
-    }
-    details.expert-drawer > summary::-webkit-details-marker { display: none; }
-    .expert-body {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--line);
-    }
-    .expert-grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-    canvas.chart-canvas {
-      width: 100%;
-      height: 220px;
-      display: block;
-      border-radius: 12px;
-      background: #f8f9f6;
-      border: 1px solid #e4e8e4;
-    }
-    .clean-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    .clean-table th, .clean-table td {
-      padding: 7px 9px;
-      text-align: left;
-      border-bottom: 1px solid #e6eae6;
-    }
-    .badge-pass {
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 11px;
-    }
-    .badge-fail {
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: #fbeae8;
-      color: var(--red);
-      font-weight: 700;
-      font-size: 11px;
-    }
+.rea-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
 
-    /* =========================================================================
-       rea.tools (github.com/morluto/rea) Authentic Layout & Component System
-       ========================================================================= */
-    .site-header {
-      border-bottom: 1px solid var(--line);
-      background: var(--paper);
-    }
-    .header-inner {
-      max-width: 1380px;
-      margin: 0 auto;
-      padding: 13px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .site-title {
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .site-nav {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
-      font-size: 13.5px;
-    }
-    .site-nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-weight: 550;
-    }
-    .site-nav a:hover {
-      color: var(--ink);
-    }
-    .home-page-nav {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 18px;
-      align-items: center;
-      margin: 0 0 14px;
-      padding: 9px 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      font-size: 13px;
-    }
-    :root[data-theme="dark"] .home-page-nav,
-    :root[data-theme="dark"] .site-header {
-      background: rgba(22, 27, 32, 0.94);
-    }
-    .home-page-nav span {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .home-page-nav a {
-      color: var(--ink);
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .home-page-nav a:hover {
-      color: var(--accent);
-    }
-    .home-start-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.88fr);
-      gap: 16px;
-      align-items: stretch;
-      margin-bottom: 12px;
-    }
-    .home-setup {
-      padding: 15px 16px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--soft);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .setup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      font-size: 12.5px;
-      color: var(--muted);
-    }
-    .setup-header strong {
-      color: var(--ink);
-      font-size: 13.5px;
-    }
-    .agent-terminal {
-      border: 1px solid #303d4a;
-      border-radius: 8px;
-      background: #202933;
-      color: #f4f7fa;
-      overflow: hidden;
-    }
-    .terminal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 7px 11px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      color: #b7c2cd;
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-    }
-    .terminal-dots {
-      display: inline-flex;
-      gap: 5px;
-    }
-    .terminal-dots i {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.24);
-      display: inline-block;
-    }
-    .terminal-prompt {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin: 0;
-      padding: 10px 12px 9px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      line-height: 1.45;
-      color: #f4f7fa;
-      overflow-x: auto;
-    }
-    .prompt-symbol {
-      color: #8fb4e8;
-      font-weight: 700;
-    }
-    .terminal-cursor {
-      width: 0.5rem;
-      height: 0.95rem;
-      background: #8fb4e8;
-      display: inline-block;
-      animation: terminal-blink 1.1s steps(1) infinite;
-      flex-shrink: 0;
-    }
-    @keyframes terminal-blink {
-      50% { opacity: 0; }
-    }
-    .agent-reply {
-      margin: 0 10px 10px;
-      padding: 10px 12px;
-      border-radius: 6px;
-      background: #ffffff;
-      color: #20252b;
-      font-size: 12.5px;
-      line-height: 1.5;
-    }
-    :root[data-theme="dark"] .agent-reply {
-      background: #161b20;
-      color: #e6edf3;
-      border: 1px solid #2b3540;
-    }
-    .reply-label {
-      margin: 0 0 3px !important;
-      color: var(--accent) !important;
-      font-size: 11px !important;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      font-family: var(--font-mono);
-    }
-    /* rea.tools Workflow Figure & Flow Steps (01 -> 02 -> 03) */
-    .workflow-figure {
-      margin: 0 0 14px;
-      padding: 11px 14px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--paper);
-    }
-    .flow-steps {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .flow-steps li {
-      position: relative;
-      padding: 9px 12px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: var(--soft);
-      font-size: 12.5px;
-      color: var(--muted);
-    }
-    .flow-steps li:not(:last-child)::after {
-      content: "→";
-      position: absolute;
-      right: -9px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--accent);
-      font-weight: 700;
-      z-index: 2;
-    }
-    .flow-steps strong {
-      display: block;
-      margin-bottom: 2px;
-      color: var(--ink);
-      font-size: 12.5px;
-    }
-    /* rea.tools Step Selector (aria-pressed="true") */
-    .step-selector {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-bottom: 9px;
-    }
-    .step-selector button {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      padding: 9px 11px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: var(--paper);
-      color: var(--ink);
-      font: inherit;
-      font-size: 12.5px;
-      font-weight: 650;
-      text-align: left;
-      cursor: pointer;
-    }
-    .step-selector button span {
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      font-weight: 700;
-    }
-    .step-selector button[aria-pressed="true"],
-    .step-selector button.active {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
+.rea-logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  text-decoration: none;
+}
 
-    /* Three.js WebGL 3D Store Architecture & CAD Studio Stage */
-    .webgl-stage-panel {
-      margin-top: 12px;
-      border: 1px solid #2b3542;
-      border-radius: 12px;
-      background: #0d121d;
-      color: #eef2f8;
-      padding: 11px 12px;
-      overflow: hidden;
-    }
-    .webgl-stage-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-    .webgl-title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .webgl-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(76, 139, 245, 0.18);
-      border: 1px solid rgba(110, 162, 235, 0.42);
-      color: #9ec5ff;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .webgl-toolbar {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .webgl-chip {
-      padding: 4px 9px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(255, 255, 255, 0.06);
-      color: #d6dfec;
-      font-size: 11.5px;
-      font-weight: 650;
-      cursor: pointer;
-    }
-    .webgl-chip:hover {
-      border-color: #6ea2eb;
-      color: #ffffff;
-    }
-    .webgl-chip.active {
-      background: #294f82;
-      border-color: #6ea2eb;
-      color: #ffffff;
-    }
-    canvas.webgl-stage-canvas {
-      width: 100%;
-      height: 310px;
-      display: block;
-      border-radius: 9px;
-      background: #0a0e1a;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: grab;
-      touch-action: none;
-    }
-    canvas.webgl-stage-canvas:active {
-      cursor: grabbing;
-    }
-    .webgl-stage-foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 7px;
-      font-size: 11.5px;
-      color: #a7b4c6;
-      font-family: var(--font-mono);
-    }
+.rea-tagline {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 
-    @media (max-width: 1080px) {
-      .home-start-grid, .flow-steps, .step-selector, .founder-inputs, .cat-grid, .workspace, .worlds, .expert-grid-2 {
-        grid-template-columns: 1fr;
-      }
-      .flow-steps li:not(:last-child)::after {
-        display: none;
-      }
-      .cta-launch { padding: 14px; }
-    }
+.rea-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.rea-nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rea-nav-link:hover,
+.rea-nav-link.active {
+  color: var(--text-primary);
+}
+
+.rea-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* rea.tools Button System */
+.rea-btn-solid {
+  background: var(--accent-dark);
+  color: #ffffff;
+  border: 1px solid var(--accent-dark);
+  border-radius: 7px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rea-btn-solid:hover:not(:disabled) {
+  background: #27303f;
+}
+
+.rea-btn-outline {
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-mid);
+  border-radius: 7px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rea-btn-outline:hover:not(:disabled) {
+  border-color: var(--text-secondary);
+  background: var(--bg-subtle);
+}
+
+.rea-btn-outline.active {
+  background: #eff6ff;
+  border-color: var(--accent-blue);
+  color: #1d4ed8;
+}
+
+/* 2. Main Layout with Right Sticky TOC Rail (rea.tools layout) */
+.rea-layout {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px 28px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 36px;
+  align-items: start;
+}
+
+.rea-main-col {
+  min-width: 0;
+}
+
+.rea-toc {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-light);
+}
+
+.rea-toc-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 4px 14px 8px;
+}
+
+.rea-toc-link {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 7px 14px;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+}
+
+.rea-toc-link.active,
+.rea-toc-link:hover {
+  color: var(--text-primary);
+  font-weight: 700;
+  border-left-color: var(--accent-blue);
+  background: #f1f5f9;
+}
+
+/* 3. Sections & 2-Column Editorial Setup */
+.rea-section {
+  padding: 8px 0;
+  scroll-margin-top: 76px;
+}
+
+.rea-divider {
+  border: 0;
+  border-top: 1px solid var(--border-light);
+  margin: 28px 0;
+}
+
+.rea-two-col {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.rea-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.rea-h1 {
+  font-size: clamp(28px, 3.2vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+.rea-h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.rea-lead {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+
+.rea-step-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+/* Commercial District Evidence Card */
+.rea-evidence-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.rea-evidence-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.rea-badge-dark {
+  background: var(--accent-dark);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.rea-survival-pill {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.rea-evidence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rea-ev-item {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ev-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ev-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.ev-val.ev-profit {
+  color: var(--accent-emerald);
+}
+
+.ev-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Signature Dark Terminal Card (exact rea.tools terminal card) */
+.rea-terminal-card {
+  background: var(--bg-terminal);
+  color: #f8fafc;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+}
+
+.rea-terminal-bar {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.rea-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.rea-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  display: inline-block;
+}
+
+.rea-terminal-body {
+  padding: 16px;
+}
+
+.rea-term-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "JetBrains Mono", "Noto Sans KR", monospace;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.rea-district-chips {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.rea-term-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.rea-term-chip.active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #ffffff;
+  font-weight: 700;
+}
+
+.rea-term-input {
+  flex: 1;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f8fafc;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: "JetBrains Mono", "Noto Sans KR", monospace;
+}
+
+.rea-link-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.rea-link-parse-btn {
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rea-link-parse-btn:hover {
+  background: #059669;
+}
+
+.rea-parsed-box {
+  margin-top: 8px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+.rea-parsed-status {
+  font-size: 11px;
+  color: #6ee7b7;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.rea-unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rea-unit-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rea-unit-chip.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.d3-tenk-box {
+  margin-top: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 10px 12px 6px;
+}
+
+.d3-tenk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.d3-tenk-head strong {
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+
+.d3-tenk-legend {
+  display: flex;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.d3-tenk-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.d3-tenk-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.d3-tenk-svg {
+  width: 100%;
+  height: 86px;
+  display: block;
+}
+
+.rea-term-slider {
+  width: 100%;
+  accent-color: #34d399;
+}
+
+.rea-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.rea-cat-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+  border-radius: 7px;
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rea-cat-btn.active {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #064e3b;
+}
+
+.rea-cat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.rea-best-tag {
+  background: #10b981;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.rea-cat-meta {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Section 2: Interactive Floorplan Stage */
+.rea-sec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.rea-env-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.rea-rule-strip {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 16px;
+  margin-bottom: 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.rea-design-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.rea-choice-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-mid);
+  border-radius: 7px;
+  padding: 8px 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rea-choice-btn strong {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.rea-choice-btn span {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.rea-choice-btn.active {
+  border: 1.5px solid var(--accent-blue);
+  background: #eff6ff;
+}
+
+.rea-scn-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.rea-scn-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-mid);
+  border-radius: 7px;
+  padding: 7px 9px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rea-scn-btn small {
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.rea-scn-btn.active {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  color: #ffffff;
+}
+
+.rea-scn-btn.active small {
+  color: #93c5fd;
+}
+
+.rea-rule-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Main Stage Card */
+.rea-stage-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.world {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.world.proposed {
+  border: 1.5px solid var(--accent-emerald);
+}
+
+.world-top {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.world-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+}
+
+.world-tag.emerald {
+  color: var(--accent-emerald);
+}
+
+.world-top h3 {
+  margin: 1px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.route-status {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent-emerald);
+  background: #ecfdf5;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.route-status.bad {
+  color: var(--accent-red);
+  background: #fef2f2;
+}
+
+.canvasbox {
+  height: 360px;
+  position: relative;
+}
+
+.canvasbox canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.canvas-floating-tools {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  pointer-events: none;
+  flex-wrap: wrap;
+}
+
+.object-chips,
+.canvas-tool-btns {
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-mid);
+  padding: 3px;
+  border-radius: 7px;
+}
+
+.obj-chip,
+.rea-mini-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+.obj-chip.active {
+  background: var(--accent-dark);
+  color: #ffffff;
+}
+
+.rea-mini-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.world-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+}
+
+.w-stat {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.w-stat + .w-stat {
+  border-left: 1px solid var(--border-light);
+}
+
+.w-stat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.w-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.w-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.w-unit {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.w-sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.d3-chart-slot {
+  width: 100%;
+  height: 54px;
+}
+
+.d3-stat-svg {
+  width: 100%;
+  height: 54px;
+  display: block;
+}
+
+.delta-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.delta-tag.good {
+  color: var(--accent-emerald);
+}
+
+.delta-tag.bad {
+  color: var(--accent-red);
+}
+
+/* Playback & Fine Controls */
+.rea-play-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+.rea-play-left,
+.rea-walk-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rea-play-left {
+  flex: 1;
+}
+
+.rea-play-left input[type="range"] {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent-dark);
+}
+
+.speed {
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dpad {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.dpad-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-mid);
+  background: #ffffff;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.rea-walk-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.rea-fine-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.fine-item label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.fine-item input[type="range"],
+.fine-item select,
+.fine-item input[type="number"] {
+  width: 100%;
+  accent-color: var(--accent-dark);
+}
+
+.fine-item select,
+.fine-item input[type="number"] {
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  padding: 4px 6px;
+  background: #ffffff;
+  font-size: 12px;
+}
+
+.rea-insight-bar {
+  margin-top: 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rea-insight-bar strong {
+  color: #064e3b;
+  font-size: 13.5px;
+}
+
+.rea-insight-bar .muted {
+  color: #065f46;
+  font-size: 12px;
+}
+
+/* Blueprint upload & calibration */
+.calibration-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.calibration-grid label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.calibration-grid input {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+#imageCanvas {
+  width: 100%;
+  height: 190px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 8px;
+  cursor: crosshair;
+}
+
+.checkrow {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--accent-emerald);
+  font-weight: 600;
+}
+
+.plan-preview pre {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1100px) {
+  .rea-layout {
+    grid-template-columns: 1fr;
+    padding: 20px 16px 48px;
+  }
+  .rea-toc {
+    display: none;
+  }
+  .rea-two-col,
+  .rea-rule-strip,
+  .compare {
+    grid-template-columns: 1fr;
+  }
+  .rea-fine-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .rea-header-inner {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .rea-tagline,
+  .rea-nav {
+    display: none;
+  }
+  .rea-design-row,
+  .rea-scn-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
   </style>
 </head>
 <body>
-  <canvas id="asciiBgCanvas" aria-hidden="true"></canvas>
-
-  <!-- rea.tools style Top Site Header -->
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="site-title" href="#setup">
-        <span>만 개의 가게 · Ten Thousand Stores</span>
-        <span class="pill" id="statusBadge">실시간 시뮬레이션 준비 완료</span>
-      </a>
-      <nav class="site-nav" aria-label="주요 섹션 탐색">
-        <a href="#setup">창업 조건 입력</a>
-        <a href="#categories">업종 추천</a>
-        <a href="#rehearsal">2.5D 도면·동선</a>
-        <a href="#aboutDetails">10,000개 매장 검증</a>
-        <span class="pill" title="window.TenThousandStoresSDK 연결됨">AI Studio UI SDK Ready</span>
-        <button id="exportBtn" type="button" style="padding:5px 10px;font-size:12px">리포트 (.txt)</button>
-        <button id="jsonBtn" type="button" style="padding:5px 10px;font-size:12px">시나리오 (.json)</button>
-      </nav>
-    </div>
-  </header>
-
-  <div class="app" id="aiStudioMountRoot">
-
-    <!-- rea.tools style Sticky "이 페이지에" Navigation -->
-    <nav class="home-page-nav" aria-label="이 페이지에">
-      <span>이 페이지에</span>
-      <a href="#setup">01 · 주소·자본금·점포 사진</a>
-      <a href="#categories">02 · 맞춤 창업 카테고리 4선</a>
-      <a href="#rehearsal">03 · 2.5D 인테리어 도면·손님 동선</a>
-      <a href="#aboutDetails">04 · 10,000개 매장 36개월 생존 데이터</a>
-    </nav>
-
-    <!-- =====================================================================
-         STEP 1: rea.tools Home-Start-Grid (Left: Founder Setup / Right: Agent Terminal)
-         ===================================================================== -->
-    <section class="card hero-card" id="setup">
-      <div class="home-start-grid">
-        <div>
-          <div class="eyebrow" style="margin-bottom:6px">
-            <span>서울시 상권(OA-15577) · 2.5D 공간 동선 · 36개월 자본금 검증</span>
-          </div>
-          <h1>주소나 사진, 내 자본금만 넣으면 가게를 미리 창업해봅니다.</h1>
-          <p class="lead" style="margin-bottom:14px">
-            상권 데이터와 10,000개 매장(500 AI design families x 20 variations) 시뮬레이션이 <strong>맞춤 창업 카테고리 추천 → 업종별 2.5D 인테리어 도면 생성 → 손님 동선 및 36개월 생존 검증</strong>까지 한 번에 끝냅니다.
-          </p>
-        </div>
-
-        <!-- rea.tools Signature .home-setup + .agent-terminal + .agent-reply -->
-        <aside class="home-setup" aria-label="실시간 창업 에이전트 터미널">
-          <div class="setup-header">
-            <strong>실시간 창업 에이전트 브리프</strong>
-            <span>TenThousandStoresSDK · v1.0</span>
-          </div>
-          <div class="agent-terminal" role="region" aria-label="창업 시뮬레이션 프롬프트 및 진단 응답">
-            <div class="terminal-header">
-              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span>store-rehearsal-cli · live</span>
-            </div>
-            <p class="terminal-prompt">
-              <span class="prompt-symbol">›</span>
-              <span id="heroTerminalPrompt">ten-thousand-stores --addr="성수동" --capital="9,000만" --category="cafe"</span>
-              <span class="terminal-cursor" aria-hidden="true"></span>
-            </p>
-            <div class="agent-reply">
-              <p class="reply-label">창업 에이전트 즉시 진단</p>
-              <div id="heroTerminalReply">
-                <strong>☕ 스페셜티 카페 · 로스터리</strong> 도면 생성 완료 · 보증금·시공비 제외 후 예비비 <strong>+2,200만원</strong> 확보 · 오른쪽 도면에서 가구를 드래그해 병목을 실험하세요.
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      <div class="founder-inputs">
-        <!-- 1. Address / Location -->
-        <div class="input-box">
-          <div class="input-label">
-            <span>📍 1. 창업할 주소 또는 상권</span>
-            <span class="small" id="detectedZoneBadge">성수카페거리 상권</span>
-          </div>
-          <input
-            id="addressInput"
-            class="text-input"
-            type="text"
-            value="서울 성동구 성수동2가 315-47"
-            placeholder="예: 성수동2가 315-47, 연남동, 강남역..."
-            aria-label="창업 주소 입력"
-          />
-          <div class="quick-chips">
-            <button class="chip active" data-addr="서울 성동구 성수동2가 315-47" data-zone="seongsu" type="button">성수동 연무장길</button>
-            <button class="chip" data-addr="서울 마포구 연남동 227-15" data-zone="yeonnam" type="button">마포 연남동</button>
-            <button class="chip" data-addr="서울 강남구 역삼동 825" data-zone="gangnam" type="button">강남역 이면</button>
-            <button class="chip" data-addr="서울 중구 을지로3가 302" data-zone="euljiro" type="button">을지로3가</button>
-          </div>
-        </div>
-
-        <!-- 2. My Capital -->
-        <div class="input-box">
-          <div class="input-label">
-            <span>💰 2. 내 자본금 (보증금·인테리어·예비비 포함)</span>
-            <strong id="capitalDisplay" style="color:var(--accent);font-size:14px">9,000만원</strong>
-          </div>
-          <input
-            id="capitalInput"
-            type="range"
-            min="3500"
-            max="25000"
-            step="500"
-            value="9000"
-            aria-label="내 자본금 슬라이더"
-          />
-          <div class="quick-chips">
-            <button class="chip" data-cap="5000" type="button">5,000만원</button>
-            <button class="chip active" data-cap="9000" type="button">9,000만원</button>
-            <button class="chip" data-cap="13000" type="button">1억 3,000만</button>
-            <button class="chip" data-cap="20000" type="button">2억원</button>
-          </div>
-        </div>
-
-        <!-- 3. Store Photo / Floorplan Upload -->
-        <div class="input-box">
-          <div class="input-label">
-            <span>📷 3. 점포 사진 · 도면 (선택)</span>
-            <span class="small" id="photoStatusBadge">기본 15평형 적용 중</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
-            <button id="photoTriggerBtn" type="button" style="width:100%;padding:8px 10px;border-style:dashed">
-              + 사진/도면 올리기 (자동 도면 변환)
-            </button>
-            <input id="imageFile" type="file" accept="image/png,image/jpeg" style="display:none" />
-          </div>
-          <div class="small" id="imageStatus">사진이 없어도 주소·자본금으로 즉시 도면을 그립니다.</div>
-        </div>
-
-        <!-- 4. Launch Button -->
-        <button class="primary cta-launch" id="startFounderSimBtn" type="button">
-          바로 가게 창업해보기 →
-        </button>
-      </div>
-    </section>
-
-    <!-- rea.tools Signature Workflow Figure (01 -> 02 -> 03) -->
-    <figure class="workflow-figure" aria-label="3단계 미리 창업 워크플로우">
-      <ol class="flow-steps">
-        <li>
-          <strong>01 · 주소·자본금·사진 입력</strong>
-          상권 임대료·유동인구와 내 자본금 여유분을 계산해 가장 유리한 업종을 추천합니다.
-        </li>
-        <li>
-          <strong>02 · 업종별 2.5D 인테리어·동선 리허설</strong>
-          카페·베이커리·팝업·다이닝 맞춤 가구를 마우스로 배치하고 10분 피크 대기열을 검증합니다.
-        </li>
-        <li>
-          <strong>03 · 10,000개 매장 36개월 생존·절벽 검증</strong>
-          계약 전 반드시 확인해야 할 단 하나의 결정 절벽(임계 임대료·매출)과 현장 행동 지침을 제시합니다.
-        </li>
-      </ol>
-    </figure>
-
-    <!-- =====================================================================
-         STEP 2: 내 주소 + 내 자본금 맞춤 창업 카테고리 추천 (클릭 시 도면 즉시 변경)
-         ===================================================================== -->
-    <section class="cat-section" id="categories">
-      <div class="section-head">
-        <div class="section-title">
-          <span>✨ 이 주소와 자본금에 가장 유리한 추천 창업 카테고리</span>
-          <span class="small" id="catRecommendReason">카드를 누르면 해당 업종 도면과 손님 시뮬레이션으로 즉시 전환됩니다.</span>
-        </div>
-        <span class="small" id="simLoadingOverlay" style="display:none;color:var(--accent);font-weight:700">
-          ⏳ 10,000개 매장 시뮬레이션 동기화 중...
-        </span>
-      </div>
-
-      <div class="cat-grid" id="categoryGrid">
-        <!-- Dynamically populated & ranked by address + capital in app.ts -->
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         STEP 3: 2.5D 자동 생성 가게 도면 & 내 자본금 36개월 창업 성적표
-         ===================================================================== -->
-    <section class="workspace" id="rehearsal">
-      <!-- Left: 2.5D Isometric Store Floorplan & Customer Flow -->
-      <main class="card main">
-        <div class="main-head">
-          <div>
-            <div style="font-weight:800;font-size:16px" id="verdictTitle">가게 도면과 손님 동선을 시뮬레이션합니다.</div>
-            <div class="small" id="verdictBody">오른쪽 변경안 도면에서 파란 가구를 마우스로 직접 끌어 옮겨보세요.</div>
-          </div>
-          <div class="quick-actions" role="group" aria-label="원클릭 매장 실험">
-            <button id="layoutBtn" type="button">동선 최적화 배치</button>
-            <button id="staffBtn" type="button">직원 +1명만 추가</button>
-            <button id="bothBtn" class="active" type="button">최적 배치 + 직원 추가</button>
-            <button id="seedBtn" type="button">다른 손님 날 보기</button>
-          </div>
-        </div>
-
-        <!-- House-Control / pgrun.dev / Planner5D / rea.tools Interactive Store HUD -->
-        <div class="hud-bar" role="toolbar" aria-label="2.5D 매장 제어 및 CAD 도면 옵션">
-          <span class="small" style="font-weight:700;padding:0 4px;font-family:var(--font-mono)">STORE HUD</span>
-          <button class="hud-btn" id="hudCadModeBtn" type="button" title="2D 정밀 건축 CAD 도면(문 스윙 아크·창호·조명 헤일로·공조 기류)과 2.5D 입체 도면 전환 (단축키 C)">🗺️ 2D 건축 CAD <kbd>C</kbd></button>
-          <button class="hud-btn on" id="hudLightsBtn" type="button" title="매장 조명 켜기/끄기 (단축키 L)">💡 조명 <kbd>L</kbd></button>
-          <button class="hud-btn on" id="hudDimsBtn" type="button" title="Planner5D 건축 치수선 표시 (단축키 G)">📐 치수·CAD <kbd>G</kbd></button>
-          <button class="hud-btn" id="hudHeatBtn" type="button" title="손님 병목·대기열 히트맵 표시 (단축키 H)">🔥 혼잡 히트맵 <kbd>H</kbd></button>
-          <button class="hud-btn" id="hudIsoAngleBtn" type="button" title="2.5D 카메라 각도 전환 (단축키 I)">🔄 각도 <kbd>I</kbd></button>
-          <button class="hud-btn" id="hudRotateBtn" type="button" title="선택한 가구 90도 회전 (단축키 R)">↻ 회전 <kbd>R</kbd></button>
-          <button class="hud-btn" id="hudAddTableBtn" type="button" title="매장에 테이블/포디움 추가">+ 가구 추가</button>
-          <button class="hud-btn" id="hudUndoBtn" type="button" title="가구 배치 실행취소 (⌘Z)">↶ 실행취소</button>
-          <button class="hud-btn" id="hudRedoBtn" type="button" title="가구 배치 다시실행 (⌘⇧Z)">↷ 다시실행</button>
-          <button class="hud-btn" id="hudThemeBtn" type="button" title="라이트 / 다크 CAD 테마 전환 (단축키 T)" style="margin-left:auto">◐ 다크·CAD <kbd>T</kbd></button>
-        </div>
-
-        <div class="worlds">
-          <section class="world">
-            <div class="world-head">
-              <div>
-                <div class="world-title">기본 도면 (개선 전)</div>
-                <div class="world-sub" id="baseSubDesc">입구 앞 혼잡 배치 · 기본 인력</div>
-              </div>
-              <span class="small" id="baseTag">기준안</span>
-            </div>
-            <canvas id="baseCanvas" class="world-canvas" aria-label="기본 도면 2.5D 공간"></canvas>
-            <div class="world-foot" id="baseFoot"></div>
-          </section>
-
-          <section class="world plan-world">
-            <div class="world-head">
-              <div>
-                <div class="world-title">내 가게 도면 (마우스로 가구 드래그·회전)</div>
-                <div class="world-sub" id="planSubDesc">매대·테이블·포토존·카운터를 직접 끌어 옮기면 동선이 즉시 바뀝니다</div>
-              </div>
-              <span class="small" id="planTag">실험안</span>
-            </div>
-            <canvas id="planCanvas" class="world-canvas" tabindex="0" aria-label="내 가게 2.5D 도면 — 마우스 드래그로 가구 이동"></canvas>
-            <div class="world-foot" id="planFoot"></div>
-          </section>
-        </div>
-
-        <div class="playbar">
-          <button class="primary" id="playBtn" type="button">일시정지</button>
-          <button id="restartBtn" type="button">처음으로</button>
-          <input id="timeline" type="range" min="0" max="600" step="1" value="110" aria-label="리허설 시간" />
-          <span class="small" id="clock">01:50 / 10:00</span>
-          <select id="speed" aria-label="재생 배속" style="width:auto;padding:5px 8px;border-radius:8px;border:1px solid var(--line)">
-            <option value="10">10배속</option>
-            <option value="20" selected>25배속</option>
-            <option value="45">50배속</option>
-          </select>
-          <button id="walkBtn" type="button">내가 손님으로 걸어보기 (WASD)</button>
-        </div>
-
-        <!-- Three.js WebGL 3D Real-Time Store Architecture, Kelvin Lighting & AC Airflow Stage -->
-        <section class="webgl-stage-panel" id="webglStagePanel" aria-label="Three.js 3D 실시간 매장 건축 쇼룸">
-          <div class="webgl-stage-head">
-            <div class="webgl-title-wrap">
-              <span class="webgl-badge">THREE.JS WEBGL 3D · BLOOM</span>
-              <strong style="font-size:13.5px;letter-spacing:-0.01em">실시간 3D 건축·조명(Kelvin)·에어컨 기류 쇼룸</strong>
-            </div>
-            <div class="webgl-toolbar" role="group" aria-label="3D 쇼룸 조명 무드 및 구역 포커스">
-              <button type="button" class="webgl-chip active" data-webgl-mood="cozy">🕯️ 코지 2800K</button>
-              <button type="button" class="webgl-chip" data-webgl-mood="bright">☀️ 낮 피크</button>
-              <button type="button" class="webgl-chip" data-webgl-mood="peak">🔥 러시 아워</button>
-              <button type="button" class="webgl-chip" data-webgl-mood="night">🌙 나이트 쇼룸</button>
-              <span style="opacity:0.25">|</span>
-              <button type="button" class="webgl-chip active" data-webgl-zone="">전체 매장</button>
-              <button type="button" class="webgl-chip" data-webgl-zone="hall">홀·메인존</button>
-              <button type="button" class="webgl-chip" data-webgl-zone="bar">카운터·작업존</button>
-              <button type="button" class="webgl-chip active" id="webglAcBtn" title="3D 벽걸이 에어컨 64-라인 냉기 기류 시뮬레이션 토글">❄️ 에어컨 기류 ON</button>
-            </div>
-          </div>
-          <canvas id="webglStageCanvas" class="webgl-stage-canvas" aria-label="Three.js 3D 매장 건축 쇼룸 — 마우스 드래그로 360도 회전, 휠로 줌, 조명·에어컨·가구 클릭"></canvas>
-          <div class="webgl-stage-foot">
-            <span id="webglHoverStatus">🖱️ 3D 드래그: 360° 회전 (외벽 자동 컷어웨이) · 휠: 줌 · 조명/에어컨/가구 클릭 시 즉시 제어</span>
-            <span id="webglRoomSummary">홀 라운지 · 에스프레소 바 · 로스터리 (AC 23°C 가동 중)</span>
-          </div>
-        </section>
-
-        <!-- rea.tools (morluto/rea) style .step-selector + .agent-terminal -->
-        <div class="rea-evidence" id="evidence" aria-label="단계별 공간·손익 분석 근거">
-          <div class="step-selector" role="group" aria-label="3단계 창업 검증 탭">
-            <button type="button" class="rea-step-btn active" data-rea-step="1" aria-pressed="true"><span>01</span> 업종별 인테리어·조닝 설계</button>
-            <button type="button" class="rea-step-btn" data-rea-step="2" aria-pressed="false"><span>02</span> 피크 동선·병목 시뮬레이션</button>
-            <button type="button" class="rea-step-btn" data-rea-step="3" aria-pressed="false"><span>03</span> 36개월 자본금·임계 규칙</button>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span class="small" id="walkHint">
-              💡 가구 클릭 후 드래그 이동 · <kbd>R</kbd> 회전 · <kbd>WASD</kbd> 보행
-            </span>
-          </div>
-          <div class="agent-terminal">
-            <div class="terminal-header">
-              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span>step-verifier · interactive</span>
-            </div>
-            <p class="terminal-prompt">
-              <span class="prompt-symbol">›</span>
-              <span id="reaPromptLine">inspect-store --category="cafe" --district="성수동" --selected="원두 로스터기 · MD 선반"</span>
-              <span class="terminal-cursor" aria-hidden="true"></span>
-            </p>
-            <div class="agent-reply">
-              <p class="reply-label">공간·재무 검증 결과</p>
-              <div id="reaReplyLine">헤링본 우드 홀 + 테라조 에스프레소 바 조닝 적용 · 2그룹 머신·쇼케이스·로스터기 및 원목 테이블 배치 완료.</div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <!-- Right: 내 자본금 36개월 미리 창업 성적표 (극도로 직관적인 4개 요약) -->
-      <aside class="card side">
-        <div>
-          <div class="eyebrow" style="margin-bottom:4px">내 가게 미리 창업 성적표</div>
-          <div style="font-weight:800;font-size:18px;letter-spacing:-0.02em" id="selectedCategoryHeadline">
-            ☕ 스페셜티 테이크아웃 카페
-          </div>
-          <div class="small" id="selectedAddressSummary">서울 성동구 성수동2가 · 전용 15평 기준</div>
-        </div>
-
-        <!-- 1. 내 자본금 vs 개업비용 & 안전 여유금 -->
-        <div class="capital-bar-wrap">
-          <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700">
-            <span>예상 개업비 <strong id="estStartupCost">6,800만원</strong></span>
-            <span style="color:var(--accent)">여유 운영자금 <strong id="estRunwayBuffer">+2,200만원</strong></span>
-          </div>
-          <div class="capital-bar">
-            <div class="capital-used" id="capitalUsedBar" style="width:72%"></div>
-          </div>
-          <div class="small" id="capitalVerdictText">
-            내 자본금 9,000만원으로 초기 적자 구간을 버틸 충분한 예비비가 남습니다.
-          </div>
-        </div>
-
-        <!-- 2. 핵심 4대 창업 지표 (동선 대기 + 완료 + 36개월 생존율 + 월 순수익) -->
-        <div class="report-kpi-grid">
-          <div class="kpi-box">
-            <div class="k">36개월 생존 비율 (보정)</div>
-            <div class="v" id="s1CalibPassRate">-</div>
-            <div class="s" id="s1PassRate">원시 시뮬레이션 대비</div>
-          </div>
-          <div class="kpi-box">
-            <div class="k">월 예상 순수익 (중앙값)</div>
-            <div class="v" id="founderMonthlyNet">+420만원</div>
-            <div class="s" id="s1MedianMargin">순마진율 기준</div>
-          </div>
-          <div class="kpi-box">
-            <div class="k">손님 대기시간 변화</div>
-            <div class="v" id="waitMetric">-</div>
-            <div class="s" id="waitNote">동선 개선 효과</div>
-          </div>
-          <div class="kpi-box">
-            <div class="k">피크 10분 완료 손님</div>
-            <div class="v" id="doneMetric">-</div>
-            <div class="s" id="doneNote">-</div>
-            <div class="s">최대 대기열 <span id="queueMetric">-</span></div>
-          </div>
-        </div>
-
-        <!-- 3. 36개월 내 자본금 & 누적 현금흐름 미니 차트 -->
-        <div class="mini-chart-box">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:700">36개월 누적 현금 추이 (P10 / P50 / P90)</span>
-            <span class="small" id="pathMetric">동선 통과 원활</span>
-          </div>
-          <canvas id="cashflowCanvas" class="mini-cashflow" aria-label="36개월 누적 현금흐름 차트"></canvas>
-          <div class="small" id="pathNote" style="margin-top:4px">선택 폭 기준</div>
-          <div class="small" id="queueNote" style="display:none">주문/픽업</div>
-        </div>
-
-        <!-- 4. 이 가게가 위험해지는 단 하나의 이유 (Decision Cliff) & 7일 행동 -->
-        <div class="risk-card">
-          <div style="font-size:12px;font-weight:750;color:var(--amber);margin-bottom:3px">
-            ⚠️ 계약 전 반드시 확인할 단 하나의 위험 (결정 절벽)
-          </div>
-          <div style="font-weight:750;font-size:13.5px;margin-bottom:4px" id="cliffHeadline">
-            임계 조건을 계산 중입니다...
-          </div>
-          <div class="small" id="cliffFlipDetail" style="color:#5c4328;margin-bottom:6px"></div>
-          <div style="font-size:12px;padding-top:6px;border-top:1px dashed #e3c9a8;color:var(--ink)">
-            <strong>📋 이번 주 현장 체크:</strong> <span id="measureAction">해당 주소 앞 피크타임 유동인구를 실측하세요.</span>
-          </div>
-        </div>
-
-        <!-- 사진/도면 업로드 시에만 열리는 간편 장애물 지정 박스 -->
-        <div class="photo-drawer" id="photoDrawerBox" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <strong style="font-size:12px">업로드한 도면/사진에서 기둥·장애물 드래그</strong>
-            <label class="small"><input id="presenceConfirm" type="checkbox" checked /> 확인</label>
-          </div>
-          <canvas id="imageCanvas" class="img-box"></canvas>
-          <button id="applyBox" type="button" style="width:100%;margin-top:6px;padding:6px" disabled>
-            드래그한 영역을 2.5D 도면 장애물로 반영
-          </button>
-        </div>
-
-        <!-- 세부 매장 조건 직접 미세조정 (접어두기) -->
-        <details id="fineTuneDetails" style="border-top:1px solid var(--line);padding-top:10px">
-          <summary class="small" style="cursor:pointer;font-weight:700;color:var(--ink)">
-            ⚙️ 직원 수 · 손님 속도 · 임대료 직접 미세조정
-          </summary>
-          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>변경안 픽업 직원 수</span><strong id="pickupStaffVal">2명</strong></div>
-              <input id="pickupStaff" type="range" min="1" max="3" step="1" value="2" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>분당 평균 유입 손님</span><strong id="arrivalsVal">1.8명/분</strong></div>
-              <input id="arrivals" type="range" min="0.6" max="2.6" step="0.1" value="1.8" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>픽업 제조 시간</span><strong id="serviceVal">22초</strong></div>
-              <input id="service" type="range" min="12" max="34" step="1" value="22" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>통과 폭 기준</span></div>
-              <select id="bodyWidth" style="width:100%;padding:5px;border-radius:8px;border:1px solid var(--line)">
-                <option value="0.55" selected>일반 보행 0.55m</option>
-                <option value="0.75">짐·유모차 0.75m</option>
-                <option value="0.9">휠체어 통과 0.90m</option>
-              </select>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-              <label class="small">가구 X(m)<input id="displayX" type="number" min="0" max="10.6" step="0.1" value="1.2" style="width:100%;padding:4px;border:1px solid var(--line);border-radius:6px" /></label>
-              <label class="small">가구 Y(m)<input id="displayY" type="number" min="0" max="8" step="0.1" value="5.7" style="width:100%;padding:4px;border:1px solid var(--line);border-radius:6px" /></label>
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>월 임대료</span><strong id="valRent">380만원</strong></div>
-              <input id="ctrlRent" type="range" min="150" max="900" step="10" value="380" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>전용 면적</span><strong id="valArea">49.6㎡ (15평)</strong></div>
-              <input id="ctrlArea" type="range" min="20" max="132" step="3.3" value="49.6" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>평균 객단가</span><strong id="valTicket">6,200원</strong></div>
-              <input id="ctrlTicket" type="range" min="3500" max="25000" step="100" value="6200" />
-            </div>
-            <div>
-              <div class="small" style="display:flex;justify-content:space-between"><span>인건비 비율</span><strong id="valLabor">26%</strong></div>
-              <input id="ctrlLabor" type="range" min="15" max="42" step="1" value="26" />
-            </div>
-            <input id="ctrlInvest" type="range" min="3500" max="25000" step="500" value="9000" style="display:none" />
-            <span id="valInvest" style="display:none">9,000만원</span>
-            <select id="presetSelect" style="display:none"><option value="seongsu">성수</option><option value="yeonnam">연남</option><option value="gangnam">강남</option><option value="euljiro">을지로</option></select>
-            <select id="ctrlZone" style="display:none"><option value="성수카페거리">성수카페거리</option><option value="연남동">연남동</option><option value="강남역">강남역</option><option value="을지로3가">을지로3가</option></select>
-            <div style="display:flex;gap:6px">
-              <button class="primary" id="btnRunInteractive" type="button" style="flex:1">세부 조건으로 재계산</button>
-              <button id="btnResetBaseline" type="button">초기화</button>
-            </div>
-          </div>
-        </details>
-      </aside>
-    </section>
-
-    <!-- =====================================================================
-         하단 접이식 전문가 서랍: 10,000개 시뮬레이션 데이터 · 공공데이터 보정 · 검증 게이트
-         평소에는 접혀 있어 화면을 극도로 단순하게 유지합니다.
-         ===================================================================== -->
-    <details class="expert-drawer" id="aboutDetails">
-      <summary>
-        <span>🔬 전문가용 상세 데이터 보기 (10,000개 매장 생존 지형도 · 서울시 OA-15577 보정 · 검증 게이트 <strong id="s5PassCount">-</strong>)</span>
-        <span class="pill" id="sbEndState">-</span>
-      </summary>
-
-      <div class="expert-body">
-        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px" class="small">
-          <div>
-            <span id="sbReplayBadge">-</span> ·
-            Run <strong id="sbRunId">-</strong> ·
-            Hash <strong id="sbInputHash">-</strong> ·
-            SHA <strong id="sbEngineSha">-</strong> ·
-            연산 <strong id="sbComputeMs">-</strong> ·
-            데이터 <strong id="sbInputFiles">-</strong> ·
-            토큰 <strong id="sbTokensTotal">-</strong> ·
-            게이트 <strong id="sbGateLog">-</strong>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button id="btnExportHtml" type="button">브리프 (.html)</button>
-            <button id="btnExportMd" type="button">카드 (.md)</button>
-            <button id="btnExportJson" type="button">10,000 요약 (.json)</button>
-            <button id="btnExportManifest" type="button">매니페스트 (.json)</button>
-            <button id="aboutBtn" type="button" style="display:none">정보</button>
-          </div>
-        </div>
-
-        <div class="expert-grid-2" id="screen-1">
-          <div>
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
-              10,000개 매장 생존 지형도 (<span id="s1TotalCount">10,000</span>개 · <span id="selectedVariantBadge">클릭 탐색</span> <span id="selectedVariantMetrics"></span>)
-            </div>
-            <canvas id="landscapeCanvas" class="chart-canvas"></canvas>
-          </div>
-          <div>
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">규모별 경계 수렴 (1,000 → 3,000 → 10,000)</div>
-            <canvas id="saturationCanvas" class="chart-canvas"></canvas>
-          </div>
-        </div>
-
-        <div class="expert-grid-2">
-          <div id="screen-2">
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
-              공공데이터 보정 (<span id="s2DatasetId">OA-15577</span> · 보정 <span id="s2TrainYears">2021Q1–2024Q4</span> → 숨긴 홀드아웃 <span id="s2HoldoutYear">2025Q1–2026Q2</span>)
-            </div>
-            <div id="uncalibratedPanel" class="small" style="margin-bottom:8px"></div>
-            <div id="calibratedDistributionContainer" class="small"></div>
-          </div>
-
-          <div id="screen-3">
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
-              민감도 및 실측 상세 (<span id="cliffParameterBadge">핵심 변수</span> · 현재 <span id="cliffCurrentVal">-</span> / 임계 <span id="cliffThresholdVal">-</span> / 차이 <span id="cliffDeltaVal">-</span>)
-            </div>
-            <div class="small" id="measureVariable" style="font-weight:700"></div>
-            <div class="small" id="measureReason"></div>
-            <div class="small" id="measureExpectedShift"></div>
-          </div>
-        </div>
-
-        <div class="expert-grid-2">
-          <div id="screen-4">
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
-              Generator · Critic · Patch 수렴 (<span id="s4TotalRounds">3</span>R · <span id="s4ConvergedBadge">수렴</span> · <span id="s4HistoryPath">artifacts/loop-history.json</span>)
-            </div>
-            <table class="clean-table">
-              <thead><tr><th>R</th><th>Generator</th><th>Critic</th><th>Patch</th><th>MAE</th><th>상태</th></tr></thead>
-              <tbody id="roundsTableBody"></tbody>
-            </table>
-          </div>
-
-          <div id="screen-5">
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px">
-              수용 게이트 검증 (<span id="s5AllGreenBadge">-</span>)
-            </div>
-            <div style="max-height:180px;overflow-y:auto">
-              <table class="clean-table">
-                <thead><tr><th>Gate</th><th>항목</th><th>근거</th><th>상태</th></tr></thead>
-                <tbody id="verificationTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
-
+  <script>window.__errors=[];window.addEventListener("error",e=>window.__errors.push(e.message));</script>
+  <div id="app">
+    <span style="display:none">만 개의 가게 · Ten Thousand Stores · 500 AI design families x 20 variations</span>
   </div>
-
-  <script src="/app.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
