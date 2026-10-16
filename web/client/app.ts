@@ -37,53 +37,56 @@ interface DistrictProfile {
   rentMultiplier: number;
   depositManwon: number;
   footTrafficMultiplier: number;
-  preferredCategories: string[];
+  preferredCategories: ("cafe" | "bakery" | "popup" | "dining")[];
 }
 
 const DISTRICT_PROFILES: Record<string, DistrictProfile> = {
   seongsu: {
     key: "seongsu",
     name: "성수동 연무장길·카페거리",
-    badgeText: "성수카페거리 상권 (유동인구·객단가 강세)",
+    badgeText: "성수 연무장길 상권 (팝업·로스터리·베이커리 강세)",
     rentMultiplier: 1.05,
     depositManwon: 3000,
-    footTrafficMultiplier: 1.12,
-    preferredCategories: ["cafe", "bakery", "winebar", "salad"],
+    footTrafficMultiplier: 1.14,
+    preferredCategories: ["popup", "cafe", "bakery", "dining"],
   },
   yeonnam: {
     key: "yeonnam",
     name: "마포구 연남동·경의선숲길",
-    badgeText: "연남동 상권 (체류형 디저트·데이트 강세)",
+    badgeText: "연남동 상권 (베이커리·디저트·카페 강세)",
     rentMultiplier: 0.92,
     depositManwon: 2500,
-    footTrafficMultiplier: 1.04,
-    preferredCategories: ["bakery", "cafe", "winebar", "salad"],
+    footTrafficMultiplier: 1.05,
+    preferredCategories: ["bakery", "cafe", "dining", "popup"],
   },
   gangnam: {
     key: "gangnam",
     name: "강남역·역삼 오피스 이면",
-    badgeText: "강남 오피스 상권 (점심 고회전·테이크아웃 강세)",
-    rentMultiplier: 1.28,
+    badgeText: "강남 오피스 상권 (스페셜티 카페·다이닝 강세)",
+    rentMultiplier: 1.26,
     depositManwon: 4000,
     footTrafficMultiplier: 1.25,
-    preferredCategories: ["salad", "cafe", "bakery", "winebar"],
+    preferredCategories: ["cafe", "dining", "bakery", "popup"],
   },
   euljiro: {
     key: "euljiro",
     name: "중구 을지로3가·힙지로",
-    badgeText: "을지로3가 상권 (합리적 임대료·저녁 주류 강세)",
+    badgeText: "을지로3가 상권 (다이닝 바·로스터리 카페 강세)",
     rentMultiplier: 0.85,
     depositManwon: 2200,
     footTrafficMultiplier: 0.98,
-    preferredCategories: ["winebar", "cafe", "salad", "bakery"],
+    preferredCategories: ["dining", "cafe", "popup", "bakery"],
   },
 };
 
+type CategoryId = "cafe" | "bakery" | "popup" | "dining";
+
 interface CategoryTemplate {
-  id: "cafe" | "bakery" | "salad" | "winebar";
+  id: CategoryId;
   icon: string;
   name: string;
   shortDesc: string;
+  interiorConcept: string;
   baseFitoutManwon: number;
   baseMonthlyRentManwon: number;
   areaM2: number;
@@ -105,16 +108,17 @@ interface CategoryTemplate {
   displaySize: { w: number; h: number };
 }
 
-const CATEGORY_TEMPLATES: Record<string, CategoryTemplate> = {
+const CATEGORY_TEMPLATES: Record<CategoryId, CategoryTemplate> = {
   cafe: {
     id: "cafe",
     icon: "☕",
-    name: "스페셜티 테이크아웃 카페",
-    shortDesc: "빠른 제조 동선과 높은 피크 회전율 중심",
+    name: "스페셜티 카페 · 로스터리",
+    shortDesc: "우드 슬랫 에스프레소 바 · 푸어오버 브루잉 바 · 로스터기 · 창가 우드 테이블",
+    interiorConcept: "헤링본 우드 바닥 + 테라조 바 조닝 + 2그룹 에스프레소 머신 & 그라인더 + 원두 로스터기",
     baseFitoutManwon: 3800,
     baseMonthlyRentManwon: 350,
     areaM2: 49.6,
-    avgTicketKrw: 5800,
+    avgTicketKrw: 6200,
     cupsPerDayBase: 195,
     makeTimeSec: 65,
     arrivalPerMin: 1.9,
@@ -122,89 +126,92 @@ const CATEGORY_TEMPLATES: Record<string, CategoryTemplate> = {
     cogsRatio: 0.28,
     laborRatioPct: 25,
     furnitureLabels: {
-      counter: "에스프레소 바·주문",
-      pickup: "음료 픽업 데스크",
-      display: "원두·MD 진열대",
-      tableA: "2인 테이블 A",
-      tableB: "2인 테이블 B",
-      tableC: "창가 테이블 C",
+      counter: "에스프레소 바·포스",
+      pickup: "핸드드립·픽업 바",
+      display: "로스터기·원두 MD랙",
+      tableA: "창가 우드 2인석 A",
+      tableB: "라운지 원형 4인석 B",
+      tableC: "창가 노트북 바 C",
     },
-    displaySize: { w: 1.3, h: 0.9 },
-  },
-  salad: {
-    id: "salad",
-    icon: "🥗",
-    name: "1인 샐러드 · 포케 키친",
-    shortDesc: "소자본 개업 가능 · 점심 피크 포장·배달 특화",
-    baseFitoutManwon: 2900,
-    baseMonthlyRentManwon: 310,
-    areaM2: 42.0,
-    avgTicketKrw: 10900,
-    cupsPerDayBase: 135,
-    makeTimeSec: 55,
-    arrivalPerMin: 1.7,
-    serviceSec: 18,
-    cogsRatio: 0.34,
-    laborRatioPct: 22,
-    furnitureLabels: {
-      counter: "키오스크·주문대",
-      pickup: "포장·배달 픽업존",
-      display: "콜드 토핑 쇼케이스",
-      tableA: "1인 바 테이블 A",
-      tableB: "1인 바 테이블 B",
-      tableC: "2인 테이블 C",
-    },
-    displaySize: { w: 1.2, h: 0.85 },
+    displaySize: { w: 1.4, h: 0.95 },
   },
   bakery: {
     id: "bakery",
     icon: "🥐",
-    name: "베이커리 · 디저트 쇼룸",
-    shortDesc: "중앙 트레이 진열 중심 · 높은 객단가와 체류 효과",
+    name: "아티장 베이커리 · 파티세리",
+    shortDesc: "중앙 대형 우드 빵 매대(트레이·집게) · 3단 데크 오븐 · 유리 케이크 쇼케이스",
+    interiorConcept: "프렌치 크림 체크 타일 + 중앙 크루아상·바게트 아일랜드 매대 + 베이킹 룸 유리 가벽 & 데크 오븐",
     baseFitoutManwon: 5200,
     baseMonthlyRentManwon: 390,
     areaM2: 56.0,
-    avgTicketKrw: 11800,
+    avgTicketKrw: 12800,
     cupsPerDayBase: 145,
-    makeTimeSec: 80,
-    arrivalPerMin: 1.5,
-    serviceSec: 25,
+    makeTimeSec: 75,
+    arrivalPerMin: 1.6,
+    serviceSec: 24,
     cogsRatio: 0.33,
     laborRatioPct: 27,
     furnitureLabels: {
-      counter: "포장·결제 카운터",
-      pickup: "트레이·음료 픽업대",
-      display: "중앙 베이커리 매대",
-      tableA: "라운지 테이블 A",
-      tableB: "라운지 테이블 B",
-      tableC: "창가 테이블 C",
+      counter: "케이크 쇼케이스·결제",
+      pickup: "데크오븐·포장 픽업대",
+      display: "중앙 아일랜드 빵 매대",
+      tableA: "파티세리 비스트로석 A",
+      tableB: "파티세리 비스트로석 B",
+      tableC: "창가 브런치 테이블 C",
     },
-    displaySize: { w: 1.6, h: 1.1 },
+    displaySize: { w: 2.2, h: 1.2 },
   },
-  winebar: {
-    id: "winebar",
-    icon: "🍷",
-    name: "캐주얼 하이볼 · 와인 바",
-    shortDesc: "저녁 고마진 주류·페어링 · 회전보다 테이블 단가 중심",
+  popup: {
+    id: "popup",
+    icon: "✨",
+    name: "성수 브랜드 팝업스토어",
+    shortDesc: "코발트 런웨이 카펫 · 아치 포토존 & 전신거울 · 아크릴 전시 플린스 · 럭키드로우",
+    interiorConcept: "노출 콘크리트 + 코발트 블루 런웨이 + 브랜드 아치 포토존 + 아크릴 전시대 & 크롬 행거 랙",
+    baseFitoutManwon: 3100,
+    baseMonthlyRentManwon: 330,
+    areaM2: 52.0,
+    avgTicketKrw: 24000,
+    cupsPerDayBase: 115,
+    makeTimeSec: 50,
+    arrivalPerMin: 1.8,
+    serviceSec: 18,
+    cogsRatio: 0.32,
+    laborRatioPct: 21,
+    furnitureLabels: {
+      counter: "QR 체크인·굿즈 결제데스크",
+      pickup: "럭키드로우·기프트 부스",
+      display: "브랜드 아치 포토존·거울",
+      tableA: "아크릴 전시 플린스 A",
+      tableB: "크롬 에디션 행거 랙 B",
+      tableC: "아크릴 전시 플린스 C",
+    },
+    displaySize: { w: 1.8, h: 1.1 },
+  },
+  dining: {
+    id: "dining",
+    icon: "🍽️",
+    name: "캐주얼 다이닝 · 하이볼 바",
+    shortDesc: "오픈 키친 바 & 바 스툴 4석 · 주류 백바 & 숙성고 · 4인 패브릭 부스 소파석",
+    interiorConcept: "다크 슬레이트 & 월넛 바닥 + 오픈 키친 L자 바 카운터 + 하이볼 타워 + 프라이빗 부스 소파 테이블",
     baseFitoutManwon: 4600,
     baseMonthlyRentManwon: 340,
     areaM2: 52.0,
-    avgTicketKrw: 21500,
-    cupsPerDayBase: 78,
-    makeTimeSec: 90,
-    arrivalPerMin: 1.2,
-    serviceSec: 27,
+    avgTicketKrw: 22500,
+    cupsPerDayBase: 82,
+    makeTimeSec: 88,
+    arrivalPerMin: 1.3,
+    serviceSec: 26,
     cogsRatio: 0.31,
     laborRatioPct: 26,
     furnitureLabels: {
-      counter: "롱 바 카운터",
-      pickup: "주류·플레이트 서브존",
-      display: "보틀 큐레이션 랙",
-      tableA: "홀 테이블 A",
-      tableB: "홀 테이블 B",
-      tableC: "부스 테이블 C",
+      counter: "오픈 키친 바·스툴 4석",
+      pickup: "화구 패스·하이볼 디스펜서",
+      display: "보틀 셀러·숙성 쇼케이스",
+      tableA: "4인 다이닝 부스 소파석 A",
+      tableB: "4인 다이닝 부스 소파석 B",
+      tableC: "창가 2인 와인 테이블 C",
     },
-    displaySize: { w: 1.3, h: 0.9 },
+    displaySize: { w: 1.4, h: 0.9 },
   },
 };
 
@@ -351,6 +358,98 @@ function makeScene(preset: "baseline" | "proposed", cat: CategoryTemplate): Scen
   const L = cat.furnitureLabels;
   const dw = cat.displaySize.w;
   const dh = cat.displaySize.h;
+
+  if (cat.id === "bakery") {
+    // Bakery: Central Bread Island is the star; in proposed layout it shifts slightly down-left so queue & tray browsing don't collide
+    return {
+      id: preset,
+      width: 12,
+      height: 9,
+      entrance: { x: 1.1, y: 4.6 },
+      orderPoint: { x: 5.5, y: 2.3 },
+      pickupPoint: { x: 8.8, y: 2.3 },
+      exit: { x: 10.8, y: 4.6 },
+      objects: [
+        { id: "counter", label: L.counter, x: 4.4, y: 0.75, w: 2.4, h: 1.05, kind: "counter", movable: true },
+        { id: "pickup", label: L.pickup, x: 7.6, y: 0.75, w: 2.3, h: 1.05, kind: "pickup", movable: true },
+        {
+          id: "display",
+          label: L.display,
+          x: moved ? 1.5 : 3.0,
+          y: moved ? 5.3 : 2.8,
+          w: dw,
+          h: dh,
+          kind: "display",
+          movable: true,
+        },
+        { id: "table-a", label: L.tableA, x: 4.5, y: 6.1, w: 1.25, h: 1.25, kind: "table", movable: true },
+        { id: "table-b", label: L.tableB, x: 6.8, y: 6.1, w: 1.25, h: 1.25, kind: "table", movable: true },
+        { id: "table-c", label: L.tableC, x: 9.1, y: 6.1, w: 1.25, h: 1.25, kind: "table", movable: true },
+      ],
+    };
+  }
+
+  if (cat.id === "popup") {
+    // Pop-up Showroom: Arch Photo Zone + Acrylic Plinths + Chrome Garment Rack + Lucky Draw Booth
+    return {
+      id: preset,
+      width: 12,
+      height: 9,
+      entrance: { x: 1.1, y: 4.5 },
+      orderPoint: { x: 5.4, y: 2.3 },
+      pickupPoint: { x: 8.7, y: 2.3 },
+      exit: { x: 10.8, y: 4.5 },
+      objects: [
+        { id: "counter", label: L.counter, x: 4.4, y: 0.8, w: 2.2, h: 0.95, kind: "counter", movable: true },
+        { id: "pickup", label: L.pickup, x: 7.6, y: 0.8, w: 2.1, h: 0.95, kind: "pickup", movable: true },
+        {
+          id: "display",
+          label: L.display,
+          x: moved ? 1.2 : 3.1,
+          y: moved ? 5.6 : 2.85,
+          w: dw,
+          h: dh,
+          kind: "display",
+          movable: true,
+        },
+        { id: "table-a", label: L.tableA, x: 4.2, y: 5.5, w: 1.15, h: 1.15, kind: "table", movable: true },
+        { id: "table-b", label: L.tableB, x: 6.4, y: 5.4, w: 1.5, h: 0.95, kind: "table", movable: true },
+        { id: "table-c", label: L.tableC, x: 8.8, y: 5.6, w: 1.15, h: 1.15, kind: "table", movable: true },
+      ],
+    };
+  }
+
+  if (cat.id === "dining") {
+    // Casual Dining & Highball Bar: Open Kitchen Bar with 4 Stools + 4-Person Booth Sofas
+    return {
+      id: preset,
+      width: 12,
+      height: 9,
+      entrance: { x: 1.1, y: 4.5 },
+      orderPoint: { x: 5.6, y: 2.4 },
+      pickupPoint: { x: 8.7, y: 2.4 },
+      exit: { x: 10.8, y: 4.5 },
+      objects: [
+        { id: "counter", label: L.counter, x: 4.3, y: 0.75, w: 2.6, h: 1.15, kind: "counter", movable: true },
+        { id: "pickup", label: L.pickup, x: 7.6, y: 0.75, w: 2.2, h: 1.1, kind: "pickup", movable: true },
+        {
+          id: "display",
+          label: L.display,
+          x: moved ? 1.15 : 3.15,
+          y: moved ? 5.6 : 2.9,
+          w: dw,
+          h: dh,
+          kind: "display",
+          movable: true,
+        },
+        { id: "table-a", label: L.tableA, x: 3.9, y: 5.6, w: 1.55, h: 1.35, kind: "table", movable: true },
+        { id: "table-b", label: L.tableB, x: 6.3, y: 5.6, w: 1.55, h: 1.35, kind: "table", movable: true },
+        { id: "table-c", label: L.tableC, x: 8.8, y: 5.7, w: 1.3, h: 1.2, kind: "table", movable: true },
+      ],
+    };
+  }
+
+  // Default: Specialty Cafe & Roastery
   return {
     id: preset,
     width: 12,
@@ -360,8 +459,8 @@ function makeScene(preset: "baseline" | "proposed", cat: CategoryTemplate): Scen
     pickupPoint: { x: 8.6, y: 2.3 },
     exit: { x: 10.8, y: 4.5 },
     objects: [
-      { id: "counter", label: L.counter, x: 4.7, y: 0.8, w: 2.2, h: 1.0, kind: "counter" },
-      { id: "pickup", label: L.pickup, x: 7.7, y: 0.8, w: 2.1, h: 1.0, kind: "pickup" },
+      { id: "counter", label: L.counter, x: 4.6, y: 0.8, w: 2.3, h: 1.0, kind: "counter", movable: true },
+      { id: "pickup", label: L.pickup, x: 7.6, y: 0.8, w: 2.1, h: 1.0, kind: "pickup", movable: true },
       {
         id: "display",
         label: L.display,
@@ -373,7 +472,7 @@ function makeScene(preset: "baseline" | "proposed", cat: CategoryTemplate): Scen
         movable: true,
       },
       { id: "table-a", label: L.tableA, x: 4.1, y: 5.6, w: 1.2, h: 1.2, kind: "table", movable: true },
-      { id: "table-b", label: L.tableB, x: 6.4, y: 5.5, w: 1.2, h: 1.2, kind: "table", movable: true },
+      { id: "table-b", label: L.tableB, x: 6.4, y: 5.5, w: 1.25, h: 1.25, kind: "table", movable: true },
       { id: "table-c", label: L.tableC, x: 8.7, y: 5.7, w: 1.2, h: 1.2, kind: "table", movable: true },
     ],
   };
@@ -772,7 +871,8 @@ const currentCategory = (): CategoryTemplate => CATEGORY_TEMPLATES[state.categor
 const state = {
   address: "서울 성동구 성수동2가 315-47",
   capitalManwon: 9000,
-  categoryId: "cafe" as "cafe" | "bakery" | "salad" | "winebar",
+  categoryId: "cafe" as CategoryId,
+  reaStep: 1 as 1 | 2 | 3,
   seed: 42,
   t: 110,
   playing: true,
@@ -873,30 +973,127 @@ function poly(ctx: CanvasRenderingContext2D, pts: Pt2D[], fill: string, stroke?:
   }
 }
 
-function drawBox3D(ctx: CanvasRenderingContext2D, v: IsoView, o: SceneObject, isSelected: boolean): void {
-  const h = o.kind === "table" ? 0.52 : o.kind === "display" ? 0.85 : 0.92;
-  const palette: Record<string, [string, string, string, string]> = state.darkTheme
-    ? {
-        counter: ["#4a4136", "#3b332a", "#2e2720", "#e6d8c5"],
-        pickup: ["#264b3d", "#1e3c31", "#172f26", "#9be3c5"],
-        display: ["#273f5e", "#1f324b", "#18273b", "#a7ccf9"],
-        table: ["#3a3d40", "#2e3134", "#232629", "#d2d8dc"],
-      }
-    : {
-        counter: ["#d9ccb8", "#c2b19a", "#b49f84", "#6e5f4d"],
-        pickup: ["#cde2d5", "#a8c7b5", "#8eb39e", "#285543"],
-        display: ["#d2e1f6", "#abc3e8", "#8eaad6", "#315892"],
-        table: ["#e6dfd3", "#CFC5B5", "#bfb29f", "#6d655a"],
-      };
-  const pal = palette[o.kind] || palette.table;
-  const p = (x: number, y: number, z: number) => project(v, x, y, z);
+// Helper: Draw a 3D isometric box from z0 to z1 with top, front-left (y+h), and front-right (x+w) faces
+function drawPrism(
+  ctx: CanvasRenderingContext2D,
+  v: IsoView,
+  x: number,
+  y: number,
+  z0: number,
+  w: number,
+  h: number,
+  dz: number,
+  topFill: string,
+  frontFill: string,
+  sideFill: string,
+  stroke = "rgba(32,37,43,0.22)",
+  lw = 0.85
+): void {
+  const z1 = z0 + dz;
+  const A = project(v, x, y, z0);
+  const B = project(v, x + w, y, z0);
+  const C = project(v, x + w, y + h, z0);
+  const D = project(v, x, y + h, z0);
+  const A1 = project(v, x, y, z1);
+  const B1 = project(v, x + w, y, z1);
+  const C1 = project(v, x + w, y + h, z1);
+  const D1 = project(v, x, y + h, z1);
+  void A;
+  poly(ctx, [D, C, C1, D1], frontFill, stroke, lw);
+  poly(ctx, [B, C, C1, B1], sideFill, stroke, lw);
+  poly(ctx, [A1, B1, C1, D1], topFill, stroke, lw);
+}
 
-  // House-Control style warm ambient floor glow under furniture when lights are ON
+function drawChair3D(
+  ctx: CanvasRenderingContext2D,
+  v: IsoView,
+  cx: number,
+  cy: number,
+  facing: "N" | "S" | "E" | "W",
+  woodTop = "#d7b38c",
+  woodSide = "#a67f58"
+): void {
+  const sw = 0.34;
+  const sh = 0.34;
+  const x = cx - sw / 2;
+  const y = cy - sh / 2;
+  // Chair base / legs
+  drawPrism(ctx, v, x + 0.04, y + 0.04, 0, sw - 0.08, sh - 0.08, 0.38, "#58524c", "#45403b", "#35312d", "rgba(0,0,0,0.18)", 0.6);
+  // Seat cushion
+  drawPrism(ctx, v, x, y, 0.38, sw, sh, 0.07, woodTop, woodSide, woodSide, "rgba(32,37,43,0.25)", 0.7);
+  // Backrest on the side opposite to facing
+  if (facing === "S") {
+    drawPrism(ctx, v, x, y, 0.45, sw, 0.08, 0.32, woodTop, woodSide, woodSide, "rgba(32,37,43,0.25)", 0.7);
+  } else if (facing === "N") {
+    drawPrism(ctx, v, x, y + sh - 0.08, 0.45, sw, 0.08, 0.32, woodTop, woodSide, woodSide, "rgba(32,37,43,0.25)", 0.7);
+  } else if (facing === "E") {
+    drawPrism(ctx, v, x, y, 0.45, 0.08, sh, 0.32, woodTop, woodSide, woodSide, "rgba(32,37,43,0.25)", 0.7);
+  } else {
+    drawPrism(ctx, v, x + sw - 0.08, y, 0.45, 0.08, sh, 0.32, woodTop, woodSide, woodSide, "rgba(32,37,43,0.25)", 0.7);
+  }
+}
+
+function drawPottedPlant3D(ctx: CanvasRenderingContext2D, v: IsoView, x: number, y: number, scale = 1): void {
+  const pw = 0.42 * scale;
+  drawPrism(
+    ctx,
+    v,
+    x - pw / 2,
+    y - pw / 2,
+    0,
+    pw,
+    pw,
+    0.42 * scale,
+    "#e6dccf",
+    "#cfc2b0",
+    "#b8a996",
+    "rgba(32,37,43,0.25)",
+    0.7
+  );
+  const top = project(v, x, y, 0.52 * scale);
+  const r = Math.max(5, v.s * 0.25 * scale);
+  ctx.fillStyle = state.darkTheme ? "#2f6b53" : "#3a7d5e";
+  ctx.beginPath();
+  ctx.arc(top.x - r * 0.45, top.y, r * 0.85, 0, Math.PI * 2);
+  ctx.arc(top.x + r * 0.45, top.y + 1, r * 0.8, 0, Math.PI * 2);
+  ctx.arc(top.x, top.y - r * 0.55, r * 0.95, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = state.darkTheme ? "#479474" : "#54a37d";
+  ctx.beginPath();
+  ctx.arc(top.x - r * 0.15, top.y - r * 0.65, r * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBox3D(ctx: CanvasRenderingContext2D, v: IsoView, o: SceneObject, isSelected: boolean): void {
+  const catId = state.categoryId;
+  const p = (x: number, y: number, z = 0) => project(v, x, y, z);
+
+  // Ambient floor shadow & warm glow under every furniture piece
+  const shadowPad = 0.06;
+  poly(
+    ctx,
+    [
+      p(o.x - shadowPad, o.y - shadowPad, 0.005),
+      p(o.x + o.w + shadowPad, o.y - shadowPad, 0.005),
+      p(o.x + o.w + shadowPad, o.y + o.h + shadowPad, 0.005),
+      p(o.x - shadowPad, o.y + o.h + shadowPad, 0.005),
+    ],
+    state.darkTheme ? "rgba(0,0,0,0.34)" : "rgba(25,32,40,0.09)"
+  );
+
   if (state.lightsOn) {
-    const gc = p(o.x + o.w / 2, o.y + o.h / 2, 0);
+    const gc = p(o.x + o.w / 2, o.y + o.h / 2, 0.01);
     const rad = Math.max(o.w, o.h) * v.s * 0.95;
     const grad = ctx.createRadialGradient(gc.x, gc.y, 2, gc.x, gc.y, rad);
-    grad.addColorStop(0, state.darkTheme ? "rgba(255, 195, 110, 0.24)" : "rgba(255, 185, 90, 0.20)");
+    const glowCol =
+      catId === "popup"
+        ? state.darkTheme
+          ? "rgba(88, 148, 235, 0.25)"
+          : "rgba(41, 79, 130, 0.16)"
+        : state.darkTheme
+          ? "rgba(255, 195, 110, 0.22)"
+          : "rgba(255, 185, 90, 0.18)";
+    grad.addColorStop(0, glowCol);
     grad.addColorStop(1, "rgba(255, 185, 90, 0)");
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -904,32 +1101,496 @@ function drawBox3D(ctx: CanvasRenderingContext2D, v: IsoView, o: SceneObject, is
     ctx.fill();
   }
 
-  const A = p(o.x, o.y, 0);
-  const B = p(o.x + o.w, o.y, 0);
-  const C = p(o.x + o.w, o.y + o.h, 0);
-  const D = p(o.x, o.y + o.h, 0);
-  const A1 = p(o.x, o.y, h);
-  const B1 = p(o.x + o.w, o.y, h);
-  const C1 = p(o.x + o.w, o.y + o.h, h);
-  const D1 = p(o.x, o.y + o.h, h);
+  const selStroke = isSelected ? (state.darkTheme ? "#6ea2eb" : "#294f82") : "rgba(32,37,43,0.26)";
+  const selLw = isSelected ? 2.1 : 0.95;
+  let labelZ = 1.05;
 
-  const borderCol = isSelected ? (state.darkTheme ? "#4ec499" : "#202c31") : pal[3] + "55";
-  const lw = isSelected ? 1.9 : 1;
+  // ==========================================================================
+  // CATEGORY 1: SPECIALTY CAFE & ROASTERY (스페셜티 카페 · 로스터리)
+  // ==========================================================================
+  if (catId === "cafe") {
+    if (o.kind === "counter") {
+      // Warm walnut wood-slat bar + white marble top
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.84, "#d9c2a3", "#9c744f", "#7d5a3b", selStroke, selLw);
+      drawPrism(ctx, v, o.x - 0.03, o.y - 0.03, 0.84, o.w + 0.06, o.h + 0.06, 0.08, "#f7f5f0", "#e5e0d5", "#cfc8ba", selStroke, 0.8);
+      // Vertical wood slats on front face
+      ctx.strokeStyle = "rgba(58, 38, 22, 0.45)";
+      ctx.lineWidth = 1;
+      for (let sx = o.x + 0.15; sx < o.x + o.w - 0.1; sx += 0.18) {
+        const b0 = p(sx, o.y + o.h, 0.04);
+        const b1 = p(sx, o.y + o.h, 0.82);
+        ctx.beginPath();
+        ctx.moveTo(b0.x, b0.y);
+        ctx.lineTo(b1.x, b1.y);
+        ctx.stroke();
+      }
+      // 2-Group Chrome Espresso Machine on left
+      const emW = Math.min(0.75, o.w * 0.34);
+      drawPrism(ctx, v, o.x + 0.16, o.y + 0.18, 0.92, emW, 0.48, 0.36, "#e8edf2", "#b8c2cc", "#8e99a4", "#49545e", 0.8);
+      // Espresso cup warmer rail + group heads
+      drawPrism(ctx, v, o.x + 0.22, o.y + 0.56, 0.98, emW - 0.12, 0.14, 0.12, "#2f353b", "#1f2428", "#15191c");
+      // 2 Twin Bean Hopper Grinders
+      drawPrism(ctx, v, o.x + emW + 0.26, o.y + 0.22, 0.92, 0.18, 0.2, 0.44, "#383e45", "#262b30", "#1b1f23");
+      drawPrism(ctx, v, o.x + emW + 0.48, o.y + 0.22, 0.92, 0.18, 0.2, 0.44, "#383e45", "#262b30", "#1b1f23");
+      // POS touchscreen in middle
+      drawPrism(ctx, v, o.x + o.w * 0.56, o.y + 0.52, 0.92, 0.28, 0.18, 0.26, "#252a30", "#181c20", "#101316");
+      // Glass Cake & Pastry Showcase on right end
+      const scW = Math.max(0.55, o.w * 0.3);
+      drawPrism(
+        ctx,
+        v,
+        o.x + o.w - scW - 0.08,
+        o.y + 0.1,
+        0.92,
+        scW,
+        o.h - 0.2,
+        0.38,
+        "rgba(215, 236, 250, 0.78)",
+        "rgba(182, 214, 238, 0.65)",
+        "rgba(152, 192, 222, 0.65)",
+        "#5b7c99",
+        0.9
+      );
+      // Pastries inside showcase
+      drawPrism(ctx, v, o.x + o.w - scW + 0.04, o.y + 0.26, 0.96, 0.18, 0.22, 0.1, "#f2d194", "#d9ad62", "#b88c42");
+      drawPrism(ctx, v, o.x + o.w - scW + 0.28, o.y + 0.26, 0.96, 0.18, 0.22, 0.12, "#f7e6e2", "#e0a9a2", "#c4837b");
+      labelZ = 1.48;
+    } else if (o.kind === "pickup") {
+      // Pour-over Brewing & Pickup Bar
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.84, "#d9c2a3", "#9c744f", "#7d5a3b", selStroke, selLw);
+      drawPrism(ctx, v, o.x - 0.02, o.y - 0.02, 0.84, o.w + 0.04, o.h + 0.04, 0.07, "#ebeae4", "#d6d4cb", "#bebbb0", selStroke, 0.8);
+      // Pour-over drip station rack (3 drippers)
+      drawPrism(ctx, v, o.x + 0.2, o.y + 0.28, 0.91, Math.min(0.95, o.w * 0.48), 0.26, 0.24, "#d4af7a", "#b38b54", "#8f6c3c");
+      // Takeout cup stacks
+      drawPrism(ctx, v, o.x + o.w - 0.55, o.y + 0.25, 0.91, 0.16, 0.16, 0.34, "#f5f2eb", "#ded9ce", "#c4beb2");
+      drawPrism(ctx, v, o.x + o.w - 0.34, o.y + 0.25, 0.91, 0.16, 0.16, 0.28, "#f5f2eb", "#ded9ce", "#c4beb2");
+      // Navy/forest pickup tray mat on front
+      drawPrism(ctx, v, o.x + 0.25, o.y + o.h - 0.32, 0.91, Math.min(0.8, o.w * 0.42), 0.22, 0.03, "#294f82", "#1e3b63", "#162c4a");
+      labelZ = 1.35;
+    } else if (o.kind === "display") {
+      // Roastery Drum Machine + 3-Tier Coffee Bean MD Rack
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.42, "#d8c3a8", "#b0926e", "#8f7352", selStroke, selLw);
+      // Copper & Cast-Iron Coffee Roaster on left half
+      const rw = Math.min(0.62, o.w * 0.44);
+      drawPrism(ctx, v, o.x + 0.12, o.y + 0.16, 0.42, rw, o.h * 0.55, 0.72, "#c87d4b", "#9e5b30", "#78411e", "#3b2313", 0.9);
+      // Roaster exhaust chimney
+      drawPrism(ctx, v, o.x + 0.22, o.y + 0.18, 1.14, 0.16, 0.16, 0.42, "#d0d7de", "#9aa4af", "#76808a");
+      // Roaster cooling tray in front
+      drawPrism(ctx, v, o.x + 0.14, o.y + o.h * 0.62, 0.42, rw, o.h * 0.28, 0.22, "#5c3d28", "#8c969e", "#6c757d");
+      // 3-Tier Bean & MD Shelf on right half
+      const sx = o.x + rw + 0.22;
+      const sw = Math.max(0.45, o.w - rw - 0.32);
+      drawPrism(ctx, v, sx, o.y + 0.12, 0.42, sw, o.h - 0.24, 0.34, "#e4d2b8", "#bfa380", "#9e8260", selStroke, 0.75);
+      drawPrism(ctx, v, sx + 0.04, o.y + 0.16, 0.76, sw - 0.08, o.h - 0.32, 0.3, "#eadbc4", "#c7ab88", "#a68a68", selStroke, 0.75);
+      // Colorful coffee bean bags on shelf
+      const bagCols = ["#c85a32", "#294f82", "#2f6b53", "#d49b35"];
+      for (let i = 0; i < 3; i++) {
+        const bx = sx + 0.06 + i * Math.min(0.18, (sw - 0.14) / 3);
+        drawPrism(ctx, v, bx, o.y + 0.24, 1.06, 0.12, 0.16, 0.18, bagCols[i % 4], bagCols[i % 4], "#20252b");
+      }
+      labelZ = 1.56;
+    } else {
+      // Cafe Wood Table + 3D Chairs + Latte Cups & Laptop
+      drawChair3D(ctx, v, o.x + o.w * 0.5, o.y - 0.12, "S", "#d9b891", "#a37e58");
+      drawChair3D(ctx, v, o.x + o.w * 0.5, o.y + o.h + 0.12, "N", "#d9b891", "#a37e58");
+      if (o.w >= 1.22) {
+        drawChair3D(ctx, v, o.x - 0.12, o.y + o.h * 0.5, "E", "#d9b891", "#a37e58");
+        drawChair3D(ctx, v, o.x + o.w + 0.12, o.y + o.h * 0.5, "W", "#d9b891", "#a37e58");
+      }
+      // Central pedestal leg
+      drawPrism(ctx, v, o.x + o.w * 0.42, o.y + o.h * 0.42, 0, o.w * 0.16, o.h * 0.16, 0.64, "#49433e", "#36312d", "#262320");
+      // Oak tabletop
+      drawPrism(ctx, v, o.x, o.y, 0.64, o.w, o.h, 0.08, "#e8cfa8", "#c4a378", "#a3835a", selStroke, selLw);
+      // Tiny laptop & coffee cups on tabletop
+      drawPrism(ctx, v, o.x + o.w * 0.26, o.y + o.h * 0.34, 0.72, 0.26, 0.2, 0.03, "#dce2e8", "#aeb6bf", "#8c959e");
+      const cup1 = p(o.x + o.w * 0.68, o.y + o.h * 0.58, 0.74);
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(cup1.x, cup1.y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#8c5832";
+      ctx.beginPath();
+      ctx.arc(cup1.x, cup1.y, 2.0, 0, Math.PI * 2);
+      ctx.fill();
+      labelZ = 0.92;
+    }
+  }
 
-  poly(ctx, [D, C, C1, D1], pal[1], borderCol, lw);
-  poly(ctx, [B, C, C1, B1], pal[2], borderCol, lw);
-  poly(ctx, [A1, B1, C1, D1], pal[0], borderCol, lw);
+  // ==========================================================================
+  // CATEGORY 2: ARTISAN BAKERY & PATISSERIE (아티장 베이커리 · 파티세리)
+  // ==========================================================================
+  else if (catId === "bakery") {
+    if (o.kind === "counter") {
+      // Illuminated 2-Tier Glass Patisserie & Cake Showcase + POS Counter
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.52, "#e8dccb", "#cbb89e", "#b09b80", selStroke, selLw);
+      // Front brass tray rail for customers sliding bread trays
+      drawPrism(ctx, v, o.x + 0.08, o.y + o.h, 0.46, o.w * 0.65, 0.14, 0.04, "#d8b46c", "#b59049", "#947232");
+      // Glass upper showcase (left 68%)
+      const gw = o.w * 0.68;
+      drawPrism(
+        ctx,
+        v,
+        o.x + 0.04,
+        o.y + 0.06,
+        0.52,
+        gw,
+        o.h - 0.12,
+        0.58,
+        "rgba(255, 248, 232, 0.82)",
+        "rgba(235, 224, 202, 0.68)",
+        "rgba(215, 200, 175, 0.68)",
+        "#b59257",
+        1.0
+      );
+      // Whole cakes & tarts inside glass showcase
+      const cakeCols = ["#f5d0c8", "#f2cf7e", "#7a4b32", "#e8ebd5"];
+      for (let i = 0; i < 4; i++) {
+        drawPrism(
+          ctx,
+          v,
+          o.x + 0.14 + i * (gw * 0.22),
+          o.y + o.h * 0.35,
+          0.62,
+          0.24,
+          0.24,
+          0.16,
+          "#fff9f5",
+          cakeCols[i],
+          "#c79d8c"
+        );
+      }
+      // Checkout POS & Pastry Box stack on right
+      drawPrism(ctx, v, o.x + gw + 0.14, o.y + 0.35, 0.52, o.w - gw - 0.2, 0.45, 0.36, "#f7f3eb", "#dfd6c7", "#c4b9a7");
+      drawPrism(ctx, v, o.x + gw + 0.22, o.y + 0.45, 0.88, 0.28, 0.2, 0.25, "#262b30", "#181c20", "#101316");
+      labelZ = 1.32;
+    } else if (o.kind === "pickup") {
+      // Tall 3-Deck Artisan Stone Baking Oven + Bread Cooling & Packaging Counter
+      drawPrism(ctx, v, o.x, o.y, 0, o.w * 0.52, o.h, 0.86, "#e6d8c3", "#c4b093", "#a69072", selStroke, selLw);
+      // Kraft bread bags & packaging boxes on left counter
+      drawPrism(ctx, v, o.x + 0.18, o.y + 0.28, 0.86, 0.36, 0.28, 0.24, "#d9a973", "#b88752", "#966a3b");
+      // Tall 3-Deck Baking Oven on right half
+      const ox = o.x + o.w * 0.52;
+      const ow = o.w * 0.48;
+      drawPrism(ctx, v, ox, o.y, 0, ow, o.h, 1.58, "#d4d9de", "#9ea7b0", "#7c858e", selStroke, selLw);
+      // 3 Glowing Amber Baking Deck Windows on front of oven
+      for (let deck = 0; deck < 3; deck++) {
+        const dz = 0.48 + deck * 0.34;
+        drawPrism(
+          ctx,
+          v,
+          ox + 0.12,
+          o.y + o.h - 0.05,
+          dz,
+          ow - 0.24,
+          0.06,
+          0.2,
+          "#ffcf70",
+          "#f59f2a",
+          "#c77712",
+          "#4a3219",
+          0.8
+        );
+      }
+      labelZ = 1.72;
+    } else if (o.kind === "display") {
+      // Central Artisan Bread Island Table with 6 Woven Trays of Croissants/Baguettes + Tray/Tongs Stand
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.78, "#e3c8a4", "#b89368", "#96734c", selStroke, selLw);
+      // Glass sneeze-guard canopy frame over bread island
+      drawPrism(
+        ctx,
+        v,
+        o.x + 0.08,
+        o.y + 0.08,
+        0.78,
+        o.w - 0.16,
+        o.h - 0.16,
+        0.24,
+        "rgba(255,252,245,0.42)",
+        "rgba(235,225,208,0.32)",
+        "rgba(215,202,182,0.32)",
+        "rgba(166,132,88,0.55)",
+        0.8
+      );
+      // 6 Wooden Bread Baskets (3 cols x 2 rows) overflowing with golden pastries
+      const cols = 3;
+      const rows = 2;
+      const padX = 0.14;
+      const padY = 0.14;
+      const tw = (o.w - padX * 2 - 0.16) / cols;
+      const th = (o.h - padY * 2 - 0.1) / rows;
+      const breadColors = [
+        ["#e8a948", "#c98427"], // Golden Croissants
+        ["#d99538", "#b5721c"], // Baguettes
+        ["#f0be6e", "#cf9642"], // Brioche
+        ["#c77d2c", "#9e5d16"], // Pain au chocolat
+        ["#e5b35a", "#bf8932"], // Pretzels / Campagne
+        ["#f2cfa0", "#cfa36b"], // Scones / Kouign-amann
+      ];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const bx = o.x + padX + c * (tw + 0.08);
+          const by = o.y + padY + r * (th + 0.1);
+          const [topC, sideC] = breadColors[(r * cols + c) % breadColors.length];
+          // Wooden tray rim
+          drawPrism(ctx, v, bx, by, 0.78, tw, th, 0.08, "#caa474", "#9e784b", "#7d5c34");
+          // Golden baked loaves mounded inside tray
+          drawPrism(ctx, v, bx + 0.05, by + 0.05, 0.86, tw * 0.42, th - 0.1, 0.11, topC, sideC, sideC);
+          drawPrism(ctx, v, bx + tw * 0.5, by + 0.05, 0.86, tw * 0.42, th - 0.1, 0.11, topC, sideC, sideC);
+        }
+      }
+      // Corner White Tray & Tongs Stack Pedestal
+      drawPrism(ctx, v, o.x - 0.04, o.y + o.h - 0.28, 0.78, 0.26, 0.26, 0.26, "#ffffff", "#e3ded6", "#c7c0b6", "#6e655a", 0.8);
+      labelZ = 1.24;
+    } else {
+      // French Patisserie Cream Marble Bistro Table + Chairs + Pastry Plates
+      drawChair3D(ctx, v, o.x + o.w * 0.5, o.y - 0.12, "S", "#e6d2b8", "#b39774");
+      drawChair3D(ctx, v, o.x + o.w * 0.5, o.y + o.h + 0.12, "N", "#e6d2b8", "#b39774");
+      drawChair3D(ctx, v, o.x - 0.12, o.y + o.h * 0.5, "E", "#e6d2b8", "#b39774");
+      drawChair3D(ctx, v, o.x + o.w + 0.12, o.y + o.h * 0.5, "W", "#e6d2b8", "#b39774");
+      // Brass table pedestal
+      drawPrism(ctx, v, o.x + o.w * 0.42, o.y + o.h * 0.42, 0, o.w * 0.16, o.h * 0.16, 0.64, "#c9a66b", "#9e7c44", "#7d5f2e");
+      // Cream marble tabletop
+      drawPrism(ctx, v, o.x, o.y, 0.64, o.w, o.h, 0.08, "#fbf8f2", "#e3dcd0", "#cbc2b4", selStroke, selLw);
+      // Pastry plate with golden croissant on table
+      drawPrism(ctx, v, o.x + o.w * 0.35, o.y + o.h * 0.35, 0.72, 0.28, 0.24, 0.04, "#ffffff", "#dedad2", "#c7c2b8");
+      drawPrism(ctx, v, o.x + o.w * 0.4, o.y + o.h * 0.4, 0.76, 0.16, 0.12, 0.07, "#e8a948", "#c98427", "#a66814");
+      labelZ = 0.92;
+    }
+  }
 
-  const c = p(o.x + o.w / 2, o.y + o.h / 2, h);
-  ctx.fillStyle = pal[3];
-  ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
+  // ==========================================================================
+  // CATEGORY 3: SEONGSU BRAND POP-UP STORE (성수 브랜드 팝업스토어 · 쇼룸)
+  // ==========================================================================
+  else if (catId === "popup") {
+    if (o.kind === "counter") {
+      // Brushed Aluminum & Electric Cobalt Blue Check-in / Merch Desk
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.1, "#4c8bf5", "#294f82", "#1d3961"); // Cobalt LED base
+      drawPrism(ctx, v, o.x, o.y, 0.1, o.w, o.h, 0.78, "#eef2f6", "#cfd6df", "#b2bcc8", selStroke, selLw);
+      // Cobalt brand stripe on front face
+      drawPrism(ctx, v, o.x + 0.15, o.y + o.h - 0.03, 0.42, o.w - 0.3, 0.04, 0.18, "#294f82", "#294f82", "#1c385e");
+      // QR Check-in iPad stands + Cobalt Shopping Bags on top
+      drawPrism(ctx, v, o.x + 0.28, o.y + 0.45, 0.88, 0.22, 0.16, 0.24, "#20252b", "#14181c", "#0c0e12");
+      drawPrism(ctx, v, o.x + 0.68, o.y + 0.45, 0.88, 0.22, 0.16, 0.24, "#20252b", "#14181c", "#0c0e12");
+      // Limited-edition Cobalt Shopping Bags lined up
+      for (let i = 0; i < 3; i++) {
+        drawPrism(ctx, v, o.x + o.w - 0.85 + i * 0.24, o.y + 0.25, 0.88, 0.18, 0.22, 0.28, "#3b6eb5", "#294f82", "#1d3961");
+      }
+      labelZ = 1.35;
+    } else if (o.kind === "pickup") {
+      // Lucky Draw Gacha Capsule Machine + Limited Gift Booth
+      // Left: Tall Gacha Machine
+      const gw = Math.min(0.75, o.w * 0.38);
+      drawPrism(ctx, v, o.x, o.y + 0.05, 0, gw, o.h - 0.1, 0.82, "#3b6eb5", "#294f82", "#1d3961", selStroke, selLw);
+      drawPrism(
+        ctx,
+        v,
+        o.x + 0.06,
+        o.y + 0.11,
+        0.82,
+        gw - 0.12,
+        o.h - 0.22,
+        0.68,
+        "rgba(235, 245, 255, 0.82)",
+        "rgba(205, 226, 250, 0.68)",
+        "rgba(175, 205, 240, 0.68)",
+        "#294f82",
+        1.0
+      );
+      // Colorful gacha capsules inside globe
+      const capCols = ["#e85c4a", "#3b82f6", "#f5b82e", "#10b981"];
+      for (let i = 0; i < 4; i++) {
+        const cp = p(o.x + 0.22 + (i % 2) * 0.22, o.y + 0.32 + Math.floor(i / 2) * 0.24, 1.02 + (i % 2) * 0.14);
+        ctx.fillStyle = capCols[i];
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Right: Gift Box Claim Counter
+      drawPrism(ctx, v, o.x + gw + 0.08, o.y, 0, o.w - gw - 0.08, o.h, 0.86, "#eef2f6", "#cfd6df", "#b2bcc8", selStroke, selLw);
+      drawPrism(ctx, v, o.x + gw + 0.22, o.y + 0.25, 0.86, 0.42, 0.32, 0.24, "#ffffff", "#294f82", "#1d3961");
+      drawPrism(ctx, v, o.x + gw + 0.28, o.y + 0.28, 1.1, 0.32, 0.24, 0.18, "#294f82", "#1d3961", "#142947");
+      labelZ = 1.66;
+    } else if (o.kind === "display") {
+      // Iconic Brand Arch Photo Zone + Full-Length Selfie Mirror + Hero Sculpture Podium
+      // Base platform rug
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.12, "#294f82", "#1e3c66", "#152b4a", selStroke, selLw);
+      // Tall Cobalt & Silver Backdrop Arch Wall at back of zone
+      drawPrism(ctx, v, o.x + 0.08, o.y + 0.06, 0.12, o.w - 0.16, 0.22, 1.52, "#3b6eb5", "#294f82", "#1b365c", selStroke, 1.0);
+      // Inner illuminated arch panel
+      drawPrism(ctx, v, o.x + 0.32, o.y + 0.09, 0.24, o.w - 0.64, 0.21, 1.22, "#f5f8fc", "#e4ecf7", "#cbd8eb");
+      // Angled Full-Length Selfie Mirror on left
+      drawPrism(ctx, v, o.x + 0.14, o.y + 0.34, 0.12, 0.36, 0.14, 1.32, "#ffffff", "#cbe0fa", "#9ec0eb", "#607d9e", 1.0);
+      // Central Hero Sculpture Podium + Cobalt/Silver Art Object
+      drawPrism(ctx, v, o.x + o.w * 0.44, o.y + o.h * 0.45, 0.12, 0.48, 0.42, 0.68, "#ffffff", "#dfe5ec", "#c5ced9");
+      drawPrism(ctx, v, o.x + o.w * 0.52, o.y + o.h * 0.52, 0.8, 0.28, 0.26, 0.36, "#6ea2eb", "#294f82", "#1c385e");
+      labelZ = 1.82;
+    } else if (o.id === "table-b" || o.w >= 1.4) {
+      // Chrome Edition Apparel Hanger Rack (성수 팝업 의류 행거 랙)
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.14, "#e6ebf0", "#c7d0d9", "#abb6c2", selStroke, selLw);
+      // Left & right chrome uprights + top crossbar
+      drawPrism(ctx, v, o.x + 0.12, o.y + o.h * 0.44, 0.14, 0.08, 0.12, 1.22, "#f0f4f8", "#b8c2cc", "#8c96a0");
+      drawPrism(ctx, v, o.x + o.w - 0.2, o.y + o.h * 0.44, 0.14, 0.08, 0.12, 1.22, "#f0f4f8", "#b8c2cc", "#8c96a0");
+      drawPrism(ctx, v, o.x + 0.12, o.y + o.h * 0.44, 1.32, o.w - 0.24, 0.12, 0.07, "#ffffff", "#c0cad4", "#9aa4ae");
+      // 5 Hanging Garments (Cobalt, Off-White, Charcoal, Sage, Silver)
+      const gCols = [
+        ["#3b6eb5", "#294f82"],
+        ["#f5f3ee", "#dad5cb"],
+        ["#343a40", "#212529"],
+        ["#6ea2eb", "#4576ba"],
+        ["#d8dde3", "#adb5bd"],
+      ];
+      for (let i = 0; i < 5; i++) {
+        const gx = o.x + 0.24 + i * ((o.w - 0.52) / 4.5);
+        const [gt, gs] = gCols[i % gCols.length];
+        drawPrism(ctx, v, gx, o.y + o.h * 0.24, 0.48, 0.14, o.h * 0.52, 0.78, gt, gs, gs);
+      }
+      labelZ = 1.54;
+    } else {
+      // Museum Acrylic Display Plinth with Hero Product & Glass Vitrine
+      drawPrism(ctx, v, o.x + 0.08, o.y + 0.08, 0, o.w - 0.16, o.h - 0.16, 0.74, "#f7f9fc", "#dde4ed", "#c2ccd9", selStroke, selLw);
+      // Clear acrylic vitrine hood
+      drawPrism(
+        ctx,
+        v,
+        o.x + 0.12,
+        o.y + 0.12,
+        0.74,
+        o.w - 0.24,
+        o.h - 0.24,
+        0.38,
+        "rgba(220, 236, 255, 0.55)",
+        "rgba(185, 214, 248, 0.42)",
+        "rgba(155, 192, 235, 0.42)",
+        "#5b82b8",
+        0.85
+      );
+      // Hero object inside vitrine (Cobalt sneaker / bottle)
+      drawPrism(ctx, v, o.x + o.w * 0.34, o.y + o.h * 0.34, 0.76, o.w * 0.32, o.h * 0.32, 0.22, "#3b6eb5", "#294f82", "#193357");
+      labelZ = 1.26;
+    }
+  }
+
+  // ==========================================================================
+  // CATEGORY 4: CASUAL DINING & HIGHBALL BAR (캐주얼 다이닝 · 하이볼 바)
+  // ==========================================================================
+  else {
+    if (o.kind === "counter") {
+      // Open Kitchen Bar Counter + 4 Round Upholstered Bar Stools + Highball Draft Tower
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.88, "#594230", "#423022", "#302217", selStroke, selLw);
+      // Dark slate & walnut bar top
+      drawPrism(ctx, v, o.x - 0.03, o.y - 0.03, 0.88, o.w + 0.06, o.h + 0.06, 0.08, "#b88c5a", "#8f693e", "#6e4f2c", selStroke, 0.8);
+      // Brass Highball Draft Tower + Chef Cutting Boards
+      drawPrism(ctx, v, o.x + 0.32, o.y + 0.3, 0.96, 0.24, 0.22, 0.42, "#e8c476", "#c49c48", "#9e7a2f");
+      drawPrism(ctx, v, o.x + 0.85, o.y + 0.35, 0.96, 0.55, 0.32, 0.05, "#e3c598", "#bd9d6e", "#9c7e52");
+      drawPrism(ctx, v, o.x + 1.65, o.y + 0.35, 0.96, 0.55, 0.32, 0.05, "#f5f2eb", "#d9d4c9", "#bdb7ab");
+      // 4 Round Bar Stools along the front of the bar
+      for (let i = 0; i < 4; i++) {
+        const sx = o.x + 0.28 + i * ((o.w - 0.56) / 3);
+        const sy = o.y + o.h + 0.14;
+        drawPrism(ctx, v, sx - 0.12, sy - 0.12, 0, 0.24, 0.24, 0.54, "#383430", "#292623", "#1c1a18");
+        drawPrism(ctx, v, sx - 0.16, sy - 0.16, 0.54, 0.32, 0.32, 0.09, "#b85d43", "#94442e", "#73311f");
+      }
+      labelZ = 1.48;
+    } else if (o.kind === "pickup") {
+      // Stainless Chef Pass + Overhead Amber Heat Lamp Bridge + Sizzling Plates
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 0.88, "#d5dce2", "#9ea8b2", "#7d8791", selStroke, selLw);
+      // Overhead Heat Lamp Bridge
+      drawPrism(ctx, v, o.x + 0.15, o.y + 0.35, 0.88, 0.08, 0.08, 0.44, "#b8c2cc", "#8c96a0", "#6c757d");
+      drawPrism(ctx, v, o.x + o.w - 0.23, o.y + 0.35, 0.88, 0.08, 0.08, 0.44, "#b8c2cc", "#8c96a0", "#6c757d");
+      drawPrism(ctx, v, o.x + 0.12, o.y + 0.28, 1.32, o.w - 0.24, 0.24, 0.1, "#e6c37a", "#ffa834", "#c97a16");
+      // Plated dishes waiting under heat lamp
+      drawPrism(ctx, v, o.x + 0.38, o.y + 0.34, 0.88, 0.32, 0.28, 0.06, "#ffffff", "#d9d4cc", "#bdb7ae");
+      drawPrism(ctx, v, o.x + 0.92, o.y + 0.34, 0.88, 0.32, 0.28, 0.06, "#383430", "#262320", "#1a1816");
+      labelZ = 1.56;
+    } else if (o.kind === "display") {
+      // Illuminated Wine, Whisky & Dry-Aging Cellar Cabinet
+      drawPrism(ctx, v, o.x, o.y, 0, o.w, o.h, 1.52, "#3d332c", "#2b241f", "#1f1916", selStroke, selLw);
+      // Warm amber glass front doors (2 bays)
+      const bw = (o.w - 0.24) / 2;
+      for (let b = 0; b < 2; b++) {
+        const bx = o.x + 0.08 + b * (bw + 0.08);
+        drawPrism(
+          ctx,
+          v,
+          bx,
+          o.y + o.h - 0.06,
+          0.14,
+          bw,
+          0.07,
+          1.26,
+          "#ffdfa0",
+          "rgba(245, 190, 105, 0.72)",
+          "rgba(205, 150, 75, 0.72)",
+          "#8f6b3e",
+          0.85
+        );
+      }
+      labelZ = 1.68;
+    } else {
+      // 4-Person Upholstered Booth Sofa Table (Left & Right Leather Banquettes + Walnut Table)
+      // Left sofa bench
+      drawPrism(ctx, v, o.x, o.y, 0, 0.36, o.h, 0.44, "#b85d43", "#94442e", "#73311f", selStroke, 0.8);
+      drawPrism(ctx, v, o.x, o.y, 0.44, 0.14, o.h, 0.42, "#c96d52", "#9e4b34", "#7a3622", selStroke, 0.8);
+      // Right sofa bench
+      drawPrism(ctx, v, o.x + o.w - 0.36, o.y, 0, 0.36, o.h, 0.44, "#b85d43", "#94442e", "#73311f", selStroke, 0.8);
+      drawPrism(ctx, v, o.x + o.w - 0.14, o.y, 0.44, 0.14, o.h, 0.42, "#c96d52", "#9e4b34", "#7a3622", selStroke, 0.8);
+      // Center Walnut Dining Table
+      drawPrism(ctx, v, o.x + 0.3, o.y + 0.08, 0.64, o.w - 0.6, o.h - 0.16, 0.08, "#9c7048", "#7a5432", "#5c3e23", selStroke, selLw);
+      // Dinner plates + cordless amber table lamp
+      drawPrism(ctx, v, o.x + o.w * 0.46, o.y + o.h * 0.25, 0.72, 0.14, 0.14, 0.22, "#ffdf8c", "#d9a848", "#b38228");
+      drawPrism(ctx, v, o.x + o.w * 0.38, o.y + o.h * 0.56, 0.72, 0.22, 0.2, 0.03, "#ffffff", "#dcd6cc", "#c2bcb2");
+      labelZ = 1.04;
+    }
+  }
+
+  // Selection highlight ring around base when selected on right canvas
+  if (isSelected) {
+    ctx.save();
+    ctx.strokeStyle = state.darkTheme ? "#6ea2eb" : "#294f82";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    poly(
+      ctx,
+      [
+        p(o.x - 0.08, o.y - 0.08, 0.02),
+        p(o.x + o.w + 0.08, o.y - 0.08, 0.02),
+        p(o.x + o.w + 0.08, o.y + o.h + 0.08, 0.02),
+        p(o.x - 0.08, o.y + o.h + 0.08, 0.02),
+      ],
+      "",
+      state.darkTheme ? "#6ea2eb" : "#294f82",
+      2
+    );
+    ctx.restore();
+  }
+
+  // Crisp Pill Tag for Furniture Label + CAD Dimensions
+  const c = p(o.x + o.w / 2, o.y + o.h / 2, labelZ);
+  ctx.font = "600 10.5px -apple-system, BlinkMacSystemFont, sans-serif";
+  const labelText = o.label;
+  const tw = ctx.measureText(labelText).width + 12;
+  const th = state.dimsOn ? 26 : 16;
+  ctx.fillStyle = isSelected
+    ? state.darkTheme
+      ? "rgba(41, 79, 130, 0.94)"
+      : "rgba(32, 37, 43, 0.92)"
+    : state.darkTheme
+      ? "rgba(23, 28, 34, 0.84)"
+      : "rgba(255, 255, 255, 0.88)";
+  ctx.strokeStyle = isSelected ? "#6ea2eb" : "rgba(32, 37, 43, 0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(c.x - tw / 2, c.y - 11, tw, th, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = isSelected ? "#ffffff" : state.darkTheme ? "#e8edf2" : "#20252b";
   ctx.textAlign = "center";
-  ctx.fillText(o.label, c.x, c.y + (state.dimsOn ? 0 : 4));
+  ctx.fillText(labelText, c.x, c.y + 1);
 
-  // Planner5D style CAD dimensions on furniture
   if (state.dimsOn) {
-    ctx.font = "500 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillStyle = state.darkTheme ? "rgba(228,236,232,0.72)" : "rgba(32,44,49,0.62)";
+    ctx.font = "500 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = isSelected ? "#cfe0ff" : state.darkTheme ? "#94a0ad" : "#5a626e";
     ctx.fillText(`${o.w.toFixed(1)}×${o.h.toFixed(1)}m`, c.x, c.y + 11);
   }
 }
@@ -946,26 +1607,108 @@ function drawWorld(
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, v.w, v.h);
 
+  const catId = state.categoryId;
+
   if (state.darkTheme) {
-    ctx.fillStyle = "#121619";
+    ctx.fillStyle = "#11151a";
     ctx.fillRect(0, 0, v.w, v.h);
   }
 
   const p = (x: number, y: number, z = 0) => project(v, x, y, z);
 
-  // Back walls & Floor
-  const wall1 = state.darkTheme ? "#1d2327" : "#eceee8";
-  const wall2 = state.darkTheme ? "#181d21" : "#e5e8e1";
-  const wallLine = state.darkTheme ? "#2c353b" : "#d7ddd7";
-  const floorFill = state.darkTheme ? "#161b1e" : "#f9faf6";
-  const floorStroke = state.darkTheme ? "#303a40" : "#cfd6d0";
+  // ==========================================================================
+  // 1. ARCHITECTURAL SHELL: THICK 3D WALLS, FLOOR MATERIAL & ZONING
+  // ==========================================================================
+  const floorBase = state.darkTheme
+    ? catId === "dining"
+      ? "#1b1918"
+      : catId === "popup"
+        ? "#181d24"
+        : "#191d22"
+    : catId === "cafe"
+      ? "#f3ece1" // Warm oak wood floor
+      : catId === "bakery"
+        ? "#f8f3ea" // Cream patisserie tile
+        : catId === "popup"
+          ? "#ebedf0" // Seongsu micro-cement gallery floor
+          : "#e6dfd5"; // Slate & walnut dining floor
 
-  poly(ctx, [p(0, 0, 0), p(12, 0, 0), p(12, 0, 1.3), p(0, 0, 1.3)], wall1, wallLine);
-  poly(ctx, [p(0, 0, 0), p(0, 9, 0), p(0, 9, 1.3), p(0, 0, 1.3)], wall2, wallLine);
-  poly(ctx, [p(0, 0, 0), p(12, 0, 0), p(12, 9, 0), p(0, 9, 0)], floorFill, floorStroke, 1.2);
+  const floorStroke = state.darkTheme ? "#2f3842" : "#cbd2d9";
+  poly(ctx, [p(0, 0, 0), p(12, 0, 0), p(12, 9, 0), p(0, 9, 0)], floorBase, floorStroke, 1.4);
 
-  // 1m Grid lines
-  ctx.strokeStyle = state.darkTheme ? "#20272c" : "#e6ebe6";
+  // Category-specific Floor Textures & Zoning Rugs
+  if (catId === "cafe") {
+    // Terrazzo Bar Service Zone along back wall (y: 0..2.45)
+    poly(
+      ctx,
+      [p(0, 0, 0.002), p(12, 0, 0.002), p(12, 2.45, 0.002), p(0, 2.45, 0.002)],
+      state.darkTheme ? "#222830" : "#e5e3dc"
+    );
+    // Brass zoning divider strip at y = 2.45
+    const b0 = p(0, 2.45, 0.004);
+    const b1 = p(12, 2.45, 0.004);
+    ctx.strokeStyle = "#b89758";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(b0.x, b0.y);
+    ctx.lineTo(b1.x, b1.y);
+    ctx.stroke();
+    // Subtle oak plank lines in hall
+    ctx.strokeStyle = state.darkTheme ? "rgba(255,255,255,0.03)" : "rgba(138, 102, 66, 0.10)";
+    ctx.lineWidth = 1;
+    for (let x = 0.5; x < 12; x += 0.5) {
+      const a = p(x, 2.45, 0.002);
+      const b = p(x, 9, 0.002);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  } else if (catId === "bakery") {
+    // French Patisserie Checkerboard Tile Pattern
+    const tileFill = state.darkTheme ? "rgba(255,255,255,0.035)" : "rgba(205, 184, 152, 0.26)";
+    for (let x = 0; x < 12; x++) {
+      for (let y = 0; y < 9; y++) {
+        if ((x + y) % 2 === 0) {
+          poly(ctx, [p(x, y, 0.002), p(x + 1, y, 0.002), p(x + 1, y + 1, 0.002), p(x, y + 1, 0.002)], tileFill);
+        }
+      }
+    }
+    // Warm walnut border carpet under central bread zone
+    poly(
+      ctx,
+      [p(1.0, 2.3, 0.003), p(6.2, 2.3, 0.003), p(6.2, 6.8, 0.003), p(1.0, 6.8, 0.003)],
+      state.darkTheme ? "rgba(184, 140, 88, 0.10)" : "rgba(184, 140, 88, 0.14)",
+      "rgba(166, 124, 74, 0.35)",
+      1
+    );
+  } else if (catId === "popup") {
+    // Seongsu Electric Cobalt Blue Brand Runway Carpet across center of showroom
+    poly(
+      ctx,
+      [p(0.8, 2.3, 0.003), p(11.2, 2.3, 0.003), p(11.2, 5.2, 0.003), p(0.8, 5.2, 0.003)],
+      state.darkTheme ? "rgba(41, 79, 130, 0.42)" : "rgba(41, 79, 130, 0.17)",
+      state.darkTheme ? "#4c8bf5" : "#294f82",
+      1.3
+    );
+  } else {
+    // Casual Dining: Dark Slate Kitchen Zone + Warm Walnut Booth Zone
+    poly(
+      ctx,
+      [p(0, 0, 0.002), p(12, 0, 0.002), p(12, 2.8, 0.002), p(0, 2.8, 0.002)],
+      state.darkTheme ? "#14181d" : "#d3d8de"
+    );
+    poly(
+      ctx,
+      [p(3.2, 4.9, 0.003), p(10.8, 4.9, 0.003), p(10.8, 7.6, 0.003), p(3.2, 7.6, 0.003)],
+      state.darkTheme ? "rgba(156, 104, 64, 0.14)" : "rgba(148, 98, 56, 0.12)",
+      "rgba(148, 98, 56, 0.3)",
+      1
+    );
+  }
+
+  // Subtle 1m CAD Grid Lines
+  ctx.strokeStyle = state.darkTheme ? "rgba(255,255,255,0.04)" : "rgba(32, 37, 43, 0.055)";
   ctx.lineWidth = 1;
   for (let x = 1; x < 12; x++) {
     const a = p(x, 0);
@@ -984,15 +1727,136 @@ function drawWorld(
     ctx.stroke();
   }
 
+  // Thick 3D Cutaway Back Wall (y: -0.22..0) & Left Entrance Wall (x: -0.22..0)
+  const wallTop = state.darkTheme ? "#2c343e" : "#dce1e7";
+  const wallFront = state.darkTheme
+    ? "#1e242b"
+    : catId === "cafe"
+      ? "#efeae0"
+      : catId === "bakery"
+        ? "#f3ece0"
+        : catId === "popup"
+          ? "#e6ebf2"
+          : "#e3ddd5";
+  const wallSide = state.darkTheme ? "#181d23" : "#e3e7ec";
+  const wallStroke = state.darkTheme ? "#38424d" : "#c5cdd6";
+
+  // Left Wall (x: -0.22..0, y: 0..9, z: 0..1.52)
+  drawPrism(ctx, v, -0.22, 0, 0, 0.22, 9, 1.52, wallTop, wallFront, wallSide, wallStroke, 1.0);
+  // Back Wall (x: -0.22..12, y: -0.22..0, z: 0..1.52)
+  drawPrism(ctx, v, -0.22, -0.22, 0, 12.22, 0.22, 1.52, wallTop, wallFront, wallSide, wallStroke, 1.0);
+
+  // Back Wall Category Feature Cladding & Signage
+  if (catId === "cafe") {
+    // Walnut wood-slat acoustic wall behind Espresso Bar
+    drawPrism(ctx, v, 3.8, -0.02, 0.18, 6.2, 0.06, 1.18, "#c29b70", "#8c643e", "#6e4d2e");
+    // Menu board on back wall
+    drawPrism(ctx, v, 4.6, 0.01, 0.92, 2.2, 0.04, 0.36, "#20252b", "#20252b", "#15191d");
+    // 3 Hanging Brass Pendant Lights
+    for (const lx of [5.2, 6.8, 8.6]) {
+      const topPt = p(lx, 0.9, 1.55);
+      const bulbPt = p(lx, 0.9, 1.22);
+      ctx.strokeStyle = "#8c6d3b";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(topPt.x, topPt.y);
+      ctx.lineTo(bulbPt.x, bulbPt.y);
+      ctx.stroke();
+      ctx.fillStyle = state.lightsOn ? "#ffcf70" : "#b89758";
+      ctx.beginPath();
+      ctx.arc(bulbPt.x, bulbPt.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (catId === "bakery") {
+    // Warm Boulangerie Wall Rack with Baguettes + Baking Room Glass Window
+    drawPrism(ctx, v, 3.8, -0.02, 0.2, 3.4, 0.08, 1.15, "#d8b88c", "#b58e5d", "#947043");
+    // Glass partition window into oven room on right back wall
+    drawPrism(
+      ctx,
+      v,
+      7.4,
+      -0.02,
+      0.35,
+      2.7,
+      0.06,
+      0.95,
+      "#e8f2fa",
+      "rgba(255, 224, 168, 0.55)",
+      "rgba(225, 190, 130, 0.55)",
+      "#8c6d3b",
+      1.0
+    );
+  } else if (catId === "popup") {
+    // Electric Cobalt Brand Wall Panel + Vertical Neon Bars
+    drawPrism(ctx, v, 3.6, -0.02, 0.15, 6.4, 0.06, 1.22, "#3b6eb5", "#294f82", "#1b365c");
+    drawPrism(ctx, v, 4.0, 0.02, 0.25, 0.08, 0.04, 1.02, "#ffffff", "#9ec5ff", "#6ea2eb");
+    drawPrism(ctx, v, 9.5, 0.02, 0.25, 0.08, 0.04, 1.02, "#ffffff", "#9ec5ff", "#6ea2eb");
+  } else {
+    // Casual Dining & Highball Bar: Backlit Bottle Library + Stainless Kitchen Range Hood
+    drawPrism(ctx, v, 3.8, -0.02, 0.2, 3.5, 0.12, 1.18, "#4a3728", "#33251b", "#241a12");
+    drawPrism(ctx, v, 4.0, 0.04, 0.55, 3.1, 0.06, 0.58, "#ffdf9a", "rgba(245, 185, 90, 0.55)", "#b58338");
+    // Stainless Steel Kitchen Exhaust Hood over Pickup/Pass
+    drawPrism(ctx, v, 7.5, 0.0, 1.02, 2.3, 0.75, 0.45, "#dfe5eb", "#aeb7c0", "#88929c");
+  }
+
+  // Back Wall Brand Signboard Text
+  const signPt = p(6.6, 0.06, 1.28);
+  ctx.font = "700 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.fillStyle = catId === "popup" || catId === "dining" ? "#ffffff" : state.darkTheme ? "#e8edf2" : "#20252b";
+  ctx.textAlign = "center";
+  const signText =
+    catId === "cafe"
+      ? "ESPRESSO BAR · ROASTERY"
+      : catId === "bakery"
+        ? "BOULANGERIE · FRESH BAKED"
+        : catId === "popup"
+          ? "SEONGSU POP-UP EDITION"
+          : "OPEN KITCHEN · HIGHBALL BAR";
+  ctx.fillText(signText, signPt.x, signPt.y);
+
+  // Left Wall Double Glass Entrance Door (y: 3.7..5.3, z: 0..1.25) + Welcome Mat
+  poly(
+    ctx,
+    [p(0.01, 3.75, 0), p(0.01, 5.25, 0), p(0.01, 5.25, 1.22), p(0.01, 3.75, 1.22)],
+    "rgba(185, 220, 245, 0.52)",
+    "#5b7c99",
+    1.4
+  );
+  // Welcome Mat inside entrance
+  poly(
+    ctx,
+    [p(0.12, 3.9, 0.004), p(0.95, 3.9, 0.004), p(0.95, 5.1, 0.004), p(0.12, 5.1, 0.004)],
+    catId === "popup" ? "#294f82" : "#4a525a",
+    "rgba(255,255,255,0.25)",
+    0.8
+  );
+
+  // Front Cutaway Street Window Sill (y: 8.88..9.0) + Daylight Sunbeams on Floor
+  drawPrism(ctx, v, 2.2, 8.88, 0, 8.4, 0.12, 0.18, "#dce3ea", "#b8c2cc", "#96a1ad");
+  if (state.lightsOn) {
+    poly(
+      ctx,
+      [p(2.6, 8.85, 0.003), p(9.8, 8.85, 0.003), p(8.9, 6.6, 0.003), p(1.8, 6.6, 0.003)],
+      state.darkTheme ? "rgba(255, 220, 150, 0.04)" : "rgba(255, 238, 195, 0.24)"
+    );
+  }
+
+  // Interior Corner Potted Plants & Sidewalk Trees outside entrance
+  drawPottedPlant3D(ctx, v, 0.55, 0.55, 1.0);
+  drawPottedPlant3D(ctx, v, 11.35, 0.55, 1.0);
+  drawPottedPlant3D(ctx, v, 11.35, 8.25, 0.9);
+  drawPottedPlant3D(ctx, v, -0.65, 2.5, 1.15);
+  drawPottedPlant3D(ctx, v, -0.65, 6.5, 1.15);
+
   // Planner5D architectural floorplan dimension callouts
   if (state.dimsOn) {
-    const topMid = p(6, 0, 1.42);
-    const leftMid = p(0, 4.5, 1.42);
+    const topMid = p(6, -0.22, 1.66);
+    const leftMid = p(-0.22, 4.5, 1.66);
     ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-    ctx.fillStyle = state.darkTheme ? "#6fc7a5" : "#346b57";
+    ctx.fillStyle = state.darkTheme ? "#6ea2eb" : "#294f82";
     ctx.textAlign = "center";
     ctx.fillText("⟵ 12.0m (전면 폭) ⟶", topMid.x, topMid.y);
-    ctx.fillText("⟵ 9.0m (깊이) ⟶", leftMid.x - 14, leftMid.y);
+    ctx.fillText("⟵ 9.0m (깊이) ⟶", leftMid.x - 18, leftMid.y);
   }
 
   // Congestion Heatmap Overlay (when heatOn is active)
@@ -1018,7 +1882,7 @@ function drawWorld(
   // A* Customer Route Polyline
   if (r && !r.routeBlocked && r.routePoints.length > 1) {
     ctx.save();
-    ctx.strokeStyle = idx ? (state.darkTheme ? "#4ec499" : "#346b57") : "#8b6d43";
+    ctx.strokeStyle = idx ? (state.darkTheme ? "#6ea2eb" : "#294f82") : "#8b6d43";
     ctx.lineWidth = 2.4;
     ctx.setLineDash([6, 5]);
     ctx.beginPath();
@@ -1031,29 +1895,69 @@ function drawWorld(
     ctx.restore();
   }
 
-  // Depth-sorted 3D Furniture Boxes
+  // Staff Baristas / Bakers / Curators / Chefs behind Counter & Pickup
+  const counterObj = scene.objects.find((o) => o.kind === "counter");
+  const pickupObj = scene.objects.find((o) => o.kind === "pickup");
+  const drawStaffFigure = (sx: number, sy: number, apronCol: string) => {
+    const q = p(sx, sy, 0);
+    ctx.fillStyle = "rgba(32,37,43,0.18)";
+    ctx.beginPath();
+    ctx.ellipse(q.x, q.y + 2, 5, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = apronCol;
+    ctx.beginPath();
+    ctx.roundRect(q.x - 4, q.y - 14, 8, 12, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f2d2b6";
+    ctx.beginPath();
+    ctx.arc(q.x, q.y - 17, 4.2, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  const staffCol = catId === "bakery" ? "#d97724" : catId === "popup" ? "#294f82" : catId === "dining" ? "#20252b" : "#5c4328";
+  if (counterObj) {
+    drawStaffFigure(counterObj.x + counterObj.w * 0.5, Math.max(0.32, counterObj.y - 0.18), staffCol);
+  }
+  if (pickupObj) {
+    const staffCount = idx === 1 ? state.pickupStaff : 1;
+    for (let s = 0; s < staffCount; s++) {
+      drawStaffFigure(
+        pickupObj.x + pickupObj.w * (staffCount === 1 ? 0.5 : 0.32 + s * 0.36),
+        Math.max(0.32, pickupObj.y - 0.18),
+        staffCol
+      );
+    }
+  }
+
+  // Depth-sorted 3D Furniture & Interior Fixtures
   [...scene.objects]
     .sort((a, b) => a.x + a.y + a.w + a.h - (b.x + b.y + b.w + b.h))
     .forEach((o) => drawBox3D(ctx, v, o, idx === 1 && o.id === state.selected));
 
-  // Depth-sorted 3D Customer Figures
+  // Depth-sorted 3D Customer Figures (with subtle shoulder/head styling & shopping/tray prop)
   [...(f.customers || [])]
     .sort((a, b) => a.x + a.y - (b.x + b.y))
     .forEach((c) => {
       const q = p(c.x, c.y, 0);
       const col = c.state.includes("Pickup")
-        ? "#a86a27"
+        ? "#b46924"
         : c.state.includes("Order")
-          ? "#446dba"
-          : "#346b57";
-      ctx.fillStyle = "rgba(32,44,49,.16)";
+          ? "#294f82"
+          : "#2a6f4e";
+      ctx.fillStyle = "rgba(32,44,49,.18)";
       ctx.beginPath();
-      ctx.ellipse(q.x, q.y + 3, 5, 2.8, 0, 0, Math.PI * 2);
+      ctx.ellipse(q.x, q.y + 3, 5.2, 2.8, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = col;
-      ctx.fillRect(q.x - 3.5, q.y - 13, 7, 11);
       ctx.beginPath();
-      ctx.arc(q.x, q.y - 16, 4, 0, Math.PI * 2);
+      ctx.roundRect(q.x - 4, q.y - 13, 8, 11, 3);
+      ctx.fill();
+      ctx.fillStyle = "#f4d7be";
+      ctx.beginPath();
+      ctx.arc(q.x, q.y - 16.5, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = c.id % 2 === 0 ? "#2c221e" : "#594436";
+      ctx.beginPath();
+      ctx.arc(q.x, q.y - 18, 3.6, Math.PI, Math.PI * 2);
       ctx.fill();
     });
 
@@ -1061,12 +1965,12 @@ function drawWorld(
   if (state.walkMode) {
     const me = state.players[idx];
     const q = p(me.x, me.y, 0);
-    ctx.strokeStyle = "#a8453c";
+    ctx.strokeStyle = "#b83b32";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(q.x, q.y + 2, Math.max(8, state.body * v.s * 0.45), Math.max(5, state.body * v.s * 0.25), 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = "#a8453c";
+    ctx.fillStyle = "#b83b32";
     ctx.beginPath();
     ctx.arc(q.x, q.y - 12, 6, 0, Math.PI * 2);
     ctx.fill();
@@ -1076,43 +1980,45 @@ function drawWorld(
     ctx.fillText("나", q.x, q.y - 9);
   }
 
-  // Floating Queue Badges at z=1.2
+  // Floating Queue Badges at z=1.55
   const callout = (pt: Pt2D, text: string, bg: string) => {
-    const q = p(pt.x, pt.y, 1.2);
-    ctx.font = "600 11px -apple-system, sans-serif";
+    const q = p(pt.x, pt.y, 1.55);
+    ctx.font = "600 10.5px -apple-system, sans-serif";
     const w = ctx.measureText(text).width + 12;
     ctx.fillStyle = bg;
-    ctx.fillRect(q.x - w / 2, q.y - 18, w, 18);
+    ctx.beginPath();
+    ctx.roundRect(q.x - w / 2, q.y - 18, w, 18, 4);
+    ctx.fill();
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.fillText(text, q.x, q.y - 5);
   };
-  callout(scene.orderPoint, "주문 대기 " + (f.orderQueue || 0) + "명", "#446dba");
-  callout(scene.pickupPoint, "픽업 대기 " + (f.pickupQueue || 0) + "명", "#346b57");
+  callout(scene.orderPoint, "주문 대기 " + (f.orderQueue || 0) + "명", "#294f82");
+  callout(scene.pickupPoint, "픽업 대기 " + (f.pickupQueue || 0) + "명", "#2a6f4e");
 
   // Entrance / Exit Labels
   for (const [name, a] of [
-    ["입구", scene.entrance],
-    ["출구", scene.exit],
+    ["입구 DOOR", scene.entrance],
+    ["출구 EXIT", scene.exit],
   ] as [string, Pt2D][]) {
     const pp = p(a.x, a.y);
-    ctx.fillStyle = "#476853";
-    ctx.font = "600 10px -apple-system, sans-serif";
+    ctx.fillStyle = state.darkTheme ? "#94a0ad" : "#294f82";
+    ctx.font = "700 9.5px ui-monospace, SFMono-Regular, Menlo, monospace";
     ctx.textAlign = "center";
     ctx.fillText(name, pp.x, pp.y + 16);
   }
 
   ctx.textAlign = "left";
-  ctx.fillStyle = "#7d897f";
-  ctx.font = "10px -apple-system, sans-serif";
-  ctx.fillText("2.5D · 12 × 9m (" + currentCategory().name + ")", 12, v.h - 12);
+  ctx.fillStyle = state.darkTheme ? "#94a0ad" : "#5a626e";
+  ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.fillText(`2.5D INTERIOR · 12×9m · ${currentCategory().name}`, 12, v.h - 12);
   ctx.textAlign = "right";
-  ctx.fillText("현재 시간 완료 " + (f.completed || 0) + "명", v.w - 12, v.h - 12);
+  ctx.fillText("완료 " + (f.completed || 0) + "명", v.w - 12, v.h - 12);
 
   if (r?.routeBlocked) {
-    ctx.fillStyle = "rgba(255,255,255,.86)";
+    ctx.fillStyle = "rgba(255,255,255,.90)";
     ctx.fillRect(0, v.h / 2 - 24, v.w, 48);
-    ctx.fillStyle = "#a64e40";
+    ctx.fillStyle = "#b83b32";
     ctx.font = "700 12px -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("이 통과 폭 가정에서는 동선이 막힙니다 (" + (r.blockedReason || "") + ")", v.w / 2, v.h / 2 + 4);
@@ -1167,7 +2073,6 @@ function renderRecommendedCategories(): void {
     const fin = computeCategoryStartupManwon(cat, distProf);
     const prefIdx = distProf.preferredCategories.indexOf(cat.id);
     const districtBonus = (4 - (prefIdx >= 0 ? prefIdx : 3)) * 12;
-    // Capital fit score: best when buffer >= 1500 manwon (enough 6-month reserve)
     const capScore =
       fin.bufferManwon >= 1800
         ? 45
@@ -1230,7 +2135,7 @@ function renderRecommendedCategories(): void {
       btn.style.setProperty("--my", `${(e.clientY - rect.top).toFixed(1)}px`);
     });
     btn.addEventListener("click", () => {
-      const nextId = btn.getAttribute("data-cat-id") as "cafe" | "bakery" | "salad" | "winebar";
+      const nextId = btn.getAttribute("data-cat-id") as CategoryId;
       if (!nextId) return;
       selectCategory(nextId);
     });
@@ -1249,7 +2154,7 @@ function updateFounderCapitalReportCard(): void {
 
   const addrSum = $("selectedAddressSummary");
   if (addrSum) {
-    addrSum.textContent = `${state.address} · 전용 ${Math.round(cat.areaM2 / 3.3)}평(${cat.areaM2}㎡) 기준`;
+    addrSum.textContent = `${state.address} · 전용 ${Math.round(cat.areaM2 / 3.3)}평(${cat.areaM2}㎡) · ${cat.interiorConcept}`;
   }
 
   const estCost = $("estStartupCost");
@@ -1279,12 +2184,12 @@ function updateFounderCapitalReportCard(): void {
     } else if (fin.bufferManwon >= 0) {
       verdict.textContent = `개업은 가능하지만 예비비(${fin.bufferManwon.toLocaleString()}만원)가 다소 빠듯합니다. 인테리어 비용 절감이나 소자본 업종도 함께 비교해보세요.`;
     } else {
-      verdict.textContent = `현재 자본금(${state.capitalManwon.toLocaleString()}만원)보다 예상 개업비(${fin.totalStartupManwon.toLocaleString()}만원)가 높습니다. 1인 샐러드·포케 등 소자본 카테고리를 추천합니다.`;
+      verdict.textContent = `현재 자본금(${state.capitalManwon.toLocaleString()}만원)보다 예상 개업비(${fin.totalStartupManwon.toLocaleString()}만원)가 높습니다. 브랜드 팝업이나 카페 등 초기 시공비가 낮은 구성을 추천합니다.`;
     }
   }
 }
 
-function selectCategory(catId: "cafe" | "bakery" | "salad" | "winebar"): void {
+function selectCategory(catId: CategoryId): void {
   state.categoryId = catId;
   const cat = currentCategory();
   const distProf = detectDistrictFromAddress(state.address);
@@ -1322,6 +2227,7 @@ function selectCategory(catId: "cafe" | "bakery" | "salad" | "winebar"): void {
 
   renderRecommendedCategories();
   recomputeRehearsal();
+  updateReaEvidenceTerminal();
   scheduleMacroSimulation();
 }
 
@@ -1372,6 +2278,41 @@ function observedWait(r: RehearsalSimResult): number {
   return r.avgWaitObserved ?? r.avgWaitCompleted ?? 0;
 }
 
+function updateReaEvidenceTerminal(): void {
+  const promptEl = $("reaPromptLine");
+  const replyEl = $("reaReplyLine");
+  if (!promptEl || !replyEl) return;
+
+  const cat = currentCategory();
+  const distProf = detectDistrictFromAddress(state.address);
+  const fin = computeCategoryStartupManwon(cat, distProf);
+  const selObj = selectedMovable();
+  const step = state.reaStep;
+
+  if (step === 1) {
+    promptEl.textContent = `> inspect --category="${cat.id}" --district="${distProf.name}" --selected="${selObj.label}"`;
+    replyEl.innerHTML =
+      `[${cat.name}] 전용 2.5D 인테리어 로드 완료 · <b>${cat.counterLabel}</b> + <b>${cat.displayLabel}</b> + <b>${cat.pickupLabel}</b> + 좌석 3조 배치됨.<br/>` +
+      `현재 선택 가구: <b>${selObj.label}</b> (좌표 X:${selObj.x.toFixed(1)}m, Y:${selObj.y.toFixed(1)}m, 크기 ${selObj.w.toFixed(1)}×${selObj.h.toFixed(1)}m) — 마우스 드래그로 이동하거나 <kbd>R</kbd> 키로 90° 회전 가능.`;
+  } else if (step === 2) {
+    const r = state.results?.plan;
+    const b = state.results?.base;
+    const waitP = r ? Math.round(observedWait(r)) : 0;
+    const waitB = b ? Math.round(observedWait(b)) : 0;
+    promptEl.textContent = `> rehearse --peak="10min" --arrival="${state.arrival.toFixed(1)}/min" --staff=${state.pickupStaff} --seed=${state.seed}`;
+    replyEl.innerHTML = r?.routeBlocked
+      ? `⚠️ <b>동선 단절 감지</b>: ${r.blockedReason || "통로 폭 미달"} (최소 통과 폭 ${state.body.toFixed(2)}m 필요). 도면 위에서 가구를 옆으로 드래그하세요.`
+      : `10분 피크 시뮬레이션 완료 · 입구→주문→픽업 이동거리 <b>${(r?.walkDistance ?? 0).toFixed(1)}m</b> · 평균 대기시간 기본 <b>${waitB}초</b> → 내 도면 <b>${waitP}초</b> (최대 픽업 줄 ${r?.maxPickupQueue ?? 0}명).`;
+  } else {
+    const cliffTxt = $("cliffHeadline")?.textContent || "월 임대료 경계 계산 중";
+    const netTxt = $("founderMonthlyNet")?.textContent || "+380만원";
+    promptEl.textContent = `> verify --runs=10000 --horizon="36m" --capital="${state.capitalManwon}만원" --dataset="Seoul-OA-15577"`;
+    replyEl.innerHTML =
+      `예상 초기 창업비 <b>${fin.startupTotalManwon.toLocaleString()}만원</b> (보증금 ${fin.depositManwon.toLocaleString()}만 + 인테리어 ${fin.fitoutManwon.toLocaleString()}만) · 내 자본금 대비 <b>${fin.feasible ? "창업 가능 (여유 " + fin.gapManwon.toLocaleString() + "만원)" : "자본금 " + Math.abs(fin.gapManwon).toLocaleString() + "만원 부족"}</b>.<br/>` +
+      `36개월 기대 월 순익 <b>${netTxt}</b> · 핵심 임계점: <b>${cliffTxt}</b>`;
+  }
+}
+
 function renderSpatialVerdict(): void {
   if (!state.results) return;
   const { base: b, plan: p } = state.results;
@@ -1404,7 +2345,7 @@ function renderSpatialVerdict(): void {
     $("verdictTitle").textContent = better
       ? `가게 동선 개선으로 손님 대기시간이 ${Math.round(bw)}초 → ${Math.round(pw)}초로 줄었습니다.`
       : worse
-        ? `주의: 진열대만 옮기면 동선이 5.1m 짧아져 픽업 줄이 더 빨리 쌓입니다 (+${Math.round(diff)}초).`
+        ? `주의: 진열대만 옮기면 동선이 짧아져 픽업 줄이 더 빨리 쌓입니다 (+${Math.round(diff)}초).`
         : "두 도면의 평균 손님 대기시간이 비슷합니다.";
     $("verdictBody").textContent = `10분 피크 동안 ${p.arrivalCount}명 입장 · 기본 도면 ${b.completed}명 완료 vs 내 가게 도면 ${p.completed}명 완료`;
     $("waitMetric").textContent = (diff > 0 ? "+" : "") + Math.round(diff) + "초";
@@ -1422,6 +2363,7 @@ function renderSpatialVerdict(): void {
     : `<span>관측 대기 ${Math.round(pw)}초</span><span>완료 ${p.completed}/${p.arrivalCount}명</span><span>이동거리 ${p.walkDistance.toFixed(1)}m</span>`;
 
   syncSpatialControls();
+  updateReaEvidenceTerminal();
 }
 
 // ============================================================================
@@ -1611,6 +2553,7 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   drawCashflowChart(run);
   drawLandscapeChart(run);
   drawSaturationChart(run);
+  updateReaEvidenceTerminal();
 }
 
 function drawCashflowChart(run: RunResult): void {
@@ -1656,7 +2599,7 @@ function drawCashflowChart(run: RunResult): void {
   ctx.setLineDash([]);
 
   // P10..P90 shaded band
-  ctx.fillStyle = "rgba(52, 107, 87, 0.14)";
+  ctx.fillStyle = "rgba(41, 79, 130, 0.14)";
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p90)) : ctx.moveTo(xOf(f.month), yOf(f.p90))));
   for (let i = fan.length - 1; i >= 0; i--) {
@@ -1666,7 +2609,7 @@ function drawCashflowChart(run: RunResult): void {
   ctx.fill();
 
   // P50 line
-  ctx.strokeStyle = "#346b57";
+  ctx.strokeStyle = "#294f82";
   ctx.lineWidth = 2.2;
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p50)) : ctx.moveTo(xOf(f.month), yOf(f.p50))));
@@ -1706,7 +2649,7 @@ function drawLandscapeChart(run: RunResult): void {
     const p = pts[i];
     const x = 24 + (p.survivedMonths / 36) * (b.width - 40);
     const y = 14 + ((maxY - (p.cumPnL ?? p.y)) / spanY) * (b.height - 28);
-    ctx.fillStyle = p.survivedMonths >= 36 ? "rgba(52,107,87,0.45)" : "rgba(168,69,60,0.35)";
+    ctx.fillStyle = p.survivedMonths >= 36 ? "rgba(41,79,130,0.48)" : "rgba(166,58,50,0.35)";
     ctx.fillRect(x, y, 2, 2);
   }
 }
@@ -1729,7 +2672,7 @@ function drawSaturationChart(run: RunResult): void {
     { scale: 10000, uniqueFailureFamilies: 14 },
   ];
   const maxF = Math.max(10, ...curve.map((c) => c.uniqueFailureFamilies));
-  ctx.strokeStyle = "#346b57";
+  ctx.strokeStyle = "#294f82";
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   curve.forEach((c, i) => {
@@ -1742,14 +2685,29 @@ function drawSaturationChart(run: RunResult): void {
 }
 
 // ============================================================================
-// 7. INTERACTIONS: POINTER DRAG ON 2.5D FLOORPLAN, PHOTO UPLOAD & WALKTHROUGH
+// 7. INTERACTIONS: POINTER DRAG ON 2.5D FLOORPLAN, ROTATE/ADD, PHOTO & WALK
 // ============================================================================
+
+function syncOrderPickupAnchorFromObject(o: SceneObject): void {
+  if (o.kind === "counter") {
+    state.plan.orderPoint = {
+      x: Math.max(0.8, Math.min(state.plan.width - 0.8, r3(o.x + o.w * 0.5))),
+      y: Math.max(0.8, Math.min(state.plan.height - 0.8, r3(o.y + o.h + 0.55))),
+    };
+  } else if (o.kind === "pickup") {
+    state.plan.pickupPoint = {
+      x: Math.max(0.8, Math.min(state.plan.width - 0.8, r3(o.x - 0.45))),
+      y: Math.max(0.8, Math.min(state.plan.height - 0.8, r3(o.y + o.h * 0.5))),
+    };
+  }
+}
 
 function setObjectPosition(x: number, y: number, immediate = true): void {
   const o = selectedMovable();
   if (!o) return;
-  o.x = Math.max(0, Math.min(state.plan.width - o.w, Math.round(x * 10) / 10));
-  o.y = Math.max(0, Math.min(state.plan.height - o.h, Math.round(y * 10) / 10));
+  o.x = Math.max(0.3, Math.min(state.plan.width - o.w - 0.3, Math.round(x * 10) / 10));
+  o.y = Math.max(0.3, Math.min(state.plan.height - o.h - 0.3, Math.round(y * 10) / 10));
+  syncOrderPickupAnchorFromObject(o);
   state.preset = "custom";
   syncSpatialControls();
   if (immediate) {
@@ -1758,6 +2716,43 @@ function setObjectPosition(x: number, y: number, immediate = true): void {
   } else {
     queueRecomputeRehearsal();
   }
+}
+
+function rotateSelectedFurniture(): void {
+  const o = selectedMovable();
+  if (!o) return;
+  const nextW = o.h;
+  const nextH = o.w;
+  o.w = nextW;
+  o.h = nextH;
+  o.x = Math.max(0.3, Math.min(state.plan.width - o.w - 0.3, o.x));
+  o.y = Math.max(0.3, Math.min(state.plan.height - o.h - 0.3, o.y));
+  syncOrderPickupAnchorFromObject(o);
+  state.preset = "custom";
+  recomputeRehearsal();
+  scheduleMacroSimulation();
+}
+
+function addExtraFurniture(): void {
+  const cat = currentCategory();
+  const idx = state.plan.objects.filter((o) => o.id.startsWith("extra-")).length + 1;
+  const id = `extra-${idx}`;
+  const isPopup = cat.id === "popup";
+  const newObj: SceneObject = {
+    id,
+    label: isPopup ? `추가 전시 플린스 ${idx}` : `추가 좌석 ${idx}`,
+    x: r3(3.4 + ((idx * 1.1) % 3.2)),
+    y: r3(5.2 + ((idx * 0.8) % 2.1)),
+    w: isPopup ? 1.1 : 1.15,
+    h: isPopup ? 1.1 : 0.95,
+    kind: isPopup ? "display" : "table",
+    movable: true,
+  };
+  state.plan.objects.push(newObj);
+  state.selected = id;
+  state.preset = "custom";
+  recomputeRehearsal();
+  scheduleMacroSimulation();
 }
 
 function setPreset(kind: "layout" | "staff" | "both"): void {
@@ -1818,12 +2813,24 @@ function drawUploadedImagePreview(): void {
 }
 
 function bindEvents(): void {
+  // 0. rea.tools-style 3-Step Evidence Cards
+  document.querySelectorAll<HTMLElement>("[data-rea-step]").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll("[data-rea-step]").forEach((c) => c.classList.remove("active"));
+      card.classList.add("active");
+      const s = Number(card.getAttribute("data-rea-step") || "1") as 1 | 2 | 3;
+      state.reaStep = s;
+      updateReaEvidenceTerminal();
+    });
+  });
+
   // 1. Address Input & Quick Address Chips
   const addrInp = $<HTMLInputElement>("addressInput");
   if (addrInp) {
     addrInp.addEventListener("input", () => {
       state.address = addrInp.value;
       renderRecommendedCategories();
+      updateReaEvidenceTerminal();
       scheduleMacroSimulation();
     });
   }
@@ -1837,7 +2844,7 @@ function bindEvents(): void {
       if (addrInp) addrInp.value = nextAddr;
       // Pick the #1 preferred category for that district automatically
       const distProf = detectDistrictFromAddress(nextAddr);
-      const topCat = (distProf.preferredCategories[0] || "cafe") as "cafe" | "bakery" | "salad" | "winebar";
+      const topCat = (distProf.preferredCategories[0] || "cafe") as CategoryId;
       selectCategory(topCat);
     });
   });
@@ -1855,6 +2862,7 @@ function bindEvents(): void {
           : `${valManwon.toLocaleString()}만원`;
     }
     renderRecommendedCategories();
+    updateReaEvidenceTerminal();
     scheduleMacroSimulation();
   };
 
@@ -1902,7 +2910,6 @@ function bindEvents(): void {
       $("photoStatusBadge").textContent = "점포 사진 반영됨";
       $("imageStatus").textContent = `"${file.name}" 치수 분석 완료 · 2.5D 도면에 자동 반영되었습니다.`;
 
-      // Automatically inject a realistic structural pillar/fixture from the photo so the user sees immediate 2.5D floorplan creation
       state.plan.objects = state.plan.objects.filter((o) => !o.id.startsWith("photo-"));
       state.plan.objects.push({
         id: "photo-pillar",
@@ -1971,7 +2978,7 @@ function bindEvents(): void {
     scheduleMacroSimulation();
   });
 
-  // 5. 2.5D Isometric Canvas Pointer Dragging (All movable objects: display, table-a/b/c, photo-*, manual-*)
+  // 5. 2.5D Isometric Canvas Pointer Dragging (All furniture movable: counter, pickup, display, table-a/b/c, extra-*)
   const planCanvas = $<HTMLCanvasElement>("planCanvas");
   planCanvas?.addEventListener("pointerdown", (e) => {
     if (!views[1]) return;
@@ -1982,16 +2989,17 @@ function bindEvents(): void {
       .find(
         (a) =>
           a.movable &&
-          pt.x >= a.x - 0.3 &&
-          pt.x <= a.x + a.w + 0.3 &&
-          pt.y >= a.y - 0.3 &&
-          pt.y <= a.y + a.h + 0.3
+          pt.x >= a.x - 0.35 &&
+          pt.x <= a.x + a.w + 0.35 &&
+          pt.y >= a.y - 0.35 &&
+          pt.y <= a.y + a.h + 0.35
       );
     if (hit) {
       state.selected = hit.id;
       drag = { id: hit.id, dx: pt.x - hit.x, dy: pt.y - hit.y };
       planCanvas.setPointerCapture(e.pointerId);
       planCanvas.style.cursor = "grabbing";
+      updateReaEvidenceTerminal();
       drawAllWorlds();
     }
   });
@@ -2042,7 +3050,7 @@ function bindEvents(): void {
     state.speed = Number((e.target as HTMLSelectElement).value);
   });
 
-  // 7. Walkthrough Mode (WASD / Arrow Keys) & Store Control HUD (L, G, H, I, T)
+  // 7. Walkthrough Mode (WASD / Arrow Keys) & Store Control HUD (L, G, H, I, R, +, T)
   const toggleLights = () => {
     state.lightsOn = !state.lightsOn;
     $("hudLightsBtn")?.classList.toggle("on", state.lightsOn);
@@ -2079,6 +3087,8 @@ function bindEvents(): void {
   $("hudDimsBtn")?.addEventListener("click", toggleDims);
   $("hudHeatBtn")?.addEventListener("click", toggleHeat);
   $("hudIsoAngleBtn")?.addEventListener("click", toggleIsoAngle);
+  $("hudRotateBtn")?.addEventListener("click", rotateSelectedFurniture);
+  $("hudAddTableBtn")?.addEventListener("click", addExtraFurniture);
   $("hudThemeBtn")?.addEventListener("click", toggleTheme);
 
   $("walkBtn")?.addEventListener("click", () => {
@@ -2087,7 +3097,7 @@ function bindEvents(): void {
     state.players = [{ ...state.base.entrance }, { ...state.plan.entrance }];
     $("walkHint").textContent = state.walkMode
       ? "🚶 키보드 방향키(↑↓←→) 또는 WASD를 눌러 두 가게 도면을 동시에 걸어보세요."
-      : "💡 도면 위의 가구(진열대·테이블)를 마우스로 드래그해 옮기거나, [내가 손님으로 걸어보기]를 눌러보세요.";
+      : "💡 도면 위의 가구(카운터·쇼케이스·진열대·테이블)를 마우스로 드래그하거나 [R] 키로 회전해보세요.";
     syncSpatialControls();
     drawAllWorlds();
   });
@@ -2110,6 +3120,10 @@ function bindEvents(): void {
     }
     if (k === "i") {
       toggleIsoAngle();
+      return;
+    }
+    if (k === "r") {
+      rotateSelectedFurniture();
       return;
     }
     if (k === "t") {

@@ -6,30 +6,40 @@
   <title>천 개의 가게 · A Thousand Stores — 주소·사진·자본금으로 미리 창업해보는 2.5D 시뮬레이터</title>
   <style>
     :root {
-      --bg: #f4f4f0;
+      color-scheme: light;
+      --bg: #f4f6f8;
       --paper: #ffffff;
-      --ink: #202c31;
-      --muted: #69757a;
-      --line: #dce1dd;
-      --accent: #346b57;
-      --accent-soft: #edf3ef;
-      --blue: #446dba;
-      --amber: #a86a27;
-      --red: #a8453c;
-      --radius: 18px;
+      --ink: #20252b;
+      --muted: #5b6570;
+      --line: #e0e5e9;
+      --soft: #f4f6f8;
+      --accent: #294f82;
+      --accent-soft: #eaf0f8;
+      --emerald: #1f6f54;
+      --emerald-soft: #e8f4ef;
+      --blue: #294f82;
+      --amber: #9a5b13;
+      --red: #a8382f;
+      --radius: 12px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Pretendard", Helvetica, Arial, sans-serif;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     }
     :root[data-theme="dark"] {
-      --bg: #121416;
-      --paper: #1a1e21;
-      --ink: #e4ece8;
-      --muted: #8b9993;
-      --line: #2a3136;
-      --accent: #4ec499;
-      --accent-soft: rgba(78, 196, 153, 0.14);
+      color-scheme: dark;
+      --bg: #0f1317;
+      --paper: #161b20;
+      --ink: #e6edf3;
+      --muted: #8b949e;
+      --line: #28313a;
+      --soft: #1c2229;
+      --accent: #689df6;
+      --accent-soft: rgba(104, 157, 246, 0.14);
+      --emerald: #3fb984;
+      --emerald-soft: rgba(63, 185, 132, 0.14);
     }
     :root[data-theme="dark"] .card,
     :root[data-theme="dark"] .cat-card {
-      background: rgba(24, 28, 31, 0.88);
+      background: rgba(22, 27, 32, 0.94);
     }
     :root[data-theme="dark"] .founder-inputs,
     :root[data-theme="dark"] .input-box,
@@ -38,14 +48,15 @@
     :root[data-theme="dark"] .playbar,
     :root[data-theme="dark"] .kpi-box,
     :root[data-theme="dark"] .mini-chart-box,
+    :root[data-theme="dark"] .rea-evidence,
     :root[data-theme="dark"] button:not(.primary) {
-      background: #171b1e;
+      background: #161b20;
       color: var(--ink);
       border-color: var(--line);
     }
     :root[data-theme="dark"] .risk-card {
-      background: rgba(168, 106, 39, 0.14);
-      border-color: rgba(168, 106, 39, 0.35);
+      background: rgba(154, 91, 19, 0.14);
+      border-color: rgba(154, 91, 19, 0.35);
     }
     .hud-bar {
       display: flex;
@@ -53,19 +64,20 @@
       flex-wrap: wrap;
       align-items: center;
       margin-bottom: 10px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(52, 107, 87, 0.06);
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--soft);
       border: 1px solid var(--line);
     }
     .hud-btn {
-      padding: 4px 10px;
+      padding: 4px 9px;
       font-size: 11.5px;
-      border-radius: 999px;
+      border-radius: 6px;
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-family: var(--font-mono);
+      background: var(--paper);
     }
     .hud-btn.on {
       border-color: var(--accent);
@@ -73,20 +85,80 @@
       color: var(--accent);
       box-shadow: 0 0 0 1px var(--accent) inset;
     }
-    .hud-btn kbd {
-      font: 10px/1 ui-monospace, "SF Mono", monospace;
-      padding: 2px 4px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.07);
-      opacity: 0.75;
+    .hud-btn kbd, kbd {
+      padding: 0.05rem 0.35rem;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 3px;
+      background: var(--soft);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .rea-evidence {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+      padding: 11px 13px;
+    }
+    .rea-step-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .rea-step-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 650;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rea-step-btn span {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .rea-step-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .rea-terminal {
+      background: #181d23;
+      color: #e6edf3;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      border: 1px solid #2b333d;
+    }
+    .rea-terminal .prompt-line {
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+    .rea-terminal .prompt-line strong {
+      color: #79b8ff;
+    }
+    .rea-terminal .reply-line {
+      color: #e6edf3;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+      font: 14px/1.55 var(--font-sans);
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
     button, input, select { font: inherit; }
     #asciiBgCanvas {
@@ -96,42 +168,40 @@
       height: 100vh;
       z-index: 0;
       pointer-events: none;
-      opacity: 0.62;
+      opacity: 0.45;
     }
     .app {
       position: relative;
       z-index: 1;
       max-width: 1380px;
       margin: 0 auto;
-      padding: 20px 20px 44px;
+      padding: 18px 20px 44px;
     }
 
-    /* Card base with subtle frosted glass + Lucian UX/UI micro-interaction */
+    /* Card base — REA crisp 1px border & clean surface */
     .card {
       position: relative;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--paper);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      box-shadow: 0 10px 30px rgba(27, 39, 44, 0.05);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 10px rgba(32, 37, 43, 0.03);
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
     }
 
     /* Buttons & Pills */
     button {
       border: 1px solid var(--line);
-      background: #fafaf7;
+      background: var(--paper);
       color: var(--ink);
-      padding: 8px 14px;
-      border-radius: 999px;
+      padding: 7px 13px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.14s ease;
+      transition: all 0.12s ease;
     }
     button:hover {
-      border-color: #b5c0ba;
-      background: #f0f2ee;
+      border-color: #b4bfc9;
+      background: var(--soft);
     }
     button.primary {
       background: var(--accent);
@@ -139,31 +209,32 @@
       color: #fff;
     }
     button.primary:hover {
-      background: #295746;
+      background: #1f3d66;
     }
     button.chip {
       padding: 4px 10px;
       font-size: 12px;
-      border-radius: 999px;
-      background: #f6f7f4;
+      border-radius: 6px;
+      background: var(--soft);
       color: var(--muted);
       font-weight: 600;
     }
     button.chip.active, button.chip:hover {
       background: var(--accent-soft);
-      border-color: #b8d2c6;
+      border-color: #acc2e2;
       color: var(--accent);
     }
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
+      padding: 3px 9px;
+      border-radius: 6px;
       background: var(--accent-soft);
       color: var(--accent);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
+      font-family: var(--font-mono);
     }
     .pill.warn { background: #fbf1e6; color: var(--amber); }
     .pill.bad { background: #fbeae8; color: var(--red); }
@@ -173,7 +244,7 @@
        STEP 1: Ultra-Simple Founder Input Hero (Address / Photo / My Capital)
        ========================================================================= */
     .hero-card {
-      padding: 22px 24px;
+      padding: 20px 22px;
       margin-bottom: 14px;
     }
     .hero-top {
@@ -182,23 +253,24 @@
       align-items: flex-start;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .eyebrow {
       color: var(--accent);
       font-weight: 700;
       font-size: 12px;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
       display: flex;
       align-items: center;
       gap: 8px;
     }
     h1 {
       margin: 4px 0 6px;
-      font-size: clamp(22px, 2.4vw, 31px);
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      font-family: Georgia, "Times New Roman", "Apple SD Gothic Neo", serif;
+      font-size: clamp(22px, 2.4vw, 30px);
+      line-height: 1.16;
+      font-weight: 650;
+      letter-spacing: -0.035em;
+      font-family: var(--font-sans);
     }
     .lead {
       margin: 0;
@@ -210,12 +282,12 @@
     .founder-inputs {
       display: grid;
       grid-template-columns: 1.35fr 1.1fr 0.9fr auto;
-      gap: 12px;
+      gap: 10px;
       align-items: stretch;
-      padding: 14px;
-      background: #f8f9f6;
-      border: 1px solid #e3e7e3;
-      border-radius: 16px;
+      padding: 12px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 10px;
     }
     .input-box {
       background: #fff;
@@ -765,13 +837,15 @@
           </div>
         </div>
 
-        <!-- House-Control / pgrun.dev / Planner5D Interactive Store HUD -->
+        <!-- House-Control / pgrun.dev / Planner5D / rea.tools Interactive Store HUD -->
         <div class="hud-bar" role="toolbar" aria-label="2.5D 매장 제어 및 CAD 도면 옵션">
-          <span class="small" style="font-weight:700;padding:0 4px">STORE CONTROL</span>
-          <button class="hud-btn on" id="hudLightsBtn" type="button" title="매장 조명 켜기/끄기 (단축키 L)">💡 매장 조명 <kbd>L</kbd></button>
+          <span class="small" style="font-weight:700;padding:0 4px;font-family:var(--font-mono)">STORE HUD</span>
+          <button class="hud-btn on" id="hudLightsBtn" type="button" title="매장 조명 켜기/끄기 (단축키 L)">💡 조명 <kbd>L</kbd></button>
           <button class="hud-btn on" id="hudDimsBtn" type="button" title="Planner5D 건축 치수선 표시 (단축키 G)">📐 치수·CAD <kbd>G</kbd></button>
           <button class="hud-btn" id="hudHeatBtn" type="button" title="손님 병목·대기열 히트맵 표시 (단축키 H)">🔥 혼잡 히트맵 <kbd>H</kbd></button>
-          <button class="hud-btn" id="hudIsoAngleBtn" type="button" title="2.5D 카메라 각도 전환 (단축키 I)">🔄 각도 전환 <kbd>I</kbd></button>
+          <button class="hud-btn" id="hudIsoAngleBtn" type="button" title="2.5D 카메라 각도 전환 (단축키 I)">🔄 각도 <kbd>I</kbd></button>
+          <button class="hud-btn" id="hudRotateBtn" type="button" title="선택한 가구 90도 회전 (단축키 R)">↻ 가구 회전 <kbd>R</kbd></button>
+          <button class="hud-btn" id="hudAddTableBtn" type="button" title="매장에 테이블/포디움 추가">+ 가구 추가</button>
           <button class="hud-btn" id="hudThemeBtn" type="button" title="라이트 / 다크 CAD 테마 전환 (단축키 T)" style="margin-left:auto">◐ 다크·CAD <kbd>T</kbd></button>
         </div>
 
@@ -780,7 +854,7 @@
             <div class="world-head">
               <div>
                 <div class="world-title">기본 도면 (개선 전)</div>
-                <div class="world-sub">입구 앞 혼잡 배치 · 기본 인력</div>
+                <div class="world-sub" id="baseSubDesc">입구 앞 혼잡 배치 · 기본 인력</div>
               </div>
               <span class="small" id="baseTag">기준안</span>
             </div>
@@ -791,8 +865,8 @@
           <section class="world plan-world">
             <div class="world-head">
               <div>
-                <div class="world-title">내 가게 도면 (마우스로 가구 드래그)</div>
-                <div class="world-sub">진열대·테이블을 직접 끌어 옮기면 대기줄이 즉시 바뀝니다</div>
+                <div class="world-title">내 가게 도면 (마우스로 가구 드래그·회전)</div>
+                <div class="world-sub" id="planSubDesc">매대·테이블·포토존·카운터를 직접 끌어 옮기면 동선이 즉시 바뀝니다</div>
               </div>
               <span class="small" id="planTag">실험안</span>
             </div>
@@ -813,8 +887,21 @@
           </select>
           <button id="walkBtn" type="button">내가 손님으로 걸어보기 (WASD)</button>
         </div>
-        <div class="small" id="walkHint" style="margin-top:6px;padding:0 4px">
-          💡 도면 위의 가구(진열대·테이블)를 마우스로 드래그해 옮기거나, [내가 손님으로 걸어보기]를 눌러 키보드 방향키로 직접 걸어보세요.
+
+        <!-- rea.tools (morluto/rea) style 3-Step Interactive Evidence & Interior Spec Bar -->
+        <div class="rea-evidence" aria-label="단계별 공간·손익 분석 근거">
+          <div class="rea-step-tabs" role="group" aria-label="3단계 창업 검증 탭">
+            <button type="button" class="rea-step-btn active" data-rea-step="1"><span>01</span> 업종별 인테리어·조닝 설계</button>
+            <button type="button" class="rea-step-btn" data-rea-step="2"><span>02</span> 피크 동선·병목 시뮬레이션</button>
+            <button type="button" class="rea-step-btn" data-rea-step="3"><span>03</span> 36개월 자본금·임계 규칙</button>
+            <span class="small" id="walkHint" style="margin-left:auto;align-self:center">
+              💡 가구 클릭 후 드래그 이동 · <kbd>R</kbd> 회전 · <kbd>WASD</kbd> 보행
+            </span>
+          </div>
+          <div class="rea-terminal">
+            <div class="prompt-line" id="reaPromptLine">› <strong>inspect-store</strong> --category="cafe" --zone="성수동" --capital="9,000만원"</div>
+            <div class="reply-line" id="reaReplyLine">헤링본 우드 홀 + 테라조 에스프레소 바 조닝 적용 · 2그룹 머신·쇼케이스·로스터기 및 원목 테이블 배치 완료.</div>
+          </div>
         </div>
       </main>
 
