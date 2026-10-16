@@ -2587,7 +2587,21 @@ function drawCashflowChart(run: RunResult): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, b.width, b.height);
 
-  const fan = run.cashflowFan ?? [];
+  // The engine does not emit a fan; take P10/P50/P90 of the engine's own month-end cash over the sampled variants
+  // that carry monthly rows (no money is computed here, only percentiles of engine values).
+  const fan: { month: number; p10: number; p50: number; p90: number }[] = (run.cashflowFan ?? []).length
+    ? (run.cashflowFan as { month: number; p10: number; p50: number; p90: number }[])
+    : (() => {
+        const withMonths = (run.results as unknown as { months?: { cashEnd: number }[] }[]).filter((r) => (r.months?.length ?? 0) > 0);
+        const out: { month: number; p10: number; p50: number; p90: number }[] = [];
+        for (let m = 0; m < 36; m++) {
+          const vals = withMonths.map((r) => r.months![m]?.cashEnd).filter((v): v is number => typeof v === "number").sort((a, b) => a - b);
+          if (!vals.length) break;
+          const q = (p: number) => vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))];
+          out.push({ month: m + 1, p10: q(0.1), p50: q(0.5), p90: q(0.9) });
+        }
+        return out;
+      })();
   if (!fan.length) return;
 
   const padL = 42;
@@ -2609,7 +2623,7 @@ function drawCashflowChart(run: RunResult): void {
 
   // Zero line
   const y0 = yOf(0);
-  ctx.strokeStyle = "#cfd6d0";
+  ctx.strokeStyle = "rgba(21, 20, 15, 0.18)";
   ctx.setLineDash([3, 3]);
   ctx.beginPath();
   ctx.moveTo(padL, y0);
@@ -2618,7 +2632,7 @@ function drawCashflowChart(run: RunResult): void {
   ctx.setLineDash([]);
 
   // P10..P90 shaded band
-  ctx.fillStyle = "rgba(41, 79, 130, 0.14)";
+  ctx.fillStyle = "rgba(21, 20, 15, 0.10)";
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p90)) : ctx.moveTo(xOf(f.month), yOf(f.p90))));
   for (let i = fan.length - 1; i >= 0; i--) {
@@ -2628,13 +2642,13 @@ function drawCashflowChart(run: RunResult): void {
   ctx.fill();
 
   // P50 line
-  ctx.strokeStyle = "#294f82";
+  ctx.strokeStyle = "#15140f";
   ctx.lineWidth = 2.2;
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p50)) : ctx.moveTo(xOf(f.month), yOf(f.p50))));
   ctx.stroke();
 
-  ctx.fillStyle = "#69757a";
+  ctx.fillStyle = "#6f6a5e";
   ctx.font = "10px -apple-system, sans-serif";
   ctx.fillText("1개월", padL, b.height - 6);
   ctx.textAlign = "right";
