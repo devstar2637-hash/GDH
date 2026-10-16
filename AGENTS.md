@@ -1,3 +1,5 @@
+<!-- Refreshed from the shared doc, 작전 탭 (Claude 작전과 병행안), 2026-10-16 11:30 KST: includes C9 / rule 11 (end states + replay), AT-14 hash+SHA, AT-15 hidden-holdout regression, and the 10,000 mode (option B) in the P1 order. -->
+<!-- Commit to the repo root only after 11:20 KST. -->
 # AGENTS.md - A Thousand Stores (hackathon build, 2026-10-16)
 
 Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude Code (owns tests/). Build agent: Gemini 4 Argon in Antigravity, three lanes (A1 engine, A2 data and model loop, A3 screen). Inside the loop Argon plays two roles, Store Designer (mutations) and Bankruptcy Designer (shocks); neither touches the oracle.
@@ -35,13 +37,14 @@ Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude 
 8. Commit small and often: lane prefix in the message (A1:, A2:, A3:), tests green, no secrets.
 9. Adversarial loop: at most 3 rounds and a wall-clock cap per round. Each round appends shocks, deaths, new failure families, non-dominated survivors and a stop reason to runs/<run-id>/rounds.json. No open-ended agent-to-agent calls; engine/ orchestrates every step.
 10. Observability: every screen shows run ID, input file names, token usage (per model call and total) and the gate log. runs/<run-id>/ is append-only.
+11. End states and replay: every run ends as DONE, FAIL or BLOCKED with a reason under runs/<run-id>/; nothing ends silently or stays "running" after the time cap. Any replayed or cached result carries a "replay" label on screen and in the logs and is never shown as live.
 
 ## Changing shared types
 shared/ is frozen at 12:15. To change it: post the diff and the reason in chat, wait for Taehyeon's explicit "approved", update shared/, run npm test and npm run test:accept, then record the change under Lessons with time and reason. No approval, no change.
 
 ## Gates (KST)
-G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 deployed URL with a real input, AT-01, AT-05, AT-12, AT-14 green. P1 order after G2: adversarial rounds (AT-13) > peak-hour queue > Sheets export > Maps card. 14:25 feature freeze (P0 defects only). 15:05 submit.
+G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 deployed URL with a real input, AT-01, AT-05, AT-12, AT-14 green. P1 order after G2: adversarial rounds (AT-13) > 10,000 mode (500 families x 20, saturation curve, AT-16) > peak-hour queue > Sheets export > Maps card. 14:25 feature freeze (P0 defects only). 15:05 submit.
 
 ## Lessons (append-only; newest at the bottom)
 Format: [HH:MM] [lane] what broke or surprised us > what we changed > which test now catches it.
-- [12:15] [all] (first entry written at kickoff)
+- [12:06] [all] Kickoff alignment completed and approved by Taehyeon before 12:15 freeze > synced AGENTS.md, docs/SPEC.md, docs/KICKOFF_PROMPT.md, and added C9/AT-04/AT-09/AT-14/AT-16 fields to shared/types.ts and shared/constants.ts > AT-01..AT-16.
