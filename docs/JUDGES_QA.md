@@ -2,7 +2,7 @@
 
 Sol · v2 · 2026-10-16 KST · English answer draft
 
-Evidence scope: source and existing local verification records. The newly connected six-screen route is awaiting the parent's final browser verification at this draft. Actual 500-family provider execution, Cloud deployment and submission are not confirmed. Use the current run and revision when answering; this document is not a certification of the planning targets.
+Evidence scope: source and existing local verification records. The six-screen route passed 20 actual local Chrome checks, and its Google Cloud deployment returned a real default 10,000-candidate result. Actual 500-family provider execution and final event submission remain unconfirmed. Use the current run and revision when answering; this document is not a certification of the planning targets.
 
 Official submission requirements supplied by the user: all submission content must be English, Google Cloud deployment is mandatory, and 15:20 is the hard deadline. Submit through the [event portal](https://cerebralvalley.ai/e/google-deepmind-ai-hackathon) with the original application account. A three-minute video target and unlisted YouTube upload remain internal preparation choices, not confirmed official rules. No submission is performed by this document.
 
@@ -38,7 +38,7 @@ The server-only family adapter makes at most five requests for one full batch, w
 
 ## 6. Is it deployed, and what can an owner safely do with it today?
 
-The verified application path is local; a working Cloud deployment URL is not established. Google Cloud sign-in succeeded, but access to the approved project was denied. Mandatory Cloud deployment is therefore an unmet submission gate; signing in does not establish project access or deployment. The new six-screen route still needs its final browser receipt before we claim that route passed. An owner can use the implemented flow to explore explicit assumptions, inspect a bounded sensitivity result and record their own fresh choice. Exports are local CSV, Markdown or JSON downloads, not automatic Google Docs or Sheets uploads. The tool does not make a lease or loan decision, perform an external transaction or produce real-world survival probabilities. Live model cost, calibration, AI-versus-random evidence and durable Cloud storage are remaining gates.
+The application is deployed at https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/ on the participant-approved Google Cloud project `h2gdm-hack26icn-2637`, with source `552b5dcde7d01c519029173559664d92a7b6a535`. Unauthenticated health and a real default 10,000-candidate preview passed; one browser request took 4,189.3 ms after initial GET checks, without a cold-start or percentile claim. The local six-screen route passed 20 browser checks. An owner can use the implemented flow to explore explicit assumptions, inspect a bounded sensitivity result and record their own fresh choice. Exports are local CSV, Markdown or JSON downloads, not automatic Google Docs or Sheets uploads. The tool does not make a lease or loan decision, perform an external transaction or produce real-world survival probabilities. Live model cost, calibration, AI-versus-random evidence and durable Cloud storage are remaining gates.
 
 **Show:** the actual runtime address and recorded revision. A GitHub source link is not a deployed demo URL. State clearly that the mandatory Cloud deployment gate is unmet until a working Cloud URL and runtime evidence exist.
 

@@ -1,0 +1,17 @@
+01. 01 / Start with explicit assumptions
+A Thousand Stores helps a prospective cafe owner explore business assumptions before signing a lease. This recording uses actual captured screens from our local application. The displayed budget, rent, demand, and staffing values are example assumptions. They are not verified quotes or observations from an operating store.
+
+02. 02 / Calculate 10,000 candidates locally
+We ran the default local rehearsal. The server calculated ten thousand candidate IDs over a thirty six month horizon. This is deterministic exploration using local seeded families, not ten thousand independently generated AI businesses. The run has its own input hash and source revision. No live model was invoked in this captured run.
+
+03. 03 / Show the evidence boundary
+The application explicitly marks cashflow calibration as unverified and keeps distribution charts hidden. The visible cashflow curve comes from the returned monthly ledger for the selected leading design. It illustrates arithmetic under the input assumptions. It is not a real world survival probability, and a chart alone does not validate a financial model.
+
+04. 04 / Sensitivity and the next measurement
+This run reports a checked interval for cupsPerDayBase. It is not proof of a global minimum boundary or an exact analytic transition. The next-measurement card is a proposal from this calculation, not a field measurement that has already happened. The interface keeps uncertainty visible rather than manufacturing a successful result.
+
+05. 05 / Separate checks from business success
+The verification screen distinguishes performed checks from missing business evidence. We do not claim that hidden holdout calibration has passed, that AI beats random search, or that live adversarial model rounds have executed. A completed calculation and passing software checks are useful evidence, but they do not certify the business assumptions.
+
+06. 06 / Record a demo Hold, then export
+For this demonstration we chose Hold, meaning insufficient evidence to proceed. We then clicked the Markdown export button and verified the actual downloaded report against the current run ID and input hash. The file retains the decision and calculated evidence. This is a recording assembled from captured local screens. Cloud deployment is checked separately and is not demonstrated here. Human judgment stays at the boundary.

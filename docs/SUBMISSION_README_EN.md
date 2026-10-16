@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-Open `http://127.0.0.1:8080/rehearsal/` for the six-screen rehearsal, or `http://127.0.0.1:8080/` for the compact workbench. These are local addresses on the computer running the server, not public demo URLs. A no-key preview is available. The approved Google Cloud project is `h2gdm-hack26icn-2637`. Its public URL must be verified and entered in [the submission field sheet](docs/SUBMISSION_FORM_FIELDS.md) before submission.
+Open `http://127.0.0.1:8080/rehearsal/` for the six-screen rehearsal, or `http://127.0.0.1:8080/` for the compact workbench. These are local addresses on the computer running the server, not public demo URLs. A no-key preview is available. Public Google Cloud demo: **[https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/](https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/)**. The approved project is `h2gdm-hack26icn-2637`; the deployed source revision is `552b5dcde7d01c519029173559664d92a7b6a535`. Unauthenticated health and a real default 10,000-candidate preview were verified. This deployment has no model key configured.
 
 ## What the prototype does
 
@@ -51,7 +51,7 @@ Build and 126 active unit/HTTP checks passed after connecting the six-screen cli
 
 Business acceptance remains incomplete: financial calibration/hidden holdout, full independent ledger coverage, live AI-family execution and advantage over random search are unverified. The sampled runtime consistency check shares production arithmetic; seven fixed external arithmetic cases do not establish a full independent oracle. The old prototype API-contract file remains inactive; protected verifier tests, fixtures and shared types are unchanged.
 
-Three earlier local preview HTTP measurements were 594–772 ms, including decoded JSON parsing, with about 854 KB gzip and 13 MB decoded JSON. Those observations exclude DOM rendering and provider calls and are not Cloud benchmarks. `npm run bench` measures only the local simulation batch.
+Three earlier local preview HTTP measurements were 594–772 ms, including decoded JSON parsing, with about 854 KB gzip and 13 MB decoded JSON. Separately, one browser request to the deployed Cloud preview took 4,189.3 ms after prior GET checks; it is a single observation, not a cold-start measurement or percentile. No claim of a two-second whole Cloud path is made. `npm run bench` measures only the local simulation batch.
 
 Web records are append-only on the current filesystem; Cloud Run storage is temporary. Export evidence to retain it across replacement. Taxes, borrowing and depreciation are outside the model. This prototype supports scenario exploration and human review; it is not financial advice.
 
@@ -72,6 +72,8 @@ The source-deployment script uses the root Dockerfile and records the committed 
 - [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
 - [English demo scripts](docs/DEMO_SCRIPT_EN.md)
 - [Judges' questions and answers](docs/JUDGES_QA.md)
+- [Actual recording narration](docs/RECORDED_NARRATION_EN.txt)
+- [Verification summary](docs/VERIFICATION_SUMMARY_EN.md)
 - [Specification](docs/SPEC.md) and [implementation scope](docs/TEN_K_UPDATE.md)
 
 Organizer instructions supplied by the participant require **English materials, Google Cloud deployment and submission by 15:20 KST on 2026-10-16** through the registered account at [Cerebral Valley](https://cerebralvalley.ai/e/google-deepmind-ai-hackathon). The three-minute video target is an internal preparation choice; authenticated form fields are not yet confirmed. No final submission has been sent.

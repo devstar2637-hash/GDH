@@ -6,13 +6,13 @@ The official event instructions supplied by the user require all submission cont
 
 The 90-second and three-minute variants below are internal recording plans. A three-minute maximum and an unlisted YouTube upload are preparation choices from `docs/SPEC.md` §§10–11; they have not been established here as official event rules.
 
-Status: recording draft. The new six-screen client has implementation evidence; its final browser verification is still pending at this draft. No video has been recorded, uploaded or submitted by this document. Use the recording revision and a fresh run's actual values. If the screen differs, describe the observed result or pause recording.
+Status: these are optional presenter scripts. A separate 147.113-second captured-screen montage with English system-voice narration and captions has been created and saved privately to Library. Its exact narration is in `RECORDED_NARRATION_EN.txt`; it is labelled as actual local captures, not continuous live interaction or a live model call. The six-screen application passed 20 actual local Chrome checks. No final event submission or public video upload has been performed.
 
-Deployment gate: Google Cloud sign-in succeeded, but access to the approved project was denied. No working Cloud deployment URL is confirmed. Sign-in alone does not satisfy the mandatory deployment requirement.
+Deployment: the participant-approved event project `h2gdm-hack26icn-2637` now hosts https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/. Unauthenticated health and a real default preview were checked separately from the local recording; source `552b5dcde7d01c519029173559664d92a7b6a535`. Live model execution remains unverified.
 
 ## Recording setup
 
-- Open `/rehearsal` on the running local server. The GitHub branch and PR are source-review links, not a hosted application. A Cloud URL is not available in the verified evidence.
+- Open `/rehearsal` on the running local server. The GitHub branch and PR are source-review links, not a hosted application. The verified Cloud preview is https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/.
 - Begin with no previous run or selected decision. Show the input form's `assumed` labels. The HTML defaults include a KRW 120,000,000 budget, KRW 40,000,000 deposit, KRW 48,000,000 initial investment, and KRW 3,300,000 monthly rent. These are scenario assumptions, not verified quotations or observations.
 - Use the local-preview button with 10,000 candidates selected. This path uses 500 local preset seed families × 20 deterministic variations. Do not describe it as 500 model-generated families.
 - For the final choice and export, wait for a fresh `DONE` result matching the current inputs. Record the downloaded file opening. If the run fails or is blocked, show its reason and leave export disabled.
@@ -74,7 +74,7 @@ Deployment gate: Google Cloud sign-in succeeded, but access to the approved proj
 
 **Narration**
 
-“Today, the verified path is a local, assumption-based rehearsal. The bounded 500-family model adapter still needs live provider evidence. Required Cloud deployment is blocked by project access. Our goal is to make uncertainty and missing evidence visible, so a confident answer cannot silently replace a checked result.”
+“Today, the verified path is a local, assumption-based rehearsal. The bounded 500-family model adapter still needs live provider evidence. The Cloud preview is verified separately; the recording demonstrates the local calculation path. Our goal is to make uncertainty and missing evidence visible, so a confident answer cannot silently replace a checked result.”
 
 ## Optional 90-second rehearsal cut — internal target
 
@@ -90,14 +90,14 @@ Use the same fresh run and the same six-screen order. The following is a shorter
 
 **1:00–1:15 · Limits:** “Calibration is unverified, so distribution charts stay hidden. The individual curve is a calculation under assumptions. Live AI execution and model advantage are also unverified.”
 
-**1:15–1:30 · Choice and status:** “After this fresh result, I choose Hold and download its evidence. Required Cloud deployment remains blocked by project access. The owner keeps the final decision.” Open an actual download; if the run is incomplete, show the failure and leave the choice and export disabled.
+**1:15–1:30 · Choice and status:** “After this fresh result, I choose Hold and download its evidence. The Cloud preview is verified separately from this local recording. The owner keeps the final decision.” Open an actual download; if the run is incomplete, show the failure and leave the choice and export disabled.
 
 ## Evidence boundaries for the final edit
 
 - Keep the recording labelled as a recording. Do not describe replayed footage or mock provider responses as live model execution.
-- Local tests and local timings are not Cloud evidence. No deployment URL or submission receipt is established here.
+- Local tests and local timings are not Cloud evidence. Cloud evidence is recorded separately in the verification summary; no submission receipt exists.
 - 10,000 candidate IDs do not imply 10,000 distinct economic parameter sets or independent model inventions. Read all three reported counts.
 - Avoid “survival probability,” verified business predictions, “AI outperforms random search,” successful hidden-holdout claims, and automatic Google export claims.
-- Before recording the new six-screen route, obtain its browser receipt. Until then, the cues above are the intended recording sequence, not a report that the sequence has already passed.
+- The completed recording has a separate capture receipt and actual downloaded-report match. These alternative presenter cues must still follow the values shown in any new recording.
 
 Sources: official event instructions pasted by the user for submission language, deployment, deadline and portal; `docs/SPEC.md` §§10–11 for internal recording plans; `docs/FINAL_REPORT_KO.md` (planning, not implementation evidence); `docs/TEN_K_UPDATE.md`; current `web/client/index.html`, `web/client/app.ts`, `web/server.ts`, `loop/familyBatches.ts` and engine source. Final claims must follow the actual recorded revision and run evidence.

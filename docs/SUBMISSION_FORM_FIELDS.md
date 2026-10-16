@@ -7,7 +7,7 @@ Copy the final text from `SUBMISSION_DESCRIPTION_EN.md` after the deployment and
 | Event / submission portal | https://cerebralvalley.ai/e/google-deepmind-ai-hackathon | Organizer notice supplied by participant |
 | Deadline | 2026-10-16 15:20 KST | Organizer notice supplied by participant |
 | Language | English | Mandatory |
-| Cloud hosting | Google Cloud project `h2gdm-hack26icn-2637` | Mandatory; participant-approved target, deployment pending |
+| Cloud hosting | Google Cloud project `h2gdm-hack26icn-2637` | Mandatory; deployed and real preview verified |
 | Project name | A Thousand Stores | Prepared |
 | Tagline | Rehearse the cashflow before signing the lease. | Prepared |
 | Project description | Five sentences in SUBMISSION_DESCRIPTION_EN.md | Prepared |
@@ -18,10 +18,10 @@ Copy the final text from `SUBMISSION_DESCRIPTION_EN.md` after the deployment and
 | Review branch | https://github.com/devstar2637-hash/GDH/tree/codex/fast-track | Active submission code; main not merged |
 | Pull request | https://github.com/devstar2637-hash/GDH/pull/2 | Open; no merge authorized |
 | Verified application code | `62e5cd78b98c953d8d0339b876bb12ad96a37c50` | Build, 126 unit/HTTP checks and 20 actual Chrome checks |
-| Final deployed/source revision | PENDING PACKET COMMIT | Fill after deployment readback |
-| Google Cloud demo | PENDING DEPLOYMENT | Must verify unauthenticated page and real input before filling |
-| Demo video | PENDING RECORDING AND UPLOAD | English narration; target <=3 minutes from internal plan |
-| Video visibility | PENDING | Verify recipient access; no upload performed by this preparation |
+| Final deployed/source revision | `552b5dcde7d01c519029173559664d92a7b6a535` | Cloud Run revision thousand-stores-00001-hzn |
+| Google Cloud demo | https://thousand-stores-wva46uzo7a-du.a.run.app/rehearsal/ | Unauthenticated health and default 10,000-candidate preview passed |
+| Demo video | a-thousand-stores-local-demo-en.mp4 | Prepared: 2:27, English narration/captions, actual local capture montage |
+| Video visibility | Private ChatGPT Library and prepared packet | Public/reviewer hosting or form attachment still required if requested |
 | Live model calls / usage | 0 / not run | Do not label local candidates as live AI generation |
 | Evidence / acceptance results | See final verification manifest and SUBMISSION_CHECKLIST.md | Calibration, independent ledger and AI advantage gates remain incomplete |
 | Data license | Public-data notice in LICENSE_NOTICE.txt and data/seoul/README.md | Retain attribution and source-specific notices |
