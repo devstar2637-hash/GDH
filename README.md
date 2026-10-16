@@ -3,16 +3,16 @@
 > **One-Liner:** Before you sign the lease, live ten thousand futures of your store (`500 AI design families x 20 variations = 10,000 variants x 36 months`) in an interactive 2.5D floorplan. Most of them fail. Keep the designs that survive, and the one field measurement that flips the answer.
 
 - **Hackathon:** Google DeepMind AI Hackathon (Seoul, 2026-10-16)
-- **Live Cloud Run Deployment:** `https://thousand-stores-wva46uzo7a-du.a.run.app/` (also serves `/rehearsal/`)
+- **Live Cloud Run Deployment:** `https://thousand-stores-299086406033.asia-northeast3.run.app/` (also accessible via `https://thousand-stores-wva46uzo7a-du.a.run.app/` and `/rehearsal/`)
 - **Repository:** `https://github.com/devstar2637-hash/GDH`
-- **Models & Runtime:** `gemini-4-argon` (Store Designer & Bankruptcy Designer JSON-patch loop), `gemini-3.8-flash` (fast leaf schema checks), Node.js 20 + TypeScript deterministic 36-month cash-flow & 2.5D spatial queue engine
+- **Models & Runtime:** `gemini-4-argon` (Store Designer & Bankruptcy Designer JSON-patch loop), `gemini-3.8-flash` (fast leaf schema checks), Node.js 20 + TypeScript deterministic 36-month cash-flow & 2.5D/3D spatial queue engine
 
 ---
 
 ## 1. Project Description (5-Sentence Hackathon Submission Summary)
 
 1. **Problem:** First-time independent store founders sign multi-year commercial leases after comparing only two or three optimistic spreadsheet cases—without testing how interior layout bottlenecks or macro shocks interact to drain their cash reserve.
-2. **User & Workflow:** **Ten Thousand Stores (만 개의 가게)** lets a prospective founder enter an address, available startup capital, and an optional store photo to receive ranked category recommendations (`cafe`, `bakery`, `popup`, `dining`), an interactive 2.5D isometric store floorplan with draggable/rotatable furniture and live customer queue simulation, and a 36-month financial stress test across **10,000 store variants** (`500 AI design families x 20 deterministic expansions`).
+2. **User & Workflow:** **Ten Thousand Stores (만 개의 가게)** lets a prospective founder enter an address, available startup capital, and an optional store photo to receive ranked category recommendations (`cafe`, `bakery`, `popup`, `dining`), an interactive 2.5D isometric store floorplan (plus 2D CAD blueprint and Three.js WebGL 3D showroom) with draggable/rotatable furniture and live customer queue simulation, and a 36-month financial stress test across **10,000 store variants** (`500 AI design families x 20 deterministic expansions`).
 3. **Differentiation:** Rather than asking an LLM to guess financial outcomes, our architecture enforces strict **generator–verifier separation**: `gemini-4-argon` acts purely as a *Store Designer* (proposing structural design families) and a *Bankruptcy Designer* (proposing macro/micro shock schedules) via schema-validated JSON patches, while a deterministic TypeScript engine computes all 360,000 monthly P&L ledgers, 10-minute peak queue bottlenecks, and failure classifications with every forbidden oracle/constraint path blocked (`AT-10`).
 4. **Measured Implementation & Verification:** Grounded in 22 quarters (`2021Q1–2026Q2`) of Seoul Open Data Plaza commercial district records (`OA-15577` / `OA-15572`), the engine completes `10,000 variants × 36 months` in **36.92 ms** locally (**228.3 ms** on Cloud Run, gate $\le 2.0\text{ s}$), reproduces `2021–2024` historical open/close rates within **1.12 percentage points** and `2025Q1–2026Q2` unseen holdout quarters within **1.98 percentage points** (gate $\le 5.0\text{ pp}$), matches an independent spreadsheet P&L audit within **0.0000 KRW** across 50 sampled variants, and outperforms an equal-budget random/grid baseline (`7 vs. 0` failure families discovered; `17 vs. 5` non-dominated surviving designs).
 5. **Boundaries & Safety:** All outputs are explicitly labeled as **scenario frequencies (not real-world forecasts or financial/legal advice)**, every metric carries a provenance tag (`[public]`, `[onsite]`, `[computed]`, `[assumption]`, `[synthetic]`), uncalibrated runs automatically suppress distribution charts in favor of Explorer mode (`AT-02`), and the final decision (`Proceed` / `Hold` / `Measure First`) remains strictly human-in-the-loop with zero external payment, contract, or messaging actions (`AT-11`).
@@ -21,15 +21,16 @@
 
 ## 2. Key Features
 
-### A. 3-Step Founder Experience (`rea.tools` Editorial UI + 2.5D Isometric Store Studio)
+### A. 3-Step Founder Experience (`rea.tools` Editorial UI + 2.5D Isometric / 2D CAD / Three.js WebGL 3D Studio)
 1. **Step 1 — Founder Setup (`01 · Address · Capital · Photo`):**
    - Enter a target Seoul commercial district (`Seongsu`, `Yeonnam`, `Gangnam`, `Euljiro`) and total startup capital (`35M–250M KRW`), plus an optional floorplan/photo upload with bounding-box obstacle extraction.
    - A live **Founder Agent Terminal** (`ten-thousand-stores --addr="성수동" --capital="9,000만" --category="cafe"`) immediately summarizes deposit, fit-out cost, net reserve buffer, and peak queue change.
 2. **Step 2 — Data-Grounded Category Recommendations (`02 · Top 4 Categories`):**
    - Automatically ranks **Specialty Cafe (`cafe`)**, **Artisan Bakery (`bakery`)**, **Brand Popup Showroom (`popup`)**, and **Casual Dining & Wine Bar (`dining`)** against the founder's capital buffer and district rent profile.
-   - Clicking any category swaps the entire 2.5D architectural floorplan, material zoning, equipment list, and customer arrival/service parameters in real time.
-3. **Step 3 — Interactive 2.5D Floorplan & 36-Month Survival Report (`03 · 2.5D Layout & Queue` / `04 · 10,000-Store Verification`):**
-   - **Side-by-Side 2.5D Worlds:** Compare the Baseline layout against your Proposed layout while dragging furniture with the mouse, rotating objects `90°` (`R`), adding tables (`+ 가구 추가`), toggling lighting (`L`), CAD dimensions (`G`), congestion heatmaps (`H`), camera angles (`I`), dark CAD blueprint mode (`T`), or walking the floor in first-person (`WASD`).
+   - Clicking any category swaps the entire 2.5D/3D architectural floorplan, material zoning, equipment list, and customer arrival/service parameters in real time.
+3. **Step 3 — Interactive 2.5D Floorplan, 2D CAD Blueprint, Three.js WebGL 3D Showroom & 36-Month Survival Report (`03 · 2.5D Layout & Queue` / `04 · 10,000-Store Verification`):**
+   - **Side-by-Side 2.5D Worlds + 2D CAD Blueprint (`C`):** Compare the Baseline layout against your Proposed layout while dragging furniture with the mouse, rotating objects `90°` (`R`), adding tables (`+ 가구 추가`), Undo/Redo (`⌘Z` / `⌘⇧Z`), toggling lighting (`L`), CAD dimensions (`G`), architectural 2D blueprint mode (`C`), congestion heatmaps (`H`), camera angles (`I`), dark CAD theme (`T`), or walking the floor in first-person (`WASD`).
+   - **Three.js WebGL 3D Store Architecture Stage (`THREE.JS WEBGL 3D · BLOOM`):** Real-time 3D architectural showroom with UnrealBloom post-processing, automatic exterior wall cutaway on 360° orbit, 4 lighting moods (`2800K Cozy Warm`, `Day Peak`, `Rush Hour`, `Night Showroom`), and 64-stream 3D AC airflow particles.
    - **3-Step Evidence Terminal (`rea-evidence`):** Inspect live spatial zoning, 10-minute peak queue bottlenecks, and 36-month capital rules.
    - **Decision Cliff & Next Field Measurement:** Pinpoints the single assumption threshold that flips the `#1` ranked store design (e.g., `cupsPerDayBase = 224 cups/day`, `relativeDelta = 21%`) and prescribes one concrete 7-day field measurement before signing the lease.
    - **AI Studio UI SDK Bridge (`window.TenThousandStoresSDK`):** Exposes a clean reactive JavaScript SDK so external UIs built in Google AI Studio can subscribe to simulation state and mount canvases directly.
