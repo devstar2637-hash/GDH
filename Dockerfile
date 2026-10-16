@@ -1,4 +1,4 @@
-# Dockerfile — Cloud Run service for Ten Thousand Stores (만 개의 가게): web (static) + api. Node 20 LTS.
+# infra/Dockerfile — single Cloud Run service: web (static) + api. Node 20 LTS.
 FROM node:20-slim AS build
 WORKDIR /app
 COPY package*.json tsconfig.json ./
