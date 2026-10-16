@@ -1,4 +1,4 @@
-# GDH · A Thousand Stores (천 개의 가게) — Google DeepMind AI Hackathon, 2026-10-16
+# GDH · Ten Thousand Stores (만 개의 가게) — Google DeepMind AI Hackathon, 2026-10-16
 
 Before you sign the lease, live ten thousand futures of your store (500 AI design families x 20 deterministic expansions = 10,000 variants x 36 months). Most of them fail. Keep the designs that survive and the one measurement that flips the answer.
 
@@ -41,7 +41,7 @@ Before you sign the lease, live ten thousand futures of your store (500 AI desig
 
 ## 12:00 결정
 
-기본값은 10,000개 변형(AI 설계족 500 × 결정적 변주 20)이고 모든 게이트도 10,000 기준이다. 1,000은 11:30 스파이크 크기만. 제품 이름은 '천 개의 가게 / A Thousand Stores'로 둔다(태현 결정 전까지).
+기본값은 10,000개 변형(AI 설계족 500 × 결정적 변주 20)이고 모든 게이트도 10,000 기준이다. 1,000은 11:30 스파이크 크기만. **제품 이름은 태현 결정에 따라 '만 개의 가게 / Ten Thousand Stores'로 확정한다 (천 개의 가게 사용 금지).**
 
 ## 규칙 한 줄
 

@@ -30,7 +30,7 @@ describe("Lane A3 — Web Server, 6-Screen UI Assets, StatusBar (AT-14), and Exp
     const htmlRes = await fetch(`${baseUrl}/`);
     assert.equal(htmlRes.status, 200);
     const html = await htmlRes.text();
-    assert.ok(html.includes("천 개의 가게 · A Thousand Stores"));
+    assert.ok(html.includes("만 개의 가게 · Ten Thousand Stores"));
     assert.ok(html.includes("500 AI design families x 20 variations"));
     assert.equal(html.toLowerCase().includes(forbiddenEn), false);
     assert.equal(html.includes(forbiddenKo), false);

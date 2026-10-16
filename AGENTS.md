@@ -1,5 +1,5 @@
 <!-- AGENTS.md draft from the shared doc (2026-10-16 12:05 KST). Frozen at 12:15; after that only the Lessons section grows. Default N = 10,000 = 500 Argon design families x 20 deterministic expansions; 1,000 only for the spike. -->
-# AGENTS.md - A Thousand Stores (hackathon build, 2026-10-16)
+# AGENTS.md - Ten Thousand Stores (만 개의 가게, hackathon build, 2026-10-16)
 
 Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude Code (owns tests/). Build agent: Gemini 4 Argon in Antigravity, three lanes (A1 engine, A2 data and model loop, A3 screen). Inside the loop Argon plays two roles, Store Designer (mutations) and Bankruptcy Designer (shocks); neither touches the oracle.
 

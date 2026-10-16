@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "A Thousand Stores (천 개의 가게) — Pre-lease 36-month store rehearsal & adversarial stress-test engine",
+  "description": "Ten Thousand Stores (만 개의 가게) — Pre-lease 36-month store rehearsal & adversarial stress-test engine",
   "scripts": {
     "dev": "tsx web/server.ts",
     "start": "node dist/web/server.js",

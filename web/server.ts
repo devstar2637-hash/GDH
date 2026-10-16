@@ -213,7 +213,7 @@ function buildMarkdownReport(envelope: ApiRunEnvelope, decision: string): string
   const deltaPct = ((run.cliff?.relativeDelta ?? 0) * 100).toFixed(1);
 
   return [
-    `# 천 개의 가게 (A Thousand Stores) — 36개월 임대차 리허설 리포트`,
+    `# 만 개의 가게 (Ten Thousand Stores) — 36개월 임대차 리허설 리포트`,
     ``,
     `> **고지 (rehearsal, not advice)**: 본 문서는 재무/계약 자문이 아닌 시나리오 리허설 결과입니다. 모든 빈도는 실세계 확률이 아닌 **시나리오 빈도(scenario frequency)**입니다.`,
     ``,
@@ -454,7 +454,7 @@ if (isMainModule) {
   const srv = createAppServer();
   srv.listen(port, "0.0.0.0", () => {
     console.log(
-      `[A Thousand Stores] Server listening on http://localhost:${port} (default mode: 10,000 = 500 AI design families x 20 variations)`
+      `[Ten Thousand Stores · 만 개의 가게] Server listening on http://localhost:${port} (default mode: 10,000 = 500 AI design families x 20 variations)`
     );
   });
 }

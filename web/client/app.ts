@@ -2303,7 +2303,7 @@ function updateReaEvidenceTerminal(): void {
   const heroPrompt = $("heroTerminalPrompt");
   const heroReply = $("heroTerminalReply");
   if (heroPrompt && heroReply) {
-    heroPrompt.textContent = `thousand-stores --addr="${distProf.name}" --capital="${state.capitalManwon.toLocaleString()}만" --category="${cat.id}"`;
+    heroPrompt.textContent = `ten-thousand-stores --addr="${distProf.name}" --capital="${state.capitalManwon.toLocaleString()}만" --category="${cat.id}"`;
     const feasibleMsg =
       fin.bufferManwon >= 0
         ? `보증금·시공비 제외 후 예비비 <strong>+${fin.bufferManwon.toLocaleString()}만원</strong> 확보`
@@ -3247,7 +3247,7 @@ function bindEvents(): void {
     const cat = currentCategory();
     const o = selectedMovable();
     const lines = [
-      `[천 개의 가게 · 미리 창업 리포트]`,
+      `[만 개의 가게 · 미리 창업 리포트]`,
       `- 창업 주소: ${state.address}`,
       `- 내 자본금: ${state.capitalManwon.toLocaleString()}만원`,
       `- 선택 창업 카테고리: ${cat.name}`,
@@ -3284,7 +3284,7 @@ function bindEvents(): void {
   $("btnExportJson")?.addEventListener("click", () => {
     if (currentEnvelope) {
       downloadBlob(
-        `thousand-stores-${currentEnvelope.run.runId}.json`,
+        `ten-thousand-stores-${currentEnvelope.run.runId}.json`,
         JSON.stringify(currentEnvelope.run, null, 2),
         "application/json"
       );
@@ -3628,12 +3628,14 @@ const ThousandStoresSDK = {
 
 declare global {
   interface Window {
+    TenThousandStoresSDK: typeof ThousandStoresSDK;
     ThousandStoresSDK: typeof ThousandStoresSDK;
     REAStoreBridge: typeof ThousandStoresSDK;
   }
 }
 
 if (typeof window !== "undefined") {
+  window.TenThousandStoresSDK = ThousandStoresSDK;
   window.ThousandStoresSDK = ThousandStoresSDK;
   window.REAStoreBridge = ThousandStoresSDK;
 }
