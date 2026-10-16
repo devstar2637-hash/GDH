@@ -1800,4 +1800,10 @@ button:disabled {
   .tenk-command-shell { padding: 14px 10px; }
   .tenk-insp-head { flex-wrap: wrap; }
   #tenKWaferCanvas { scroll-margin-top: 160px; }
+  .rea-env-controls { flex-wrap: wrap; }
+  .pgrun-readout {
+    max-width: calc(100% - 20px);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
