@@ -288,7 +288,7 @@ export function createAppServer(): Server {
       const method = req.method ?? "GET";
 
       if (
-        method === "GET" &&
+        (method === "GET" || method === "HEAD") &&
         (path === "/" ||
           path === "/index.html" ||
           path === "/rehearsal" ||
@@ -300,12 +300,12 @@ export function createAppServer(): Server {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store, no-cache, must-revalidate",
         });
-        res.end(html);
+        res.end(method === "HEAD" ? undefined : html);
         return;
       }
 
       if (
-        method === "GET" &&
+        (method === "GET" || method === "HEAD") &&
         (path === "/app.js" || path === "/rehearsal/app.js")
       ) {
         const js = resolveClientAsset("app.js");
@@ -313,7 +313,7 @@ export function createAppServer(): Server {
           "Content-Type": "application/javascript; charset=utf-8",
           "Cache-Control": "no-store, no-cache, must-revalidate",
         });
-        res.end(js);
+        res.end(method === "HEAD" ? undefined : js);
         return;
       }
 

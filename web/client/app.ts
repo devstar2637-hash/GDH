@@ -550,7 +550,7 @@ const state: StudioState = {
 };
 
 function mountShell(): void {
-  const root = document.getElementById("root")!;
+  const root = (document.getElementById("root") ?? document.getElementById("app"))!;
   root.innerHTML = `
     <!-- TOP BAR (rea.tools style editorial header) -->
     <header class="rea-header">
