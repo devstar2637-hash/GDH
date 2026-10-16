@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>천 개의 가게 · A Thousand Stores — 임대차 계약 전 10,000개 미래 리허설 엔진</title>
+  <title>천 개의 가게 · A Thousand Stores — Rehearsal Studio (공간·동선 × 10,000개 36개월 미래 리허설)</title>
   <style>
     :root {
-      --bg-primary: #0b0f17;
-      --bg-card: #121826;
-      --bg-card-alt: #171f32;
-      --bg-input: #0e1420;
-      --border: #26324d;
-      --border-strong: #3b4e75;
-      --text-primary: #f1f5f9;
+      --bg-primary: #060911;
+      --bg-card: rgba(14, 20, 34, 0.86);
+      --bg-card-alt: rgba(20, 28, 46, 0.92);
+      --bg-input: rgba(9, 13, 24, 0.95);
+      --border: rgba(148, 163, 184, 0.14);
+      --border-strong: rgba(56, 189, 248, 0.34);
+      --text-primary: #f8fafc;
       --text-secondary: #94a3b8;
       --text-muted: #64748b;
       --accent-blue: #38bdf8;
@@ -20,8 +20,12 @@
       --accent-emerald: #10b981;
       --accent-amber: #f59e0b;
       --accent-rose: #f43f5e;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+      --accent-violet: #a855f7;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Inter", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
       --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
     }
 
     * {
@@ -33,15 +37,27 @@
     body {
       background-color: var(--bg-primary);
       background-image:
-        radial-gradient(circle at 15% 5%, rgba(56, 189, 248, 0.08) 0%, transparent 35%),
-        radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.08) 0%, transparent 40%),
-        linear-gradient(rgba(38, 50, 77, 0.14) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(38, 50, 77, 0.14) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.14) 0%, transparent 38%),
+        radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.13) 0%, transparent 42%),
+        radial-gradient(circle at 50% 48%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+        linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
       color: var(--text-primary);
       font-family: var(--font-sans);
       line-height: 1.55;
-      padding-bottom: 64px;
+      padding-bottom: 80px;
+      overflow-x: hidden;
+    }
+
+    /* Grainient Subtle Noise Overlay */
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.032;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     }
 
     /* Sticky Observability Status Bar (AT-14) */
@@ -49,19 +65,20 @@
       position: sticky;
       top: 0;
       z-index: 1000;
-      background: rgba(11, 15, 23, 0.94);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-strong);
-      padding: 10px 20px;
+      background: rgba(6, 9, 17, 0.88);
+      backdrop-filter: blur(16px) saturate(160%);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.24);
+      padding: 8px 20px;
       font-size: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
     }
 
     .status-bar-inner {
-      max-width: 1280px;
+      max-width: 1400px;
       margin: 0 auto;
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 18px;
+      gap: 8px 16px;
       align-items: center;
       justify-content: space-between;
     }
@@ -87,32 +104,34 @@
     }
 
     .gate-strip {
-      max-width: 1280px;
+      max-width: 1400px;
       margin: 6px auto 0;
       padding-top: 6px;
-      border-top: 1px dashed rgba(59, 78, 117, 0.5);
+      border-top: 1px dashed rgba(148, 163, 184, 0.18);
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       align-items: center;
     }
 
+    /* AlignUI Pill Badges */
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 8px;
+      padding: 2.5px 9px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 600;
       font-family: var(--font-mono);
       letter-spacing: 0.01em;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
 
     .badge-done {
       background: rgba(16, 185, 129, 0.16);
       color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.45);
+      border: 1px solid rgba(16, 185, 129, 0.42);
     }
 
     .badge-fail {
@@ -145,64 +164,162 @@
       align-items: center;
       gap: 3px;
       padding: 1px 6px;
-      border-radius: 4px;
+      border-radius: 5px;
       font-size: 10.5px;
       font-weight: 600;
       font-family: var(--font-mono);
-      margin-left: 5px;
+      margin-left: 4px;
       vertical-align: middle;
     }
 
     .src-public {
-      background: rgba(56, 189, 248, 0.14);
+      background: rgba(56, 189, 248, 0.13);
       color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.35);
+      border: 1px solid rgba(56, 189, 248, 0.32);
     }
 
     .src-onsite {
-      background: rgba(16, 185, 129, 0.14);
+      background: rgba(16, 185, 129, 0.13);
       color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      border: 1px solid rgba(16, 185, 129, 0.32);
     }
 
     .src-computed {
-      background: rgba(129, 140, 248, 0.15);
+      background: rgba(129, 140, 248, 0.14);
       color: #c7d2fe;
-      border: 1px solid rgba(129, 140, 248, 0.35);
+      border: 1px solid rgba(129, 140, 248, 0.32);
     }
 
     .src-assumed {
-      background: rgba(245, 158, 11, 0.14);
+      background: rgba(245, 158, 11, 0.13);
       color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.35);
+      border: 1px solid rgba(245, 158, 11, 0.32);
     }
 
     .src-synthetic {
-      background: rgba(244, 63, 94, 0.14);
+      background: rgba(244, 63, 94, 0.13);
       color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.35);
+      border: 1px solid rgba(244, 63, 94, 0.32);
     }
 
-    /* Main Layout */
+    /* Main Container */
     .container {
-      max-width: 1280px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 20px 16px;
+      padding: 20px 18px;
       display: flex;
       flex-direction: column;
       gap: 20px;
     }
 
-    /* Hero Header */
+    /* Tactile EvilButtons Style */
+    button {
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 9px;
+      padding: 8px 13px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+      color: var(--text-primary);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 2px 0 rgba(2, 6, 23, 0.9),
+        0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.08s ease, box-shadow 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    button:hover {
+      border-color: var(--accent-blue);
+      background: linear-gradient(180deg, rgba(38, 56, 84, 0.98) 0%, rgba(19, 30, 53, 0.98) 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2px 0 rgba(2, 6, 23, 0.95),
+        0 0 14px rgba(56, 189, 248, 0.25);
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 0 0 rgba(2, 6, 23, 0.9);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%);
+      border-color: #7dd3fc;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 2px 0 #1e3a8a,
+        0 6px 16px rgba(14, 165, 233, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #38bdf8 0%, #1d4ed8 100%);
+      border-color: #bae6fd;
+    }
+
+    .btn-emerald {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      border-color: #6ee7b7;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 2px 0 #064e3b,
+        0 6px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-emerald:hover {
+      background: linear-gradient(180deg, #34d399 0%, #047857 100%);
+      border-color: #a7f3d0;
+    }
+
+    .btn-warn {
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.28) 100%);
+      border-color: rgba(251, 191, 36, 0.55);
+      color: #fde68a;
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.25) 0%, rgba(159, 18, 57, 0.28) 100%);
+      border-color: rgba(251, 113, 133, 0.55);
+      color: #fecdd3;
+    }
+
+    .btn-active-preset {
+      border-color: #38bdf8 !important;
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.32) 0%, rgba(37, 99, 235, 0.32) 100%) !important;
+      color: #ffffff !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        0 0 0 1px rgba(56, 189, 248, 0.5),
+        0 4px 14px rgba(56, 189, 248, 0.28) !important;
+    }
+
+    /* Bento Hero Card */
     .hero {
-      background: linear-gradient(135deg, rgba(18, 24, 38, 0.96), rgba(23, 31, 50, 0.92));
-      border: 1px solid var(--border-strong);
-      border-radius: 14px;
-      padding: 22px 24px;
+      background:
+        radial-gradient(circle at 92% 10%, rgba(56, 189, 248, 0.16), transparent 45%),
+        radial-gradient(circle at 8% 90%, rgba(16, 185, 129, 0.1), transparent 45%),
+        linear-gradient(145deg, rgba(14, 21, 38, 0.95), rgba(9, 14, 26, 0.96));
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 18px 40px rgba(0, 0, 0, 0.45);
     }
 
     .hero-top {
@@ -216,7 +333,7 @@
     .hero-title {
       font-size: 24px;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       color: #ffffff;
       display: flex;
       align-items: center;
@@ -225,17 +342,18 @@
     }
 
     .hero-subtitle {
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--text-secondary);
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     .philosophy-banner {
       background: rgba(56, 189, 248, 0.07);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       border-left: 3px solid var(--accent-blue);
       padding: 8px 14px;
-      border-radius: 0 8px 8px 0;
-      font-size: 13px;
+      border-radius: 8px;
+      font-size: 12.5px;
       color: #bae6fd;
       display: flex;
       flex-wrap: wrap;
@@ -244,13 +362,12 @@
       gap: 8px;
     }
 
-    /* Demo Scenario Switcher */
     .demo-toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      padding-top: 6px;
+      padding-top: 8px;
       border-top: 1px solid var(--border);
     }
 
@@ -261,54 +378,23 @@
       margin-right: 4px;
     }
 
-    button {
-      cursor: pointer;
-      font-family: var(--font-sans);
-      font-size: 13px;
-      font-weight: 600;
-      border-radius: 8px;
-      padding: 8px 14px;
-      border: 1px solid var(--border-strong);
-      background: var(--bg-card-alt);
-      color: var(--text-primary);
-      transition: all 0.15s ease;
-    }
-
-    button:hover {
-      border-color: var(--accent-blue);
-      background: rgba(56, 189, 248, 0.12);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #0284c7, #2563eb);
-      border-color: #38bdf8;
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #0369a1, #1d4ed8);
-    }
-
-    .btn-warn {
-      background: rgba(245, 158, 11, 0.14);
-      border-color: rgba(245, 158, 11, 0.5);
-      color: #fde68a;
-    }
-
-    .btn-danger {
-      background: rgba(244, 63, 94, 0.14);
-      border-color: rgba(244, 63, 94, 0.5);
-      color: #fecdd3;
-    }
-
-    /* Screen Cards */
+    /* Bento Screen Cards */
     .screen-card {
       background: var(--bg-card);
+      backdrop-filter: blur(14px);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
       padding: 20px 22px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .screen-card-Interactive {
+      border-color: rgba(56, 189, 248, 0.4);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08), transparent 60%),
+        var(--bg-card);
     }
 
     .screen-header {
@@ -328,34 +414,266 @@
       font-weight: 700;
       color: var(--accent-blue);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
     }
 
     .screen-title {
       font-size: 18px;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: -0.015em;
       color: #ffffff;
+    }
+
+    /* Interactive Rehearsal Studio Grid */
+    .studio-top-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .slider-card {
+      background: rgba(9, 14, 26, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      transition: border-color 0.15s ease;
+    }
+
+    .slider-card:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .slider-val {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 1px 7px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(51, 65, 85, 0.85);
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+      cursor: grab;
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.15);
+    }
+
+    .slider-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Segmented Control (AlignUI style) */
+    .seg-group {
+      display: flex;
+      background: rgba(6, 9, 17, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 5px 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      box-shadow: none;
+    }
+
+    .seg-btn:hover {
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--text-primary);
+      box-shadow: none;
+    }
+
+    .seg-btn.active {
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.24), rgba(37, 99, 235, 0.28));
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    /* Side-by-Side Floorplan Comparison Stage */
+    .spatial-stage-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .spatial-stage-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .spatial-card {
+      background: rgba(8, 12, 22, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .spatial-card-mod {
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: inset 0 0 24px rgba(16, 185, 129, 0.05);
+    }
+
+    .spatial-canvas-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #050811;
+      border: 1px solid rgba(59, 78, 117, 0.55);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .spatial-canvas-wrap canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+      border-radius: 0;
+      cursor: grab;
+    }
+
+    .spatial-canvas-wrap canvas:active {
+      cursor: grabbing;
+    }
+
+    .spatial-metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .spatial-metric-pill {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 8px;
+      padding: 7px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .spatial-metric-pill span {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+    }
+
+    .spatial-metric-pill strong {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      color: #ffffff;
+    }
+
+    /* Playback Timeline & Walkthrough Bar */
+    .playback-bar {
+      background: rgba(11, 17, 30, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .dpad-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(6, 9, 17, 0.9);
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .dpad-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      border-radius: 5px;
     }
 
     /* Form Grid (Screen 1) */
     .input-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+      gap: 10px;
     }
 
     .field-box {
       background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
+      border-radius: 10px;
+      padding: 9px 12px;
       display: flex;
       flex-direction: column;
       gap: 5px;
+      transition: border-color 0.15s ease;
+    }
+
+    .field-box:focus-within {
+      border-color: var(--accent-blue);
     }
 
     .field-label {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-secondary);
       display: flex;
       justify-content: space-between;
@@ -365,10 +683,10 @@
 
     .field-box input,
     .field-box select {
-      background: #161f33;
-      border: 1px solid var(--border-strong);
+      background: #11192c;
+      border: 1px solid rgba(59, 78, 117, 0.65);
       border-radius: 6px;
-      padding: 7px 10px;
+      padding: 6px 9px;
       color: var(--text-primary);
       font-family: var(--font-mono);
       font-size: 13px;
@@ -386,8 +704,9 @@
     .kpi-card {
       background: var(--bg-card-alt);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 13px 15px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     .kpi-label {
@@ -397,7 +716,7 @@
     }
 
     .kpi-val {
-      font-size: 21px;
+      font-size: 20px;
       font-weight: 800;
       font-family: var(--font-mono);
       color: #ffffff;
@@ -425,15 +744,16 @@
     .canvas-panel {
       background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 14px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      position: relative;
     }
 
     .canvas-title {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text-primary);
       display: flex;
@@ -446,7 +766,7 @@
     canvas {
       width: 100%;
       height: 310px;
-      background: #090d14;
+      background: #070b12;
       border: 1px solid rgba(59, 78, 117, 0.45);
       border-radius: 8px;
       display: block;
@@ -491,7 +811,7 @@
     .callout-box {
       background: rgba(56, 189, 248, 0.06);
       border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -508,6 +828,11 @@
       border-color: rgba(244, 63, 94, 0.45);
     }
 
+    .callout-emerald {
+      background: rgba(16, 185, 129, 0.07);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
     /* Decision Buttons (Screen 6) */
     .decision-grid {
       display: grid;
@@ -519,7 +844,7 @@
     .decision-card {
       background: var(--bg-input);
       border: 2px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 16px;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -528,6 +853,7 @@
     .decision-card.active {
       border-color: var(--accent-blue);
       background: rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.16);
     }
 
     .decision-card h4 {
@@ -547,6 +873,8 @@
   </style>
 </head>
 <body>
+  <div class="grain-overlay" aria-hidden="true"></div>
+
   <!-- Always-Visible Status Bar (AT-14) -->
   <header class="status-bar" id="statusBar" role="region" aria-label="실행 상태 및 검증 게이트">
     <div class="status-bar-inner">
@@ -580,7 +908,7 @@
             <span class="badge badge-done" id="heroBaselineBadge">AI-native</span>
           </h1>
           <p class="hero-subtitle">
-            임대차 계약서에 서명하기 전, 한 상권·한 예산에서 <strong>10,000개의 36개월 미래(500 AI 설계족 × 20 결정적 변주)</strong>를 먼저 살아봅니다.
+            <strong>Rehearsal · 현실을 바꾸기 전에 살아보는 AI</strong> — 매대 하나를 옮기고, 인력을 1명 바꾸고, 임대료를 조정할 때 <strong>12×9m 공간 동선·대기열</strong>과 <strong>10,000개의 36개월 재무 미래(500 AI 설계족 × 20 변주)</strong>가 어떻게 바뀌는지 직접 조작하며 리허설합니다.
           </p>
         </div>
         <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
@@ -595,7 +923,7 @@
       </div>
 
       <div class="demo-toolbar">
-        <span class="demo-toolbar-label">3분 라이브 데모 시나리오:</span>
+        <span class="demo-toolbar-label">⚡ 원클릭 라이브 데모 &amp; 검증 시나리오:</span>
         <button class="btn-primary" id="btnRunDefault10k" type="button">① 10,000개 미래 기본 실행 (500×20)</button>
         <button id="btnFlipLeft" type="button">② 절벽 좌측 (-1 step) 재실행</button>
         <button id="btnFlipRight" type="button">③ 절벽 우측 (+1 step) 재실행</button>
@@ -605,12 +933,284 @@
       <div id="patchAttackAlert" class="callout-box callout-rose hidden"></div>
     </section>
 
+    <!-- INTERACTIVE REHEARSAL STUDIO: 12x9m Spatial A* & Queue Live Simulator + Live Parameter Sliders -->
+    <section class="screen-card screen-card-Interactive" id="rehearsalStudio">
+      <div class="screen-header">
+        <div>
+          <div class="screen-step">Interactive Spatial &amp; Financial Rehearsal Studio · 12×9m 0.1m-Grid A* + FIFO Queue + 10,000 Futures</div>
+          <h2 class="screen-title">0. 인터랙티브 공간·동선·대기열 리허설 스튜디오 (마우스 드래그 · 슬라이더 · WASD 직접 보행)</h2>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6ee7b7; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 10px; border-radius: 8px; cursor: pointer;">
+            <input type="checkbox" id="chkAutoSync10k" checked />
+            <span>⚡ 조작 즉시 10,000개 36개월 재무 엔진 실시간 연동</span>
+          </label>
+          <button class="btn-emerald" id="btnSyncSpatialTo10k" type="button">🚀 현재 조작 상태로 10,000개 미래 즉시 재계산</button>
+        </div>
+      </div>
+
+      <!-- Scenario Presets & Interactive Mode Bar -->
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(9, 14, 26, 0.85); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <span style="font-size: 12px; font-weight: 700; color: var(--accent-blue);">공간·인력 비교 프리셋 (Seed 42 동일 유입):</span>
+          <button type="button" id="btnPresetBaseline" class="btn-active-preset">🅰️ 대안 1: 진열대만 이동 (인력 동일: 주문1+픽업1)</button>
+          <button type="button" id="btnPresetStaffAdded">🅱️ 대안 2: 진열대 이동 + 픽업 1명 충원 (주문1+픽업2 · 권장)</button>
+          <button type="button" id="btnPresetNarrowBlock">🚧 대안 3: 유모차·트레이(0.85m) 협소 통로 병목 체감</button>
+          <button type="button" id="btnResetSpatial">↺ 도면 초기화</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <label for="inpFloorplanUpload" style="cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.4); color: #7dd3fc; padding: 6px 11px; border-radius: 8px;">
+            🖼️ 내 매장 평면도(PNG/JPG) 불러오기 (12×9m)
+          </label>
+          <input type="file" id="inpFloorplanUpload" accept="image/png,image/jpeg" class="hidden" />
+          <button type="button" id="btnToggleDrawBox" title="우측 캔버스에서 마우스 드래그로 새 장애물 박스를 추가합니다">✏️ 장애물 박스 그리기: OFF</button>
+          <button type="button" id="btnShowChecklist">📋 실행 체크리스트 생성</button>
+        </div>
+      </div>
+
+      <!-- Live Interactive Sliders Deck (8 Levers) -->
+      <div class="studio-top-controls">
+        <!-- Slider 1: Arrivals per minute -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>① 분당 평균 도착 고객 (Seed 42)</span>
+            <span class="slider-val" id="lblArrivalsPerMin">4.0명/분</span>
+          </div>
+          <input type="range" id="sliderArrivalsPerMin" min="1.5" max="7.5" step="0.5" value="4.0" />
+          <div class="slider-sub">
+            <span>한산 (1.5명/분)</span>
+            <span id="lblTotalArrivals10m">10분 피크: 53명 유입</span>
+            <span>초피크 (7.5명/분)</span>
+          </div>
+        </div>
+
+        <!-- Slider 2: Make / Service Time -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>② 1잔 제조·픽업 기준 시간</span>
+            <span class="slider-val" id="lblMakeTimeSec">75초</span>
+          </div>
+          <input type="range" id="sliderMakeTimeSec" min="35" max="125" step="5" value="75" />
+          <div class="slider-sub">
+            <span>자동머신 (35초)</span>
+            <span>핸드드립/수제 (125초)</span>
+          </div>
+        </div>
+
+        <!-- Control 3: Station Staff Allocation -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>③ 변경안 주문·픽업 인력 배치</span>
+            <span class="slider-val" id="lblStaffConfig">주문1 + 픽업2</span>
+          </div>
+          <div class="seg-group" id="segStaffGroup">
+            <button type="button" class="seg-btn" data-staff="1-1">주문1+픽업1</button>
+            <button type="button" class="seg-btn active" data-staff="1-2">주문1+픽업2</button>
+            <button type="button" class="seg-btn" data-staff="2-2">주문2+픽업2</button>
+          </div>
+          <div class="slider-sub">
+            <span>고정 배치 (역할 교대 없음)</span>
+            <span id="lblStaffFteSync">상근 FTE: 2.0명 연동</span>
+          </div>
+        </div>
+
+        <!-- Control 4: Pedestrian / Stroller Footprint Width -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>④ 보행자·통과 폭 (A* 격자 반경)</span>
+            <span class="slider-val" id="lblFootprintWidth">0.50m (일반)</span>
+          </div>
+          <div class="seg-group" id="segFootprintGroup">
+            <button type="button" class="seg-btn active" data-footprint="0.50">일반 보행 (0.50m)</button>
+            <button type="button" class="seg-btn" data-footprint="0.85">유모차·트레이 (0.85m)</button>
+          </div>
+          <div class="slider-sub">
+            <span>0.1m 격자 충돌 판정</span>
+            <span id="lblClearanceStatus" style="color: #34d399;">양쪽 통과 가능</span>
+          </div>
+        </div>
+
+        <!-- Slider 5: Monthly Rent -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>⑤ 월 임대료 (절벽 핵심 변수)</span>
+            <span class="slider-val" id="lblMonthlyRent">330만 원</span>
+          </div>
+          <input type="range" id="sliderMonthlyRent" min="1800000" max="6000000" step="100000" value="3300000" />
+          <div class="slider-sub">
+            <span>180만 원</span>
+            <span>성수 평균 330만</span>
+            <span>600만 원</span>
+          </div>
+        </div>
+
+        <!-- Slider 6: Average Ticket Price -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>⑥ 평균 객단가 (1잔/주문)</span>
+            <span class="slider-val" id="lblAvgTicket">5,200원</span>
+          </div>
+          <input type="range" id="sliderAvgTicket" min="3600" max="7600" step="200" value="5200" />
+          <div class="slider-sub">
+            <span>저가 (3,600원)</span>
+            <span>스페셜티 (7,600원)</span>
+          </div>
+        </div>
+
+        <!-- Slider 7: Store Seats -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>⑦ 매장 좌석 수 (홀 체류 규모)</span>
+            <span class="slider-val" id="lblSeats">18석</span>
+          </div>
+          <input type="range" id="sliderSeats" min="0" max="36" step="2" value="18" />
+          <div class="slider-sub">
+            <span>테이크아웃 (0석)</span>
+            <span>대형 홀 (36석)</span>
+          </div>
+        </div>
+
+        <!-- Slider 8: Total Startup Budget -->
+        <div class="slider-card">
+          <div class="slider-head">
+            <span>⑧ 총 창업 예산 (최소 유보 10%)</span>
+            <span class="slider-val" id="lblBudget">12,000만 원</span>
+          </div>
+          <input type="range" id="sliderBudget" min="80000000" max="220000000" step="5000000" value="120000000" />
+          <div class="slider-sub">
+            <span>8,000만 원</span>
+            <span>2억 2,000만 원</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playback Timeline Scrubber & Direct Walkthrough Bar -->
+      <div class="playback-bar">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+          <button type="button" class="btn-primary" id="btnSimPlayPause">⏸ 일시정지</button>
+          <button type="button" id="btnSimRestart">⏮ 처음부터 (00:00)</button>
+          <div class="seg-group" id="segSimSpeed">
+            <button type="button" class="seg-btn" data-speed="1">1×</button>
+            <button type="button" class="seg-btn active" data-speed="4">4×</button>
+            <button type="button" class="seg-btn" data-speed="10">10×</button>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #7dd3fc; min-width: 115px;" id="lblSimClock">03:20 / 10:00</span>
+        </div>
+
+        <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap;">피크 10분 스크러버:</span>
+          <input type="range" id="sliderSimTime" min="0" max="600" step="1" value="200" />
+        </div>
+
+        <div class="dpad-cluster" title="키보드 방향키(↑↓←→) 또는 WASD로 두 도면에서 동시에 직접 걸어볼 수 있습니다">
+          <span style="font-size: 11.5px; font-weight: 700; color: #d8b4fe; margin-right: 4px;">🚶 직접 걸어보기 (WASD/방향키):</span>
+          <button type="button" class="dpad-btn" id="btnWalkLeft">◀</button>
+          <button type="button" class="dpad-btn" id="btnWalkUp">▲</button>
+          <button type="button" class="dpad-btn" id="btnWalkDown">▼</button>
+          <button type="button" class="dpad-btn" id="btnWalkRight">▶</button>
+          <button type="button" class="dpad-btn" id="btnWalkReset">입구로</button>
+        </div>
+      </div>
+
+      <!-- Dual Side-by-Side 12x9m Floorplan Canvases -->
+      <div class="spatial-stage-grid">
+        <!-- Left: Original Layout -->
+        <div class="spatial-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div>
+              <span class="badge badge-blocked">현재 배치 (Baseline)</span>
+              <strong style="font-size: 14px; margin-left: 6px;">기존 매장 도면 (12m × 9m · 주문1 + 픽업1)</strong>
+            </div>
+            <span class="src-tag src-synthetic" id="origStatusTag">synthetic: 중앙 진열대 우회 병목</span>
+          </div>
+
+          <div class="spatial-canvas-wrap">
+            <canvas id="spatialOrigCanvas" width="600" height="450"></canvas>
+          </div>
+
+          <div class="spatial-metrics-strip">
+            <div class="spatial-metric-pill">
+              <span>퇴장 완료 / 총 유입</span>
+              <strong id="origMetricExited">45 / 53명</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>미완료 (대기 체류)</span>
+              <strong id="origMetricIncomplete" style="color: #fb7185;">8명</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>A* 보행 경로 길이</span>
+              <strong id="origMetricPathLen">24.4 m</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>관측 평균대기 (주문+픽업)</span>
+              <strong id="origMetricWait" style="color: #fbbf24;">41.3 초</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Modified Layout -->
+        <div class="spatial-card spatial-card-mod">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div>
+              <span class="badge badge-done">변경안 리허설 (Interactive)</span>
+              <strong style="font-size: 14px; margin-left: 6px;">마우스로 진열대·픽업대·주문대·좌석을 직접 드래그하세요!</strong>
+            </div>
+            <span class="src-tag src-computed" id="modStatusTag">computed: 실시간 A* 재탐색</span>
+          </div>
+
+          <div class="spatial-canvas-wrap">
+            <canvas id="spatialModCanvas" width="600" height="450"></canvas>
+          </div>
+
+          <div class="spatial-metrics-strip">
+            <div class="spatial-metric-pill">
+              <span>퇴장 완료 / 총 유입</span>
+              <strong id="modMetricExited" style="color: #34d399;">51 / 53명 (+6)</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>미완료 (대기 체류)</span>
+              <strong id="modMetricIncomplete" style="color: #34d399;">2명 (-6)</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>A* 보행 경로 길이</span>
+              <strong id="modMetricPathLen" style="color: #7dd3fc;">20.6 m (-3.8m)</strong>
+            </div>
+            <div class="spatial-metric-pill">
+              <span>관측 평균대기 (주문+픽업)</span>
+              <strong id="modMetricWait" style="color: #34d399;">12.1 초 (-29.2초)</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Spatial Diagnosis Banner & Execution Checklist Drawer -->
+      <div class="callout-box callout-emerald" id="spatialDiagnosisBox">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;">
+          <div style="font-size: 13.5px; font-weight: 700; color: #a7f3d0;" id="spatialDiagnosisHeadline">
+            💡 리허설 인사이트: 진열대만 옮기면 동선은 3.8m 줄지만 손님이 픽업대에 더 빨리 몰려 픽업 대기가 41.3초 → 44.3초로 오히려 증가합니다. 픽업 1명 충원(주문1+픽업2) 시 평균대기가 12.1초로 급감하고 퇴장 완료가 +6명 늘어납니다!
+          </div>
+          <span class="src-tag src-computed">computed: Seed 42 동일 유입 비교</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);" id="spatialWalkthroughStatus">
+          🚶 <strong>직접 걸어보기 상태:</strong> 보라색 마커(🟣 나)가 입구(1.2m, 4.5m)에 있습니다. 키보드 방향키(↑↓←→)나 WASD 또는 상단 화살표 버튼을 눌러 두 배치에서 동시에 이동해 보세요.
+        </div>
+      </div>
+
+      <div id="executionChecklistBox" class="callout-box hidden" style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="color: #7dd3fc; font-size: 14px;">📋 현장 시공·운영 실행 체크리스트 (Spatial Rehearsal Export)</strong>
+          <button type="button" id="btnCopyChecklist">📋 클립보드 복사</button>
+        </div>
+        <pre id="executionChecklistPre" style="font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); white-space: pre-wrap; background: rgba(6, 9, 17, 0.9); padding: 12px; border-radius: 8px; border: 1px solid var(--border);"></pre>
+      </div>
+    </section>
+
     <!-- SCREEN 1: 현장 입력 및 공공데이터 출처 (Onsite Input & Public Provenance) -->
     <section class="screen-card" id="screen1">
       <div class="screen-header">
         <div>
-          <div class="screen-step">Screen 1 · Input & Provenance (P0)</div>
-          <h2 class="screen-title">1. 상권·예산·매장 조건 입력 및 데이터 출처 태그</h2>
+          <div class="screen-step">Screen 1 · Input &amp; Provenance (P0 · 상단 슬라이더와 양방향 실시간 동기화)</div>
+          <h2 class="screen-title">1. 상권·예산·매장 정밀 입력 및 데이터 출처 태그</h2>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
           <label for="inpMode" style="font-size: 12.5px; color: var(--text-secondary);">실행 규모(N):</label>
@@ -749,7 +1349,7 @@
     <section class="screen-card" id="screen2">
       <div class="screen-header">
         <div>
-          <div class="screen-step">Screen 2 · Survival Landscape & Saturation Curve (AT-01, AT-02, AT-05, AT-16)</div>
+          <div class="screen-step">Screen 2 · Survival Landscape &amp; Saturation Curve (AT-01, AT-02, AT-05, AT-16)</div>
           <h2 class="screen-title">2. 36개월 생존 지형도 — <span id="landscapeModeLabel">500 AI design families x 20 variations</span></h2>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -804,13 +1404,16 @@
         </div>
 
         <div class="chart-grid">
-          <!-- 10,000-Dot Canvas Scatter -->
+          <!-- 10,000-Dot Canvas Scatter (with Interactive Hover/Click Inspector) -->
           <div class="canvas-panel">
             <div class="canvas-title">
-              <span>10,000개 변형 생존 지형도 산점도 (X: 생존 개월, Y: 36개월 누적 손익 만원)</span>
+              <span>10,000개 변형 생존 지형도 산점도 (마우스를 올려 개별 가게 설계안을 탐색하세요)</span>
               <span class="src-tag src-computed">500 AI design families x 20 variations</span>
             </div>
-            <canvas id="landscapeCanvas" width="720" height="310"></canvas>
+            <canvas id="landscapeCanvas" width="720" height="310" style="cursor: crosshair;"></canvas>
+            <div id="landscapeInspectorBar" style="background: rgba(14, 21, 38, 0.92); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 7px 11px; font-size: 12px; color: #bae6fd; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <span>🔍 <strong>산점도 인터랙티브 인스펙터:</strong> 점 위에 마우스를 올리거나 클릭하면 해당 가게 변형의 36개월 손익·사망원인·설계변수를 즉시 확인합니다.</span>
+            </div>
             <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--text-secondary);">
               <span>🟢 <strong>파레토 비지배 생존 (#1 및 후보군)</strong></span>
               <span>🔵 <strong>36개월 생존 변형</strong></span>
@@ -836,7 +1439,7 @@
         <div class="chart-grid" style="margin-top: 16px;">
           <div class="canvas-panel">
             <div class="canvas-title">
-              <span>#1 생존 설계안 vs 조기 폐업 변형 36개월 현금 잔고 추이 (보증금=묶인 현금, 36개월차 환급 · AT-04)</span>
+              <span>#1 생존 설계안 vs 선택/폐업 변형 36개월 현금 잔고 추이 (보증금=묶인 현금, 36개월차 환급 · AT-04)</span>
               <span class="src-tag src-computed">computed: 월별 P&amp;L</span>
             </div>
             <canvas id="cashflowCanvas" width="720" height="240"></canvas>
@@ -901,7 +1504,7 @@
     <section class="screen-card" id="screen5">
       <div class="screen-header">
         <div>
-          <div class="screen-step">Screen 5 · Adversarial Rounds & Verification Gates (AT-09, AT-13, AT-15)</div>
+          <div class="screen-step">Screen 5 · Adversarial Rounds &amp; Verification Gates (AT-09, AT-13, AT-15)</div>
           <h2 class="screen-title">5. 파산 설계자 vs 가게 설계자 적대적 라운드 (최대 3라운드) 및 기준선 검증</h2>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -955,7 +1558,7 @@
     <section class="screen-card" id="screen6">
       <div class="screen-header">
         <div>
-          <div class="screen-step">Screen 6 · Founder Decision & Export (AT-12)</div>
+          <div class="screen-step">Screen 6 · Founder Decision &amp; Export (AT-12)</div>
           <h2 class="screen-title">6. 창업자 의사결정 기록 및 Google Sheets / Docs 내보내기</h2>
         </div>
         <span class="src-tag src-onsite">onsite: 창업자 최종 선택</span>
