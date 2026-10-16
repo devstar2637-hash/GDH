@@ -378,6 +378,10 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
       let stopReason: AdversarialRound["stopReason"] | undefined;
       if (nonDominatedSurvivors === 0 && deaths === roundDesigns.length) {
         stopReason = "allSurvivorsKilled";
+      } else if (elapsedMs > 90_000) {
+        stopReason = "timeCap"; // SPEC §5: 90 s per round
+      } else if (newFamiliesCount === 0) {
+        stopReason = "noNewFamily"; // SPEC §5: stop when a round finds no new failure family
       } else if (roundNum === maxRounds) {
         stopReason = "roundCap";
       }
@@ -389,12 +393,12 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
         deaths,
         newFailureFamilies: newFamiliesCount,
         nonDominatedSurvivors,
-        changed: "P",
+        changed: "S", // shocks (scenario) changed this step; designs held fixed (shared/forbidden-paths.json: S = scenario/shocks, P = store design)
         stopReason,
         elapsedMs,
       });
 
-      if (stopReason === "allSurvivorsKilled") {
+      if (stopReason && stopReason !== "roundCap") {
         break;
       }
     }
@@ -423,26 +427,8 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   const runId =
     options.runId ?? `run-${constraints.seed}-${inputHash.slice(0, 8)}`;
 
-  const tokens: TokenUsage[] = options.tokens ?? [
-    {
-      model: "gemini-2.5-flash",
-      call: "StoreDesigner.proposePatchBundles",
-      inputTokens: 1840,
-      outputTokens: 920,
-    },
-    {
-      model: "gemini-2.5-flash",
-      call: "BankruptcyDesigner.proposeShocks",
-      inputTokens: 1420,
-      outputTokens: 610,
-    },
-    {
-      model: "gemini-2.5-pro",
-      call: "ReportSummarizer.cliffAndMeasurement",
-      inputTokens: 1150,
-      outputTokens: 480,
-    },
-  ];
+  // Token rows come only from real API usage passed in by loop/. No model call -> no rows (never placeholder numbers, AT-14).
+  const tokens: TokenUsage[] = options.tokens ?? [];
 
   const tokenTotal = tokens.reduce(
     (acc, t) => ({

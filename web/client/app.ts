@@ -2478,16 +2478,36 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   setText("sbEndState", run.status.endState);
   setText("sbReplayBadge", run.status.replay ? "REPLAY" : "LIVE ENGINE");
   setText("sbRunId", run.runId);
-  setText("sbInputHash", (run.provenance?.inputHash ?? "").slice(0, 12));
-  setText("sbEngineSha", (run.provenance?.engineSha ?? "").slice(0, 10));
-  setText("sbComputeMs", `${Math.round(run.provenance?.computeElapsedMs ?? 0)}ms`);
+  // Status bar reads runs/<id>/status only (AT-14): hash, engine SHA, input files, tokens, gate log. Never a placeholder.
+  const st = run.status as unknown as {
+    inputHash?: string; engineSha?: string; inputFiles?: string[];
+    tokenTotal?: { input: number; output: number }; tokens?: unknown[];
+    gateLog?: { gate: string; passed: boolean | null }[];
+  };
+  const prov = (run as unknown as { provenance?: { inputHash?: string; engineSha?: string; computeElapsedMs?: number } }).provenance;
+  setText("sbInputHash", (prov?.inputHash ?? st.inputHash ?? "-").slice(0, 12));
+  setText("sbEngineSha", (prov?.engineSha ?? st.engineSha ?? "-").slice(0, 10));
+  const computeMs = prov?.computeElapsedMs ?? (run as unknown as { computeMs?: number }).computeMs;
+  setText("sbComputeMs", computeMs !== undefined ? `${Math.round(computeMs)}ms` : "-");
+  setText("sbInputFiles", (st.inputFiles ?? []).map((f) => f.split("/").pop() ?? f).join(", ") || "-");
+  const tt = st.tokenTotal;
+  setText("sbTokensTotal", tt ? `${(tt.input + tt.output).toLocaleString()} (in ${tt.input.toLocaleString()} / out ${tt.output.toLocaleString()}, ${st.tokens?.length ?? 0} calls)` : "-");
+  const gl = st.gateLog ?? [];
+  const gatePass = gl.filter((g) => g.passed === true).length;
+  setText("sbGateLog", gl.length ? `${gatePass}/${gl.length} PASS · ${gl.map((g) => `${g.gate}:${g.passed === true ? "ok" : g.passed === false ? "FAIL" : "n/a"}`).join(" ")}` : "-");
+  setText("s5PassCount", gl.length ? `${gatePass}/${gl.length}` : "-");
+  setText("s5AllGreenBadge", gl.length ? (gatePass === gl.length ? "ALL PASS" : `${gl.length - gatePass} FAIL`) : "-");
 
   const totalN = run.results.length || 10000;
   const survivors = run.results.filter((r) => r.deathMonth === null).length;
   const rawSurvPct = ((survivors / totalN) * 100).toFixed(1) + "%";
-  const calibSurvPct = run.calibration.calibrated
-    ? Math.max(5, Math.min(96, (survivors / totalN) * 100 - (run.calibration.holdoutErrorPp ?? 1.2))).toFixed(1) + "%"
-    : "보정 대기";
+  // The client never computes money or rates: show the engine's calibration label and its measured error, nothing derived here.
+  const calib = run.calibration as unknown as { calibrated?: boolean; label?: string; koLabel?: string; errorPp?: number | null; maxErrorPp?: number; holdoutErrorPp?: number | null };
+  const isCalibrated = calib.calibrated === true || calib.label === "calibrated";
+  const calibErrPp = calib.errorPp ?? calib.maxErrorPp ?? null;
+  const calibSurvPct = isCalibrated
+    ? `${calib.koLabel ?? "보정됨"} (백테스트 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp)`
+    : `${calib.koLabel ?? "미보정"}`;
 
   setText("s1TotalCount", totalN.toLocaleString());
   setText("s1PassRate", `원시 통과 ${rawSurvPct}`);
@@ -2545,9 +2565,9 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   }
   const calEl = $("calibratedDistributionContainer");
   if (calEl) {
-    calEl.textContent = run.calibration.calibrated
-      ? `서울시 OA-15577 백테스트 최대 오차 ${run.calibration.maxErrorPp.toFixed(2)}pp · 은닉 홀드아웃 오차 ${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)}pp (5pp 이내 통과)`
-      : `보정 오차 초과 (${run.calibration.maxErrorPp.toFixed(2)}pp) — 분포 표시 차단됨`;
+    calEl.textContent = isCalibrated
+      ? `서울시 OA-15577 백테스트 최대 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp · 은닉 홀드아웃 오차 ${(calib.holdoutErrorPp ?? 0).toFixed(2)}pp (5pp 이내 통과)`
+      : `미보정 — 보정 오차 초과 (${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp) — 분포 표시 차단됨, 가정표만 표시`;
   }
 
   const roundsBody = $("roundsTableBody");
@@ -2601,7 +2621,21 @@ function drawCashflowChart(run: RunResult): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, b.width, b.height);
 
-  const fan = run.cashflowFan ?? [];
+  // The engine does not emit a fan; take P10/P50/P90 of the engine's own month-end cash over the sampled variants
+  // that carry monthly rows (no money is computed here, only percentiles of engine values).
+  const fan: { month: number; p10: number; p50: number; p90: number }[] = (run.cashflowFan ?? []).length
+    ? (run.cashflowFan as { month: number; p10: number; p50: number; p90: number }[])
+    : (() => {
+        const withMonths = (run.results as unknown as { months?: { cashEnd: number }[] }[]).filter((r) => (r.months?.length ?? 0) > 0);
+        const out: { month: number; p10: number; p50: number; p90: number }[] = [];
+        for (let m = 0; m < 36; m++) {
+          const vals = withMonths.map((r) => r.months![m]?.cashEnd).filter((v): v is number => typeof v === "number").sort((a, b) => a - b);
+          if (!vals.length) break;
+          const q = (p: number) => vals[Math.min(vals.length - 1, Math.floor(p * (vals.length - 1)))];
+          out.push({ month: m + 1, p10: q(0.1), p50: q(0.5), p90: q(0.9) });
+        }
+        return out;
+      })();
   if (!fan.length) return;
 
   const padL = 42;
@@ -2623,7 +2657,7 @@ function drawCashflowChart(run: RunResult): void {
 
   // Zero line
   const y0 = yOf(0);
-  ctx.strokeStyle = "#cfd6d0";
+  ctx.strokeStyle = "rgba(21, 20, 15, 0.18)";
   ctx.setLineDash([3, 3]);
   ctx.beginPath();
   ctx.moveTo(padL, y0);
@@ -2632,7 +2666,7 @@ function drawCashflowChart(run: RunResult): void {
   ctx.setLineDash([]);
 
   // P10..P90 shaded band
-  ctx.fillStyle = "rgba(41, 79, 130, 0.14)";
+  ctx.fillStyle = "rgba(21, 20, 15, 0.10)";
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p90)) : ctx.moveTo(xOf(f.month), yOf(f.p90))));
   for (let i = fan.length - 1; i >= 0; i--) {
@@ -2642,13 +2676,13 @@ function drawCashflowChart(run: RunResult): void {
   ctx.fill();
 
   // P50 line
-  ctx.strokeStyle = "#294f82";
+  ctx.strokeStyle = "#15140f";
   ctx.lineWidth = 2.2;
   ctx.beginPath();
   fan.forEach((f, i) => (i ? ctx.lineTo(xOf(f.month), yOf(f.p50)) : ctx.moveTo(xOf(f.month), yOf(f.p50))));
   ctx.stroke();
 
-  ctx.fillStyle = "#69757a";
+  ctx.fillStyle = "#6f6a5e";
   ctx.font = "10px -apple-system, sans-serif";
   ctx.fillText("1개월", padL, b.height - 6);
   ctx.textAlign = "right";

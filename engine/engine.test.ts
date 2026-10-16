@@ -208,7 +208,11 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
     assert.equal(run.status.endState, "DONE");
     assert.ok(run.status.inputHash && run.status.inputHash.length === 8);
     assert.ok(run.status.engineSha && run.status.engineSha.length >= 7);
-    assert.ok(run.status.tokenTotal.input > 0);
+    // Engine-only runs make no model call, so no token rows; the total must equal the sum of the rows (AT-14), never a placeholder.
+    const sumIn = run.status.tokens.reduce((a, t) => a + t.inputTokens, 0);
+    const sumOut = run.status.tokens.reduce((a, t) => a + t.outputTokens, 0);
+    assert.equal(run.status.tokenTotal.input, sumIn);
+    assert.equal(run.status.tokenTotal.output, sumOut);
   });
 
   it("AT-16: 10,000-variant mode (500 families x 20 variations) passes all constraints and finishes <= 2.0s with saturation curve", () => {
