@@ -6,6 +6,7 @@ COPY tsconfig.json ./
 COPY shared ./shared
 COPY engine ./engine
 COPY loop ./loop
+COPY data/onsiteLoader.ts data/seoulLoader.ts ./data/
 COPY web ./web
 RUN npm run build && npm prune --omit=dev --ignore-scripts
 
