@@ -1,22 +1,8 @@
-# Local dependencies and build output
 node_modules/
-.next/
 dist/
-build/
-coverage/
-.venv/
-venv/
-__pycache__/
-*.pyc
-.DS_Store
-
-# Credentials and local logs
 .env
 .env.*
-!.env.example
-*.pem
 *.key
-credentials*.json
-service-account*.json
-application_default_credentials.json
-logs/
+*.pem
+runs/
+.DS_Store

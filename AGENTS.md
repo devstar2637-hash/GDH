@@ -1,5 +1,4 @@
-<!-- Refreshed from the shared doc, 작전 탭 (Claude 작전과 병행안), 2026-10-16 11:30 KST: includes C9 / rule 11 (end states + replay), AT-14 hash+SHA, AT-15 hidden-holdout regression, and the 10,000 mode (option B) in the P1 order. -->
-<!-- Commit to the repo root only after 11:20 KST. -->
+<!-- AGENTS.md draft from the shared doc (2026-10-16 12:05 KST). Frozen at 12:15; after that only the Lessons section grows. Default N = 10,000 = 500 Argon design families x 20 deterministic expansions; 1,000 only for the spike. -->
 # AGENTS.md - A Thousand Stores (hackathon build, 2026-10-16)
 
 Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude Code (owns tests/). Build agent: Gemini 4 Argon in Antigravity, three lanes (A1 engine, A2 data and model loop, A3 screen). Inside the loop Argon plays two roles, Store Designer (mutations) and Bankruptcy Designer (shocks); neither touches the oracle.
@@ -20,7 +19,7 @@ Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude 
 - npm test                 unit tests (engine, loop, web); must pass before every commit
 - npm run test:accept      acceptance tests AT-01..AT-14 (reads tests/accept)
 - npm run backtest         backtest gate: prints open/close-rate error in pp and the calibrated / uncalibrated label
-- npm run bench            1,000 variants x 36 months timing, median of 5 runs, must be <= 2.0 s
+- npm run bench            10,000 variants x 36 months timing, median of 5 runs, must be <= 2.0 s
 - npm run baseline         random / grid search with the same budget; prints new-failure-family and non-dominated counts vs Argon
 - npm run adversarial      three adversarial rounds on the current survivors; prints shocks, deaths, new failure families per round and the stop reason
 - npm run secrets:scan     fails if any key-like string is in the client bundle, git history or logs
@@ -43,8 +42,8 @@ Read this file fully before any edit. Product owner: Taehyeon. Verifier: Claude 
 shared/ is frozen at 12:15. To change it: post the diff and the reason in chat, wait for Taehyeon's explicit "approved", update shared/, run npm test and npm run test:accept, then record the change under Lessons with time and reason. No approval, no change.
 
 ## Gates (KST)
-G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 deployed URL with a real input, AT-01, AT-05, AT-12, AT-14 green. P1 order after G2: adversarial rounds (AT-13) > 10,000 mode (500 families x 20, saturation curve, AT-16) > peak-hour queue > Sheets export > Maps card. 14:25 feature freeze (P0 defects only). 15:05 submit.
+G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 deployed URL with a real input, AT-01, AT-05, AT-12, AT-14 green. P1 order after G2: adversarial rounds (AT-13) > saturation curve (N = 1,000 / 3,000 / 10,000, AT-16) > peak-hour queue > Sheets export > Maps card. 14:25 feature freeze (P0 defects only). 15:05 submit.
 
 ## Lessons (append-only; newest at the bottom)
 Format: [HH:MM] [lane] what broke or surprised us > what we changed > which test now catches it.
-- [12:06] [all] Kickoff alignment completed and approved by Taehyeon before 12:15 freeze > synced AGENTS.md, docs/SPEC.md, docs/KICKOFF_PROMPT.md, and added C9/AT-04/AT-09/AT-14/AT-16 fields to shared/types.ts and shared/constants.ts > AT-01..AT-16.
+- [12:15] [all] (first entry written at kickoff)
