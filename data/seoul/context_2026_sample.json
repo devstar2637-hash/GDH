@@ -1,0 +1,353 @@
+{
+  "schema_version": "1.1.0",
+  "quarter_code": "20262",
+  "quarter_label": "2026Q2",
+  "service_code": "CS100010",
+  "service_name": "커피-음료",
+  "period_semantics_note": "Raw source columns are named 당월_매출_금액 / 당월_매출_건수 inside a quarter-keyed table (기준_년분기_코드=20262). Period aggregation semantics remain unconfirmed; values are preserved verbatim without dividing by 3 or inferring per-store revenue.",
+  "attribution": {
+    "copyright_holder": "Seoul Metropolitan Government (서울특별시)",
+    "provider": "Seoul Credit Guarantee Foundation (서울신용보증재단)",
+    "license": "Korea Open Government License Type 1 (attribution required)",
+    "store_dataset": {
+      "dataset_id": "OA-15577",
+      "file": "data/seoul/2026/OA-15577_2026Q1-Q2_utf8.csv",
+      "sha256": "9cc1dca5359e90ba654c177c26c5df7dee5b53336aba31b621a65b60704c6966"
+    },
+    "sales_dataset": {
+      "dataset_id": "OA-15572",
+      "file": "data/seoul/2026/OA-15572_2026Q1-Q2_utf8.csv",
+      "sha256": "7c192e387c57b3d32cf6d59ea614e178e530faac817e2770b54af25606d4a960"
+    }
+  },
+  "areas": [
+    {
+      "quarter_code": "20262",
+      "area_type_code": "U",
+      "area_type_name": "관광특구",
+      "area_code": "3001496",
+      "area_name": "강남 마이스 관광특구",
+      "display_name": "강남 마이스 관광특구",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75455,
+      "stores": {
+        "total_stores": 45,
+        "ordinary_stores": 24,
+        "franchise_stores": 21,
+        "opening_rate_pct": 0,
+        "opening_stores": 0,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": 20,
+      "observed_sales": {
+        "raw_reported_sales_krw": 6954728920,
+        "raw_reported_transactions": 570778,
+        "weekday_sales_krw": 4914115321,
+        "weekend_sales_krw": 2040613599,
+        "weekday_transactions": 404114,
+        "weekend_transactions": 166664
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "U",
+      "area_type_name": "관광특구",
+      "area_code": "3001495",
+      "area_name": "잠실 관광특구",
+      "display_name": "잠실 관광특구",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75550,
+      "stores": {
+        "total_stores": 177,
+        "ordinary_stores": 105,
+        "franchise_stores": 72,
+        "opening_rate_pct": 2,
+        "opening_stores": 4,
+        "closure_rate_pct": 2,
+        "closed_stores": 3
+      },
+      "sales_row_line": 59,
+      "observed_sales": {
+        "raw_reported_sales_krw": 9674247361,
+        "raw_reported_transactions": 1015292,
+        "weekday_sales_krw": 6083429252,
+        "weekend_sales_krw": 3590818109,
+        "weekday_transactions": 652565,
+        "weekend_transactions": 362727
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "U",
+      "area_type_name": "관광특구",
+      "area_code": "3001494",
+      "area_name": "종로?청계 관광특구",
+      "display_name": "종로·청계 관광특구 (원본 표기: 종로?청계 관광특구)",
+      "normalization_note": "Source CSV literal string is '종로?청계 관광특구'; raw area_name is preserved verbatim.",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75639,
+      "stores": {
+        "total_stores": 162,
+        "ordinary_stores": 116,
+        "franchise_stores": 46,
+        "opening_rate_pct": 4,
+        "opening_stores": 7,
+        "closure_rate_pct": 3,
+        "closed_stores": 5
+      },
+      "sales_row_line": 112,
+      "observed_sales": {
+        "raw_reported_sales_krw": 8013430388,
+        "raw_reported_transactions": 960054,
+        "weekday_sales_krw": 6105839805,
+        "weekend_sales_krw": 1907590583,
+        "weekday_transactions": 748465,
+        "weekend_transactions": 211589
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "U",
+      "area_type_name": "관광특구",
+      "area_code": "3001493",
+      "area_name": "동대문패션타운 관광특구",
+      "display_name": "동대문패션타운 관광특구",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75729,
+      "stores": {
+        "total_stores": 109,
+        "ordinary_stores": 75,
+        "franchise_stores": 34,
+        "opening_rate_pct": 3,
+        "opening_stores": 3,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": 150,
+      "observed_sales": {
+        "raw_reported_sales_krw": 2797774488,
+        "raw_reported_transactions": 439629,
+        "weekday_sales_krw": 1956097934,
+        "weekend_sales_krw": 841676554,
+        "weekday_transactions": 338142,
+        "weekend_transactions": 101487
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "U",
+      "area_type_name": "관광특구",
+      "area_code": "3001492",
+      "area_name": "명동 남대문 북창동 다동 무교동 관광특구",
+      "display_name": "명동 남대문 북창동 다동 무교동 관광특구",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75817,
+      "stores": {
+        "total_stores": 328,
+        "ordinary_stores": 229,
+        "franchise_stores": 99,
+        "opening_rate_pct": 2,
+        "opening_stores": 7,
+        "closure_rate_pct": 2,
+        "closed_stores": 6
+      },
+      "sales_row_line": 204,
+      "observed_sales": {
+        "raw_reported_sales_krw": 26031603018,
+        "raw_reported_transactions": 3163555,
+        "weekday_sales_krw": 21372341858,
+        "weekend_sales_krw": 4659261160,
+        "weekday_transactions": 2662495,
+        "weekend_transactions": 501060
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110008",
+      "area_name": "배화여자대학교(박노수미술관)",
+      "display_name": "배화여자대학교(박노수미술관)",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75167,
+      "stores": {
+        "total_stores": 46,
+        "ordinary_stores": 46,
+        "franchise_stores": 0,
+        "opening_rate_pct": 7,
+        "opening_stores": 3,
+        "closure_rate_pct": 7,
+        "closed_stores": 3
+      },
+      "sales_row_line": 21094,
+      "observed_sales": {
+        "raw_reported_sales_krw": 2267229104,
+        "raw_reported_transactions": 155419,
+        "weekday_sales_krw": 1284584388,
+        "weekend_sales_krw": 982644716,
+        "weekday_transactions": 97459,
+        "weekend_transactions": 57960
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110006",
+      "area_name": "부암동주민센터",
+      "display_name": "부암동주민센터",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75216,
+      "stores": {
+        "total_stores": 3,
+        "ordinary_stores": 3,
+        "franchise_stores": 0,
+        "opening_rate_pct": 0,
+        "opening_stores": 0,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": 21104,
+      "observed_sales": {
+        "raw_reported_sales_krw": 62028790,
+        "raw_reported_transactions": 4828,
+        "weekday_sales_krw": 35331738,
+        "weekend_sales_krw": 26697052,
+        "weekday_transactions": 2786,
+        "weekend_transactions": 2042
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110003",
+      "area_name": "세검정초등학교",
+      "display_name": "세검정초등학교",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75327,
+      "stores": {
+        "total_stores": 8,
+        "ordinary_stores": 6,
+        "franchise_stores": 2,
+        "opening_rate_pct": 13,
+        "opening_stores": 1,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": 21121,
+      "observed_sales": {
+        "raw_reported_sales_krw": 86575558,
+        "raw_reported_transactions": 9177,
+        "weekday_sales_krw": 50960802,
+        "weekend_sales_krw": 35614756,
+        "weekday_transactions": 5527,
+        "weekend_transactions": 3650
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110002",
+      "area_name": "독립문역 1번",
+      "display_name": "독립문역 1번",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75364,
+      "stores": {
+        "total_stores": 3,
+        "ordinary_stores": 1,
+        "franchise_stores": 2,
+        "opening_rate_pct": 0,
+        "opening_stores": 0,
+        "closure_rate_pct": 33,
+        "closed_stores": 1
+      },
+      "sales_row_line": 21130,
+      "observed_sales": {
+        "raw_reported_sales_krw": 63160702,
+        "raw_reported_transactions": 7612,
+        "weekday_sales_krw": 44643632,
+        "weekend_sales_krw": 18517070,
+        "weekday_transactions": 5493,
+        "weekend_transactions": 2119
+      }
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110007",
+      "area_name": "사직공원(한국사회과학도서관)",
+      "display_name": "사직공원(한국사회과학도서관)",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75198,
+      "stores": {
+        "total_stores": 6,
+        "ordinary_stores": 6,
+        "franchise_stores": 0,
+        "opening_rate_pct": 0,
+        "opening_stores": 0,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": null,
+      "observed_sales": null
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110005",
+      "area_name": "세검정",
+      "display_name": "세검정",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75253,
+      "stores": {
+        "total_stores": 2,
+        "ordinary_stores": 1,
+        "franchise_stores": 1,
+        "opening_rate_pct": 0,
+        "opening_stores": 0,
+        "closure_rate_pct": 0,
+        "closed_stores": 0
+      },
+      "sales_row_line": null,
+      "observed_sales": null
+    },
+    {
+      "quarter_code": "20262",
+      "area_type_code": "A",
+      "area_type_name": "골목상권",
+      "area_code": "3110001",
+      "area_name": "이북5도청사",
+      "display_name": "이북5도청사",
+      "service_code": "CS100010",
+      "service_name": "커피-음료",
+      "store_row_line": 75391,
+      "stores": {
+        "total_stores": 2,
+        "ordinary_stores": 2,
+        "franchise_stores": 0,
+        "opening_rate_pct": 50,
+        "opening_stores": 1,
+        "closure_rate_pct": 50,
+        "closed_stores": 1
+      },
+      "sales_row_line": null,
+      "observed_sales": null
+    }
+  ]
+}

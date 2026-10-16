@@ -1,0 +1,20 @@
+# Exclude git, local logs, credentials, and raw 111MB dataset files from container build context
+.git
+.gitignore
+node_modules
+npm-debug.log*
+*.log
+logs/
+.env
+.env.*
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
+
+# Exclude large raw ZIPs (~83MB) and 28MB full CSVs while retaining small verified context
+data/seoul/raw/
+data/seoul/2026/
+!data/seoul/context_2026_sample.json
+!data/seoul/manifest.json
+!data/seoul/README.md

@@ -1,0 +1,14 @@
+{
+  "name": "a-thousand-stores",
+  "version": "0.1.0",
+  "description": "A Thousand Stores — deterministic 36-month cafe lease scenario analysis and 1,000-scenario batch explorer with attributed Seoul commercial-area context",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  }
+}

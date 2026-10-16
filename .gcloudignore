@@ -1,0 +1,19 @@
+# Exclude git, local logs, credentials, and raw 111MB dataset files from Cloud Run upload
+.git
+.gitignore
+node_modules/
+*.log
+logs/
+.env
+.env.*
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
+
+# Exclude 111MB raw ZIPs and full CSVs; retain small verified context & attribution
+data/seoul/raw/
+data/seoul/2026/
+!data/seoul/context_2026_sample.json
+!data/seoul/manifest.json
+!data/seoul/README.md

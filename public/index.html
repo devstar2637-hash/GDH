@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Thousand Stores — Pre-Lease Cafe Scenario &amp; Measurement Workbench</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand-wrap">
+      <div class="eyebrow">SEOUL COMMERCIAL-AREA SCENARIO WORKBENCH · 2026Q2 CONTEXT</div>
+      <h1>A Thousand Stores</h1>
+      <p class="subtitle">
+        Pre-lease 36-month cashflow arithmetic, 1,000 seeded assumption scenarios, transaction break-even boundary, and next field measurement before signing a cafe lease.
+      </p>
+    </div>
+    <div class="status-badges">
+      <div id="engineBadge" class="badge badge-neutral">Deterministic Engine v1.1.0</div>
+      <div id="geminiBadge" class="badge badge-warn">Gemini API: Checking...</div>
+      <div id="runFreshnessBadge" class="badge badge-ok">Run Status: Ready</div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+    <!-- Left Column: Observed Public Context & User Assumption Inputs -->
+    <section class="panel panel-inputs" aria-labelledby="assumptionsHeading">
+      <div class="panel-header">
+        <span class="pill pill-observed">1. Attributed Public Context (Observed)</span>
+        <h2>Seoul Commercial-Area Context (2026Q2 · CS100010 커피-음료)</h2>
+      </div>
+
+      <div class="field-group">
+        <label for="areaSelect">Commercial Area (OA-15577 Stores + OA-15572 Sales)</label>
+        <select id="areaSelect"></select>
+        <p class="helper-note">
+          Source: Seoul Metropolitan Government / Seoul Credit Guarantee Foundation (KOGL Type 1).
+          Missing sales rows remain <code>null</code> (never filled with 0) and cannot produce a data-derived rank or cashflow.
+        </p>
+      </div>
+
+      <div id="observedContextCard" class="context-card">
+        Loading attributed Seoul public context...
+      </div>
+
+      <hr class="divider" />
+
+      <div class="panel-header">
+        <span class="pill pill-assumed">2. Explicit User Assumptions (Store-Level)</span>
+        <h2 id="assumptionsHeading">Capital, Ticket, Volume &amp; Cost Structure</h2>
+      </div>
+
+      <div class="preset-bar">
+        <span class="preset-label">Deterministic Presets (Not Gemini):</span>
+        <button type="button" class="btn-chip" data-preset="case1">Case 1: Baseline (tx=100)</button>
+        <button type="button" class="btn-chip" data-preset="case2">Case 2: Explicit Zero (tx=0)</button>
+        <button type="button" class="btn-chip" data-preset="case3Pass">Case 3a: 10% Reserve Pass (D=108M)</button>
+        <button type="button" class="btn-chip" data-preset="case3Fail">Case 3b: 10% Reserve Fail (D=109M)</button>
+      </div>
+
+      <form id="simulationForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="budgetInput">Total Budget B (KRW)</label>
+            <input id="budgetInput" name="budget" type="number" step="1000000" value="120000000" required />
+          </div>
+          <div class="field">
+            <label for="depositInput">Locked Deposit D (KRW · Not Monthly Expense)</label>
+            <input id="depositInput" name="deposit" type="number" step="1000000" value="30000000" required />
+          </div>
+          <div class="field">
+            <label for="openingCostInput">Opening Expenditure K (KRW)</label>
+            <input id="openingCostInput" name="openingCost" type="number" step="1000000" value="42000000" required />
+          </div>
+          <div class="field">
+            <label for="avgTicketInput">Average Ticket (KRW)</label>
+            <input id="avgTicketInput" name="avgTicket" type="number" step="100" value="5000" required />
+          </div>
+          <div class="field">
+            <label for="transactionsPerDayInput">Transactions / Day (Explicit 0 allowed; blank rejected)</label>
+            <input id="transactionsPerDayInput" name="transactionsPerDay" type="number" step="1" value="100" required />
+          </div>
+          <div class="field">
+            <label for="tradingDaysInput">Trading Days / Month (1–31)</label>
+            <input id="tradingDaysInput" name="tradingDaysPerMonth" type="number" step="1" min="1" max="31" value="24" required />
+          </div>
+          <div class="field">
+            <label for="variableRatioInput">Variable-Cost Ratio (0.00–0.95)</label>
+            <input id="variableRatioInput" name="variableCostRatio" type="number" step="0.01" min="0" max="0.95" value="0.35" required />
+          </div>
+          <div class="field">
+            <label for="monthlyFixedInput">Monthly Fixed Cash Outflows (KRW)</label>
+            <input id="monthlyFixedInput" name="monthlyFixedCost" type="number" step="100000" value="6000000" required />
+          </div>
+          <div class="field">
+            <label for="seedInput">Scenario Seed (Repeatable Comparison)</label>
+            <input id="seedInput" name="seed" type="text" value="seoul-cafe-2026-v1" required />
+          </div>
+        </div>
+
+        <div id="validationErrorBox" class="alert alert-error hidden" role="alert"></div>
+        <div id="staleWarningBox" class="alert alert-warn hidden" role="status">
+          Inputs or area context changed since the last deterministic calculation. Re-run simulation before recording a decision or downloading evidence.
+        </div>
+
+        <div class="action-row">
+          <button type="submit" id="runSimulationBtn" class="btn btn-primary">
+            Run Deterministic 36-Month &amp; 1,000-Scenario Simulation
+          </button>
+          <button type="button" id="proposeGeminiBtn" class="btn btn-secondary">
+            Request Bounded Gemini Assumption Proposal (1 Call)
+          </button>
+        </div>
+      </form>
+
+      <!-- AI Proposal Status Box (Strictly separated from deterministic results) -->
+      <div id="geminiProposalBox" class="ai-box">
+        <div class="ai-box-header">
+          <span class="pill pill-ai">3. Optional Bounded AI Suggestion (Gemini Interactions API)</span>
+        </div>
+        <div id="geminiProposalContent" class="ai-box-body">
+          No Gemini proposal requested in this session. Deterministic calculator operates independently.
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Deterministic 36-Month Cashflow, 1,000 Scenarios, Next Measurement & Human Decision -->
+    <section class="panel panel-results" aria-live="polite">
+      <div class="panel-header">
+        <span class="pill pill-verified">4. Deterministic Verifier &amp; 36-Month Trajectory</span>
+        <h2>Reserve Gate, Break-Even Volume &amp; Cashflow Boundary</h2>
+      </div>
+
+      <div id="kpiGrid" class="kpi-grid"></div>
+
+      <!-- 36-Month SVG Cashflow Curve -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>36-Month Cash Trajectory (KRW)</h3>
+          <span class="chart-note">After negative cash, trajectory is arithmetic only; continued operation or financing is not established.</span>
+        </div>
+        <div id="cashflowSvgContainer" class="svg-container"></div>
+      </div>
+
+      <!-- 1,000 Seeded Scenario Batch Distribution -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Seeded 1,000 Assumed Scenario Distribution (Month-36 Cash)</h3>
+          <span id="batchMetaLabel" class="chart-note">Counts describe assumed scenarios under seeded bounds, NOT survival probabilities.</span>
+        </div>
+        <div id="distributionSvgContainer" class="svg-container"></div>
+        <div id="batchSummaryRow" class="batch-summary-row"></div>
+      </div>
+
+      <!-- Next Measurement & Human Decision (Hold / Measure / Proceed) -->
+      <div class="decision-card">
+        <div class="panel-header">
+          <span class="pill pill-decision">5. Pre-Lease Field Measurement &amp; Human Owner Decision</span>
+          <h3>What to Measure Next &amp; Explicit Human Decision</h3>
+        </div>
+        <div id="nextMeasurementContainer" class="measurement-list"></div>
+
+        <div class="human-decision-controls">
+          <p class="decision-prompt">
+            Select your human decision for the current verified run snapshot (no automated or AI lease verdict):
+          </p>
+          <div class="decision-buttons" role="radiogroup" aria-label="Human Lease Decision">
+            <button type="button" class="btn-decision" data-decision="hold">Hold Lease Signing</button>
+            <button type="button" class="btn-decision active" data-decision="measure">Measure Before Signing</button>
+            <button type="button" class="btn-decision" data-decision="proceed">Proceed to Lease Review</button>
+          </div>
+          <div class="field" style="margin-top:0.75rem;">
+            <label for="ownerNoteInput">Owner Measurement / Decision Note (Included in Evidence JSON)</label>
+            <input id="ownerNoteInput" type="text" placeholder="e.g., Schedule 3 weekday + 2 weekend cup-count tallies before deposit transfer" />
+          </div>
+          <div class="export-row">
+            <button type="button" id="downloadEvidenceBtn" class="btn btn-primary">
+              Download Verified Run Evidence (.json)
+            </button>
+            <span id="evidenceMetaText" class="helper-note"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>
+      <strong>Attribution &amp; Boundaries:</strong> Public data copyright Seoul Metropolitan Government (서울특별시), provided by Seoul Credit Guarantee Foundation (서울신용보증재단) under Korea Open Government License Type 1. Raw reported sales (<code>당월_매출_금액</code>) in quarter-keyed files have unconfirmed period aggregation semantics and are never divided by 3 or used to infer individual store survival.
+    </p>
+  </footer>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
