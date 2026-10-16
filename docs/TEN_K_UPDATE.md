@@ -27,8 +27,14 @@ Unmet or unverified: live 500-family Gemini execution and actual token cost, Clo
 
 PR #2 is the reviewable deliverable. Main remains unmerged by user decision. No messages, submissions, public publishing or new schedules are triggered by these attachments.
 
-## Upstream A3 prototype
+## Connected six-screen client
 
-Upstream `f9e4b92` is integrated into the PR history. Its six-screen prototype is preserved in `web/client/`, with its old contract test in `web/client/a3-integration-contract.test.ts`. It is intentionally outside the active build and suite; no runtime/test pass is claimed for that prototype. The active workbench remains `web/public/` with the validated server API.
+Upstream `f9e4b92` is integrated into the PR history. The six-screen client is now connected at `/rehearsal/` to the same validated `/run` API as the compact workbench. The root page links to it. The client is type-checked and bundled, all inline CSS has moved to its dedicated stylesheet, and server-only code and credentials do not enter the bundle.
 
-Activation is blocked by incompatible request/envelope shapes and incorrect evidence claims in the prototype: fixed AI-family labels despite offline execution, null holdout errors coerced to zero, prefilled calibration values, default-result substitution for unknown run IDs, and a hardcoded unchanged-hash assertion. The upstream server and its narrower test command do not replace the verified server, input/timeout guards or regression glob. A source read is the evidence for these incompatibilities, not a browser execution of the inactive prototype.
+The old fixed AI/calibration/holdout claims were removed. Initial state is unrun; actual model requests require the separate AI button. Financial distributions remain hidden, and the leader's individual cashflow is labelled as an assumption-based calculation. Unrun rounds, peak-queue estimates and endpoint-replay controls are not presented as completed features. Stored public summaries are separate context with the raw-reconciliation limitation visible.
+
+Fresh human decisions are required before export. Input edits, in-flight changes and failed or blocked responses cannot reuse a prior result or choice. CSV/JSON preserve the actual run evidence; Markdown is a short readable report, with the full JSON exported separately. The inactive original prototype-contract file remains in `web/client/a3-integration-contract.test.ts`; it is not a passing business gate.
+
+Build and 126 active unit/HTTP checks pass. Actual Chrome passed 20 checks on code revision `62e5cd78b98c953d8d0339b876bb12ad96a37c50`, including 10,000 unique candidate IDs, the actual leader canvas/ledger, zero-demand boundary arithmetic, stale/in-flight guards, blocked AI handling, original downloaded CSV/JSON/Markdown bytes and 390px layout. The Markdown fixture is 8,107 bytes. Live model calls: 0. These are local checks, not Cloud deployment evidence.
+
+The participant approved deployment to the accessible event project `h2gdm-hack26icn-2637`; the earlier configured project was inaccessible to the event account. Cloud deployment and reviewer access must be separately verified before filling the submission URL.

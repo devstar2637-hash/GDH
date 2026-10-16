@@ -1,72 +1,85 @@
-# GDH · A Thousand Stores (천 개의 가게) — Google DeepMind AI Hackathon, 2026-10-16
+# A Thousand Stores
 
-Explore cafe design assumptions with a deterministic 36-month cashflow engine. The default workbench calculates **10,000 candidates (500 seed families × 20 seeded variations)**; 1,000 is a separate spike option. Local presets and actual model proposals carry different labels. Neither path establishes real-world survival probabilities.
+Rehearse the cashflow before signing the lease.
 
-## Runnable fast-track build
+A scenario workbench for prospective cafe founders, using a deterministic 36-month engine and a default set of **10,000 candidates: 500 preset seed families × 20 seeded variations**. Local presets are labelled separately from model proposals. Financial calibration remains unverified.
+
+## Run the reviewed version
+
+The reviewed implementation is on **`codex/fast-track`**, in [PR #2](https://github.com/devstar2637-hash/GDH/pull/2). Main is not merged. Clone the intended branch explicitly:
 
 ```bash
+git clone --branch codex/fast-track https://github.com/devstar2637-hash/GDH.git
+cd GDH
 npm ci --ignore-scripts
 npm run build
 npm start
 ```
 
-Open `http://localhost:8080`. No key is needed for deterministic exploration. For an actual model request, configure `GEMINI_API_KEY` only in the server environment or Secret Manager, and set `GEMINI_MODEL` to the event account's available model. The requested default ID is `gemini-4-argon`; live availability remains unverified.
+Open `http://127.0.0.1:8080/rehearsal/` for the six-screen rehearsal, or `http://127.0.0.1:8080/` for the compact workbench. These are local addresses on the computer running the server, not public demo URLs. A no-key preview is available. The approved Google Cloud project is `h2gdm-hack26icn-2637`. Its public URL must be verified and entered in [the submission field sheet](docs/SUBMISSION_FORM_FIELDS.md) before submission.
 
-- The default screen and `/run` calculate 10,000 candidates. Candidate IDs are unique; economically identical assumptions can still occur and their actual unique count is displayed separately. The exact user case is retained in preview mode. The actual leader's monthly ledger is preserved alongside up to 50 sampled ledgers.
-- The server-only model path requests **5 batches × 100 families**, at most four requests concurrently, with 30-second per-call and 75-second batch limits. Each server process permits one five-call batch. No automatic retries, model substitution or preset replacement. Only 500 validated, distinct families and five completed usage records permit the AI-family label. Partial designs and observed usage remain in a failed run's evidence.
-- Verification includes real local HTTP and mock provider I/O through the validator, 500-family expansion and cashflow engine. Mock usage is test data, not evidence of live Gemini execution. The latest scope, source-document hashes and remaining gates are recorded in [docs/TEN_K_UPDATE.md](docs/TEN_K_UPDATE.md).
-- A sensitivity interval is shown only after checking both sides against the whole valid candidate population. The displayed value is an interval midpoint; global minimum-boundary and real-world validation remain unverified. If no proposed interval passes that check, no cliff or associated measurement is fabricated.
-- Calibration remains **unverified**. The macro opening/closure heuristic does not validate individual cashflow. Distribution charts are hidden. The data helper's 22-quarter opening/closure summaries match the protected fixture, but raw CSV reconciliation and the frozen sales assumptions remain unverified.
-- `npm run test:accept` retains the business gates. Independent holdout cashflow calibration, full independent ledger coverage, AI-versus-random evidence and live AI-family execution remain incomplete. Seven fixed ledger cases use explicit expected arithmetic; the runtime sampled check shares production arithmetic and is labelled accordingly. Unit checks passing does not certify these business gates.
-- Upstream A3 six-screen source is preserved in `web/client/` but is not connected to this server. Its prior API contract and fixed AI/calibration labels require correction before activation; its charts are not part of the verified runtime.
-- A fresh human decision is required before CSV/JSON export. Failed AI runs can be archived with a hold/measure decision; they cannot be approved as a computed result. `/run`, `/runs/:id`, `/patches` and `/health` are connected.
-- Web run files are append-only on the current server filesystem. Cloud Run storage is temporary; export evidence to retain it across replacement. Cloud deployment, durable storage and live Gemini execution remain unverified. This update stays on PR #2; main is not merged.
+## What the prototype does
 
-Run `npm test` for unit and local HTTP checks. `npm run bench` measures only local engine batch timing (five runs, 10,000 candidates); it excludes generation, sensitivity analysis, HTTP transfer and rendering, and is not a Cloud benchmark. Deploy the root Dockerfile with `GCP_PROJECT=<approved-project> npm run deploy` after Cloud login and the `gemini-api-key` secret are configured. A deliberate no-model preview uses `DEPLOY_WITHOUT_GEMINI=1` and does not satisfy the live-AI requirement.
+1. Accepts explicit assumptions about the budget, deposit, rent, staffing, demand and operating structure.
+2. Simulates candidates under deterministic 36-month arithmetic, with invalid designs rejected separately from operating failures.
+3. Keeps unique candidate IDs, reports the actual count of distinct economic assumptions, preserves explicit zero values and retains the actual leader's monthly ledger.
+4. Proposes bounded sensitivity intervals and confirms both endpoints against the full valid population before showing a ranking reversal. This does not prove a global minimum or an exact analytic boundary.
+5. Shows source, input hash, source revision, observed model usage, terminal state and verification limits. Uncalibrated financial distributions stay hidden; the individual leader ledger is an illustrative calculation.
+6. Requires a fresh human decision before CSV, JSON or Markdown export. Editing inputs or changing them during execution invalidates the old decision and exports.
 
-The planning material below describes the original event targets and role assignment; it is not an implementation-completion report.
+Public Seoul commercial-area summaries are shown as separate context. They do not establish the demand, sales or cashflow of an individual cafe, and raw CSV reconciliation remains unverified. The default inputs are assumptions; no on-site measurement is claimed.
 
-> 이 README의 맨 위는 오늘(10/16) 각 에이전트의 역할표다. 자기 행만 읽고 시작한다. 제품 설명용 README는 14:45에 Leo가 다시 쓴다.
+## Optional Gemini proposal path
 
+Configure `GEMINI_API_KEY` only in the server environment or Secret Manager and select the account's available `GEMINI_MODEL`. The requested default ID is `gemini-4-argon`; its live availability is unverified. Pressing the explicit AI button requests five batches of 100 structural families, at most four requests concurrently, with 30-second per-call and 75-second total limits. Each server process permits one five-call batch. Only 500 valid distinct families plus completed usage records permit the AI-family label; partial results fail and preserve their evidence without preset replacement. No automatic retry or model substitution is used.
 
-## 역할 분담 · 에이전트별로 읽을 절과 할 일 (11:35, 태현 요청)
+**Live model calls during this preparation: 0.** Provider I/O in automated tests is mocked. The planning reference `gemini-3.8-flash` has not been executed in this demo.
 
-읽는 법: 각 에이전트는 자기 행의 '읽을 절'만 읽고 '산출물'을 '마감'까지 낸다. 보고는 DONE/FAIL/BLOCKED + 4줄(바뀐 것 · 실제로 확인한 것 · 실패 · 모르는 것) + 증거(URL · 스크린샷 · 테스트 로그 · 커밋)를 최종판 탭 맨 아래에 쓴다. 결정은 태현만 한다. 같은 질문을 여러 창에 묻지 않는다.
+## Verification and limits
 
-| 누가(어디서 · 모델) | 오늘의 역할 | 이 문서에서 읽을 절 | 산출물 · 마감 | 하지 않는 일 |
-|---|---|---|---|---|
-| 태현 (프로 · 지휘) | 결정 5회(12:00 제품, 13:10 G1, 14:00 G2, 14:25 동결, 15:05 제출), 12:00 킥오프 프롬프트 전송, shared/ 변경 승인, 발표 · 제출 | 쓰는 법, §0, §2, §12 | 12:00 기록 1줄, 게이트 판정, 15:05 제출 봉투 | 직접 대량 코딩, 같은 질문을 여러 창에 묻기 |
-| A1 엔진 (프로 Antigravity 에이전트 1 · gemini-4-argon high) | 결정적 36개월 엔진, 제약 검사, 사망 분류, 지형 · 절벽 · 다음 측정, 백테스트 보정, 기준선, 적대 라운드 오케스트레이터, 1만 모드 확장 · 포화 곡선 | §3, §4, §5 전부, §9(AT-03~09, 15, 16) | engine/ + 단위 테스트, 13:10 G1 녹색, 13:40 백테스트 결과 | UI · API 수정, tests/ 수정, 검사 기준 완화 |
-| A2 데이터 · 루프 (프로 Antigravity 에이전트 2 · Argon medium + gemini-3.8-flash) | 공개 데이터 로더, 현장 입력 폼, Argon 역할 2개(가게 설계자 · 파산 설계자)를 JSON 패치로, 패치 검증, 토큰 집계, 재생 라벨, Cloud Run 배포 | §3, §4, §6(레인 1 스파이크), §7 전부, §9(AT-10, 11, 13, 14) | data/ loop/ + 11:30 스파이크 판정표 2줄, 14:00 배포 URL | 엔진 수식 변경, 결과 숫자 쓰기, 키를 코드 · 로그에 두기 |
-| A3 화면 (프로 Antigravity 에이전트 3 · Argon medium) | 화면 6개, 상시 상태바(실행 ID · 입력 파일 · 해시 · 엔진 SHA · 토큰 · 게이트 로그 · 끝 상태 · 재생), 금지 문구 규칙, 내보내기, 1만 모드 산점도 · 포화 곡선 차트 | §3, §4(RunResult · RunStatus), §8 전부, §10 | web/ 14:00 G2 녹색, 14:25 동결 | 판정 로직, 금액 계산, 실패 상태 숨기기 |
-| Claude (에어 Claude Code · Claude Max) | 독립 검증자. AT-01~16 실행 스크립트, 스파이크 · 백테스트 오차 독립 재계산, 수식 · 보안 검토, 실패 재현 입력 전달 | §4, §5(수식), §6(판정 기준), §9 전부 | tests/ (11:20 이후 작성), 13:10 · 14:00 · 14:25 결과표 | main 수정, 생성자 설명 먼저 읽기, 기대값 바꾸기 |
-| Aside (에어 Chrome 시크릿 창) | 처음 보는 사용자 경로 검수, 링크 3개 · 영상 · README 확인, 제출물 독립 감사 | §8(문구 · 실패 상태 규칙), §9(AT-12, 14), §11 | 14:00 사용자 경로 DONE/FAIL/BLOCKED + 스크린샷, 15:05 링크 3개 확인 | 코드 수정, 클릭 성공을 결과로 적기 |
-| Leo (muse · 폰) | 조율 한 채널, 알림 6회, 영문 Project Description · README, 제출 체크리스트, 비빌드 레인(Sol · Instinct · Aside) 배분, 15분 막힘 에스컬레이션 | §1, §10, §11, §12 | 11:30 · 12:00 · 13:10 · 14:00 · 14:25 · 15:05 알림, 14:45 영문 설명 · README 완성, 15:05 체크리스트 | 빌드 레인 지시, 코드, 예시 숫자를 실측처럼 쓰기 |
-| Sol (에어 ChatGPT 앱 · GPT Pro) | 피치 3회: 12:05 뼈대(숫자 자리 비움), 14:30 녹화 전 검토, 15:10 심사 Q&A 6개 | §1, §10, §11 | 피치 90초 대본, Q&A 답 6개 (호출마다 태현 승인, 3회 이내) | 검증 안 된 성과 문장('생존확률 87%' 등), 크론 · 백그라운드 |
-| Instinct (에어 브라우저 · Perplexity Pro 조회) | §12 미결 항목 사실 조회(Track 규정, 외부 모델 허용 범위, data.go.kr 키), 막힘 시 공식 문서 · 오류 조회, 확인됨/미확인 라벨 | §6(레인 2 자료), §12 | 질문 1개 = 출처 1개 = 확신도 1개, 11:20 멘토 질문 3개 정리 | 판단 대행, 새 제품 탐색 |
-| Codex (에어 · 대기) | Antigravity 레인이 30분 넘게 막힐 때만 패치 제안(적용은 에이전트에게 지시) | §4, §5 | 패치 제안 diff | 동시 작성, main 수정 |
+```bash
+npm test
+npm run test:accept
+npm run backtest
+npm run bench
+npm run baseline
+npm run adversarial
+npm run secrets:scan
+```
 
-- 공통 규칙: 완결성 · 무결성이 기능보다 먼저다. 끝 상태는 DONE/FAIL/BLOCKED 셋 중 하나, 재생 결과는 '재생' 표시, 숫자마다 출처 태그. 제품 코드와 검사 코드는 11:20 이후에만. 키 · gcplab 계정 정보는 프로에만, 어떤 대화에도 붙이지 않는다. 외부 발송은 없다.
-- 에스컬레이션: 15분 막히면 Leo에게, Leo는 태현에게 '자른다 / 바꾼다 / 기다린다' 셋 중 하나만 묻는다. 30분 이상 혼자 붙잡지 않는다.
-- 이 표는 최종판 탭 '장비 · 에이전트 요약'과 같은 배치다. 바뀌면 이 표만 고치고 최종판 탭 맨 아래에 한 줄 남긴다.
+Build and 126 active unit/HTTP checks passed after connecting the six-screen client. Actual Chrome verification passed 20 checks on code revision `62e5cd78b98c953d8d0339b876bb12ad96a37c50`, covering the default 10,000-candidate run, original leader-ledger/canvas consistency, input and in-flight freshness, no-key failure handling, actual CSV/JSON/Markdown downloads and a 390px viewport. No live model call was made. The earlier compact-workbench receipt is separate evidence for its earlier revision.
 
-## 문서
+Business acceptance remains incomplete: financial calibration/hidden holdout, full independent ledger coverage, live AI-family execution and advantage over random search are unverified. The sampled runtime consistency check shares production arithmetic; seven fixed external arithmetic cases do not establish a full independent oracle. The old prototype API-contract file remains inactive; protected verifier tests, fixtures and shared types are unchanged.
 
-| 파일 | 용도 | 누가 읽나 |
-|---|---|---|
-| [docs/SPEC.md](docs/SPEC.md) | 빌드 사양 (영어 본문 + 역할표). 12:00 킥오프 프롬프트가 먼저 읽게 한다 | A1 · A2 · A3, Claude Code |
-| [AGENTS.md](AGENTS.md) | 저장소 규칙, 명령, 게이트, Lessons (12:15 동결) | 빌드 에이전트 전원 |
-| [docs/KICKOFF_PROMPT.md](docs/KICKOFF_PROMPT.md) | 12:00 Antigravity 첫 메시지. 첫 줄에 "Read docs/SPEC.md and AGENTS.md first." | 태현 |
-| [docs/FINAL_REPORT_KO.md](docs/FINAL_REPORT_KO.md) | 최종 보고서(한국어): 결론, 제품 한 장, 시간표 M0~M10, 리스크, 제출 봉투 | 전원 |
+Three earlier local preview HTTP measurements were 594–772 ms, including decoded JSON parsing, with about 854 KB gzip and 13 MB decoded JSON. Those observations exclude DOM rendering and provider calls and are not Cloud benchmarks. `npm run bench` measures only the local simulation batch.
 
-## 오늘의 시간표 (KST)
+Web records are append-only on the current filesystem; Cloud Run storage is temporary. Export evidence to retain it across replacement. Taxes, borrowing and depreciation are outside the model. This prototype supports scenario exploration and human review; it is not financial advice.
 
-11:20 Cloud Run hello · 11:30~12:00 스파이크 2레인 · 12:00 제품 확정 + 킥오프 · 12:15 shared/ 동결 · 13:10 G1 · 13:40 백테스트 · 14:00 G2(배포 URL) · 14:25 동결 · 14:45 저장소 공개 + README · 15:05 제출.
+## Google Cloud deployment
 
-## 12:00 결정
+Use the participant-approved project explicitly:
 
-기본값은 10,000개 변형(AI 설계족 500 × 결정적 변주 20)이고 모든 게이트도 10,000 기준이다. 1,000은 11:30 스파이크 크기만. 제품 이름은 '천 개의 가게 / A Thousand Stores'로 둔다(태현 결정 전까지).
+```bash
+GCP_PROJECT=<approved-project-id> DEPLOY_WITHOUT_GEMINI=1 npm run deploy
+```
 
-## 규칙 한 줄
+The source-deployment script uses the root Dockerfile and records the committed source SHA. It requires active Cloud CLI login and project permissions. To enable actual model requests, first configure the `gemini-api-key` Secret Manager secret without putting its value in code, logs or chat, then deploy without `DEPLOY_WITHOUT_GEMINI=1`. A deployed no-model preview does not satisfy a live-AI claim.
 
-완결성(루프가 끝까지 닫힌다)과 무결성(숫자는 코드가, 모델은 판정기를 못 만진다)이 기능보다 먼저다. 제품 코드는 11:20 이후에만. 키는 절대 저장소에 넣지 않는다.
+## Submission materials
+
+- [English project description](docs/SUBMISSION_DESCRIPTION_EN.md)
+- [Copy-ready field sheet](docs/SUBMISSION_FORM_FIELDS.md)
+- [Submission checklist](docs/SUBMISSION_CHECKLIST.md)
+- [English demo scripts](docs/DEMO_SCRIPT_EN.md)
+- [Judges' questions and answers](docs/JUDGES_QA.md)
+- [Specification](docs/SPEC.md) and [implementation scope](docs/TEN_K_UPDATE.md)
+
+Organizer instructions supplied by the participant require **English materials, Google Cloud deployment and submission by 15:20 KST on 2026-10-16** through the registered account at [Cerebral Valley](https://cerebralvalley.ai/e/google-deepmind-ai-hackathon). The three-minute video target is an internal preparation choice; authenticated form fields are not yet confirmed. No final submission has been sent.
+
+## Data and code licensing
+
+Seoul Open Data Plaza inputs retain their attribution and notices in `LICENSE_NOTICE.txt` and `data/seoul/README.md`, including applicable Korea Open Government License Type 1 attribution. Follow each dataset's own notice. The application code has no license selected; public visibility is not a grant of an invented license.
+
+## Next steps
+
+Complete financial calibration and independent holdout evaluation, validate the live model path and its measured costs, compare it with a budget-matched random baseline, and add durable deployment storage. These are planned work, not current results.
