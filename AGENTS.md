@@ -47,3 +47,4 @@ G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 depl
 ## Lessons (append-only; newest at the bottom)
 Format: [HH:MM] [lane] what broke or surprised us > what we changed > which test now catches it.
 - [12:15] [all] (first entry written at kickoff)
+- [12:40] [A1] Later-quarter rows lived in shared/constants.ts next to the calibration series, so the frozen contract held the check series > moved those six rows to data/holdoutQuarters.ts; shared/ keeps 2021Q1-2024Q4 only; fitting reads only the calibration window > engine/cli.contract.test.ts fails if those quarter ids reappear under shared/. CLI `run --input --seed --n --out` writes result.json (designs, every result including constraintsOk=false, months when n>=50, leaderDesignId, cliff.relativeDelta, StatusBar). Outlay is deposit + fitoutCost only.

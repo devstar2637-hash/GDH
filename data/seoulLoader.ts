@@ -7,6 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEONGSU_CAFE_QUARTERS } from "../shared/constants.js";
 import type { QuarterMarketRow, SourceTag, Tagged } from "../shared/types.js";
+import { HOLDOUT_CAFE_QUARTERS } from "./holdoutQuarters.js";
 
 export interface SeoulDatasetBundle {
   quarters: readonly QuarterMarketRow[];
@@ -49,7 +50,10 @@ export function loadSeoulMarketData(repoRoot = process.cwd()): SeoulDatasetBundl
     inputFiles.push("shared/constants.ts#SEONGSU_CAFE_QUARTERS");
   }
 
-  const quarters = SEONGSU_CAFE_QUARTERS;
+  const quarters: readonly QuarterMarketRow[] = [
+    ...SEONGSU_CAFE_QUARTERS,
+    ...HOLDOUT_CAFE_QUARTERS,
+  ];
   const calibrationQuarters = quarters.filter((q) => q.quarter < "20251");
   const holdoutQuarters = quarters.filter((q) => q.quarter >= "20251");
 
