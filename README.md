@@ -1,6 +1,27 @@
 # GDH · A Thousand Stores (천 개의 가게) — Google DeepMind AI Hackathon, 2026-10-16
 
-Before you sign the lease, live ten thousand futures of your store (500 AI design families x 20 deterministic expansions = 10,000 variants x 36 months). Most of them fail. Keep the designs that survive and the one measurement that flips the answer.
+Explore cafe design assumptions with a deterministic 36-month cashflow engine. The fast-track screen computes 1,000 local preset candidates; its separate Gemini action requests up to four validated structural alternatives. Neither path establishes real-world survival probabilities.
+
+## Runnable fast-track build
+
+```bash
+npm ci --ignore-scripts
+npm run build
+npm start
+```
+
+Open `http://localhost:8080`. No key is needed for deterministic exploration. For a real model request, configure `GEMINI_API_KEY` only in the server environment or Secret Manager, and set `GEMINI_MODEL` to the model available to the event account. The default requested ID is `gemini-4-argon`; live availability has not been verified. The adapter makes no automatic retries or model substitutions.
+
+- Working locally: validated inputs, 36-month cashflow, exact user case plus preset alternatives, a sensitivity boundary when found, one next measurement, a fresh human decision and CSV/JSON export. `/run`, `/runs/:id`, `/patches` and `/health` are connected.
+- Verification: 99 unit/integration checks passed, including fixed external arithmetic expectations and real local HTTP. Actual Chrome verified the 390px layout, input changes during execution, fresh decisions and downloaded CSV/JSON. Provider I/O was mocked; no live model call is claimed.
+- The engine also exposes a 10,000-preset mode through the CLI. This is deterministic generation, not evidence of 500 AI-created families. The screen currently uses 1,000 candidates; live AI mode calculates only the candidates actually returned and validated.
+- Calibration remains **unverified**. The macro opening/closure heuristic does not validate individual cashflow. Frozen market sales constants have not been reconciled to the source CSV and are not presented as verified observations. Distribution charts are hidden. Unit tests passing does not mean all acceptance gates pass.
+- `npm run test:accept` retains the business gates; cashflow calibration, full independent ledger coverage, AI-versus-random evidence and the full planned AI-family workflow remain unmet. The fixed ledger tests cover seven explicit boundary cases; the runtime sampled check shares the production arithmetic and is labelled accordingly.
+- Run files are append-only through the web API on the current server filesystem. Cloud Run storage is temporary; download CSV/JSON to retain evidence across instance replacement. Cloud deployment, durable storage and live Gemini execution remain unverified.
+
+Run `npm test` for the current unit and HTTP checks, and `npm run bench -- --n=1000` or `npm run bench` for engine-only local timing. Deploy the root Dockerfile with `GCP_PROJECT=<approved-project> npm run deploy` after Cloud login and the `gemini-api-key` secret are configured. Deployment records the actual source SHA. A deliberate no-model preview is available via `DEPLOY_WITHOUT_GEMINI=1`; it does not satisfy the live-AI requirement.
+
+The planning material below describes the original event targets and role assignment; it is not an implementation-completion report.
 
 > 이 README의 맨 위는 오늘(10/16) 각 에이전트의 역할표다. 자기 행만 읽고 시작한다. 제품 설명용 README는 14:45에 Leo가 다시 쓴다.
 

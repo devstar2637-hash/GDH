@@ -145,6 +145,8 @@ const DEFAULT_ADVERSARIAL_SHOCK_ROUNDS: Shock[][] = [
 let cachedGitSha: string | null = null;
 
 export function getEngineGitSha(): string {
+  const deployedSha = process.env.ENGINE_SHA;
+  if (deployedSha && /^[a-f0-9]{7,40}$/i.test(deployedSha)) return deployedSha;
   if (cachedGitSha) return cachedGitSha;
   try {
     cachedGitSha = execSync("git rev-parse --short=8 HEAD", {
@@ -156,7 +158,7 @@ export function getEngineGitSha(): string {
   } catch {
     // Fallback when git metadata is unavailable (e.g. inside minimal container)
   }
-  cachedGitSha = "a869ef80";
+  cachedGitSha = "unknown";
   return cachedGitSha;
 }
 
@@ -208,8 +210,8 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
 
   gateLog.push({
     gate: "backtest",
-    passed: (calibration.errorPp ?? 99) <= 5.0,
-    detail: `2021-2024 성수동 카페 개·폐업률 최대 오차 ${calibration.errorPp?.toFixed(2) ?? "N/A"}pp (기준 <= 5.0pp) -> ${calibration.koLabel}`,
+    passed: null,
+    detail: calibration.reason,
     value: calibration.errorPp ?? undefined,
     threshold: 5.0,
     at: nowIso(),
@@ -217,8 +219,8 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
 
   gateLog.push({
     gate: "holdout",
-    passed: (calibration.holdoutErrorPp ?? 99) <= 5.0,
-    detail: `2025Q1-2026Q2 홀드아웃 최대 오차 ${calibration.holdoutErrorPp?.toFixed(2) ?? "N/A"}pp (기준 <= 5.0pp)`,
+    passed: null,
+    detail: "2025Q1-2026Q2 집계 휴리스틱 참고값이며 실제 현금흐름 엔진의 독립 홀드아웃 검증은 미완료",
     value: calibration.holdoutErrorPp ?? undefined,
     threshold: 5.0,
     at: nowIso(),
@@ -288,7 +290,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   );
   gateLog.push({
     gate: "pnl_recompute",
-    passed: pnlCheck.passed,
+    passed: pnlCheck.passed ? null : false,
     detail: `공유 월별 산식을 사용한 P&L 상호일치 검사 (${pnlCheck.sampledCount}개 표본: 생존 ${pnlCheck.aliveSampled} + 폐업 ${pnlCheck.deadSampled}) 최대 오차 ${pnlCheck.maxAbsDiffKrw.toFixed(4)}원 (기준 <= 1원). 독립 오라클 검증 아님`,
     value: pnlCheck.maxAbsDiffKrw,
     threshold: 1,
@@ -407,11 +409,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
     sha256Canonical(oracleHashesBefore) === sha256Canonical(oracleHashesAfter);
 
   // 9. Determine Run ID, Input Hash, Token Totals, and End State (AT-14)
-  const inputFiles = options.inputFiles ?? [
-    "data/seoul/2026/seongsu_cafe_2021_2026.csv",
-    "data/seoul/manifest.json",
-    "shared/forbidden-paths.json",
-  ];
+  const inputFiles = options.inputFiles ?? [];
   const inputHash =
     options.inputHash ??
     sha256Canonical({
@@ -419,7 +417,10 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
       baseDesign,
       mode,
       scenarios,
-    }).slice(0, 16);
+      customDesigns: options.customDesigns ?? null,
+      injectedDesigns: options.injectedDesigns ?? null,
+      quarters: options.quarters ?? SEONGSU_CAFE_QUARTERS,
+    });
 
   const runId =
     options.runId ?? `run-${constraints.seed}-${inputHash.slice(0, 8)}`;
@@ -469,7 +470,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
     status: {
       runId,
       inputFiles,
-      inputHash: inputHash.slice(0, 8),
+      inputHash,
       engineSha: options.engineSha ?? getEngineGitSha(),
       endState,
       endReason,

@@ -47,3 +47,5 @@ G1 13:10 engine end to end on the fixed input, AT-03..AT-07 green. G2 14:00 depl
 ## Lessons (append-only; newest at the bottom)
 Format: [HH:MM] [lane] what broke or surprised us > what we changed > which test now catches it.
 - [12:15] [all] (first entry written at kickoff)
+- [12:46] [integration] The docs-only commit 34d2abc also removed code, shared schema and public datasets. Restored their exact 88b3616 contents on a separate integration branch while preserving the newer planning documents. Keep partial lane uploads from replacing the complete repository tree.
+- [12:46] [verification] Local presets were labelled AI-generated, unused model calls had synthetic token counts, and an aggregate heuristic was labelled cashflow-calibrated. Added numeric rejection and evidence-shape regression checks; retained uncalibrated/explorer/zero-call labels. Corrected implementation unit assertions for these labels; tests/ acceptance criteria, fixtures, financial expected amounts and shared/ remain unchanged. Business acceptance is still incomplete.

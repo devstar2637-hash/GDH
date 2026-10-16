@@ -1,16 +1,19 @@
-# infra/Dockerfile — single Cloud Run service: web (static) + api. Node 20 LTS.
 FROM node:20-slim AS build
 WORKDIR /app
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY tsconfig.json ./
 COPY shared ./shared
 COPY engine ./engine
 COPY loop ./loop
 COPY web ./web
-RUN npm ci --ignore-scripts && npm run build
+RUN npm run build && npm prune --omit=dev --ignore-scripts
+
 FROM node:20-slim
 WORKDIR /app
 ENV NODE_ENV=production PORT=8080
-COPY --from=build /app /app
+COPY --from=build --chown=node:node /app /app
+RUN mkdir -p /app/runs && chown node:node /app/runs
 USER node
 EXPOSE 8080
-CMD ["npm","run","start"]
+CMD ["node", "dist/web/server.js"]
