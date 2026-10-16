@@ -1,3 +1,6 @@
+// INACTIVE PROTOTYPE CONTRACT from upstream f9e4b92. Not the active server API.
+// This source includes unverified AI/calibration assertions and is preserved for correction before wiring.
+// It is excluded together with web/client from the active build and test suite; no pass is claimed.
 // web/web.test.ts — Lane A3 integration tests for HTTP server, UI assets, exports, and AT-12/AT-14 compliance.
 
 import assert from "node:assert/strict";

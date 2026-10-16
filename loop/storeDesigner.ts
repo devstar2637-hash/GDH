@@ -1,7 +1,7 @@
 // loop/storeDesigner.ts — Lane A2. Store Designer role (Argon P-mutation).
 // Proposes store design patch bundles strictly within store_designer_allowed_prefixes,
 // validates against forbidden-paths.json (AT-10) and hard constraints (AT-03),
-// and expands 500 AI design families x 20 variations = 10,000 variants (AT-16).
+// Legacy deterministic family expansion: this is NOT 500 independent AI designs.
 
 import { generateStructuredStoreDesigns } from "../engine/baseline.js";
 import { expandDesignFamiliesTo10k } from "../engine/landscape.js";
@@ -71,8 +71,9 @@ export async function runStoreDesigner(options: {
     fallbackGenerator: () => buildDefaultPatchBundles(options.baseDesign, 16),
   });
 
+  if (!Array.isArray(geminiRes.data)) throw new Error("INVALID_STORE_DESIGN_OUTPUT: no replay substituted.");
   const allBundles = [
-    ...(Array.isArray(geminiRes.data) ? geminiRes.data : buildDefaultPatchBundles(options.baseDesign, 16)),
+    ...geminiRes.data,
     ...(options.injectedBundles ?? []),
   ];
 
@@ -82,7 +83,7 @@ export async function runStoreDesigner(options: {
     options.constraints
   );
 
-  // Build full 500 families (expanded x 20 = 10,000 variants) or 1,000 variants
+  // Build deterministic families; only accepted proposal overlays may come from a live model.
   const familyCount = mode === 10000 ? 500 : 1000;
   const baseFamilies = generateStructuredStoreDesigns(
     options.baseDesign,
@@ -90,7 +91,7 @@ export async function runStoreDesigner(options: {
     familyCount
   );
 
-  // Overlay validated Argon patch bundles into family slots 2..N while preserving Pareto leaders 0..1
+  // Overlay validated live/replay bundles; fixed seed leaders and other families remain deterministic.
   for (let i = 0; i < validation.acceptedDesigns.length && i + 2 < baseFamilies.length; i++) {
     const patched = validation.acceptedDesigns[i];
     const slotIdx = i + 2;

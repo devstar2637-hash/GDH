@@ -1,4 +1,4 @@
-// engine/engine.test.ts — Lane A1 comprehensive test suite for AT-01..AT-09, AT-13..AT-16.
+// Unit behavior checks. Passing these does not satisfy the protected business acceptance gates.
 
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -18,11 +18,14 @@ import { runOrchestration } from "./orchestrator.js";
 import { sha256Canonical } from "./prng.js";
 import { simulateBatch } from "./simulator.js";
 
-describe("Lane A1: Deterministic Engine & Hard Gates", () => {
-  it("AT-01 & AT-15: Backtest (2021-2024) and Holdout (2025Q1-2026Q2) pass within +/-5.0 pp", () => {
+describe("Lane A1: Deterministic engine unit behavior", () => {
+  it("aggregate heuristic remains uncalibrated even when its diagnostic errors are within tolerance", () => {
     const cal = runBacktestGate();
-    assert.equal(cal.label, "calibrated");
-    assert.equal(cal.koLabel, "보정됨");
+    assert.equal(cal.label, "uncalibrated");
+    assert.equal(cal.koLabel, "미보정");
+    assert.equal(cal.evidenceScope, "aggregate_heuristic_only");
+    assert.match(cal.reason, /현금흐름 보정·검증을 입증하지 않습니다/);
+    assert.equal(cal.diagnosticWithinTolerance, true);
     assert.ok((cal.errorPp ?? 99) <= 5.0, `Expected errorPp <= 5.0, got ${cal.errorPp}`);
     assert.ok(
       (cal.holdoutErrorPp ?? 99) <= 5.0,
@@ -93,7 +96,7 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
     }
   });
 
-  it("AT-04: Independent spreadsheet-style P&L recomputation matches 50 sampled variants within <= 1 KRW and returns deposit at month 36", () => {
+  it("shared-arithmetic ledger consistency matches sampled variants without claiming an independent oracle", () => {
     const designs = generateStructuredStoreDesigns(
       DEFAULT_BASE_STORE_DESIGN,
       DEFAULT_CONSTRAINTS,
@@ -121,6 +124,7 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
     assert.equal(check.passed, true);
     assert.ok(check.sampledCount >= 50, `Sampled ${check.sampledCount} variants`);
     assert.ok(check.maxAbsDiffKrw <= 1, `Max diff ${check.maxAbsDiffKrw}`);
+    assert.match(check.detail, /not an independent oracle/);
   });
 
   it("AT-05 & AT-06: 10,000 variants x 36 months (default) runs in <= 2.0s and produces identical SHA-256 hash on same seed", () => {
@@ -153,7 +157,8 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
     assert.equal(run.nextMeasurement.variable, String(run.cliff.variable));
     assert.notEqual(run.cliff.leaderBelow, run.cliff.leaderAbove);
 
-    const validDesigns = run.designs.filter((_, i) => run.results[i]?.constraintsOk).slice(0, 120);
+    // Verify the reported leaders against every valid candidate, not a prefix.
+    const validDesigns = run.designs.filter((_, i) => run.results[i]?.constraintsOk);
     const delta = run.cliff.relativeDelta ?? 0;
     const step = 0.03;
     const leaderBelow = evaluateLeaderAtAssumptionDelta(
@@ -173,9 +178,11 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
       run.constraints
     );
     assert.notEqual(leaderBelow, leaderAbove);
+    assert.equal(leaderBelow, run.cliff.leaderBelow);
+    assert.equal(leaderAbove, run.cliff.leaderAbove);
   });
 
-  it("AT-09: Structured Argon variants beat or match random baseline at same N=1,000 budget", () => {
+  it("local structured presets remain an explorer even when coverage metrics match the random baseline", () => {
     const run = runOrchestration({
       runId: "test-baseline",
       mode: 1000,
@@ -183,12 +190,12 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
       persistToDisk: false,
     });
     assert.ok(run.baseline);
-    assert.equal(run.baseline.label, "ai-native");
+    assert.equal(run.baseline.label, "explorer");
     assert.ok(run.baseline.argonNewFamilies >= run.baseline.randomNewFamilies);
     assert.ok(run.baseline.argonNonDominated >= run.baseline.randomNonDominated);
   });
 
-  it("AT-13 & AT-14: Adversarial loop logs <= 3 rounds with stopReason, preserves oracle hashes, and populates StatusBar", () => {
+  it("local stress rounds log stop reasons, unchanged oracle files, full input hash and zero model usage", () => {
     const run = runOrchestration({
       runId: "test-adv-rounds",
       mode: 1000,
@@ -206,12 +213,13 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
     assert.equal(roundsJson.oracleUnchanged, true);
 
     assert.equal(run.status.endState, "DONE");
-    assert.ok(run.status.inputHash && run.status.inputHash.length === 8);
+    assert.match(run.status.inputHash ?? '', /^[a-f0-9]{64}$/);
     assert.ok(run.status.engineSha && run.status.engineSha.length >= 7);
-    assert.ok(run.status.tokenTotal.input > 0);
+    assert.deepEqual(run.status.tokens, []);
+    assert.deepEqual(run.status.tokenTotal, { input: 0, output: 0 });
   });
 
-  it("AT-16: 10,000-variant mode (500 families x 20 variations) passes all constraints and finishes <= 2.0s with saturation curve", () => {
+  it("10,000 local preset variants report deterministic provenance and a saturation curve", () => {
     const run10k = runOrchestration({
       runId: "test-10k",
       mode: 10000,
@@ -221,7 +229,9 @@ describe("Lane A1: Deterministic Engine & Hard Gates", () => {
 
     assert.equal(run10k.results.length, 10000);
     assert.equal(run10k.rejectedCount, 0);
-    assert.equal(run10k.modeLabel, "500 AI design families x 20 variations");
+    assert.equal(run10k.modeLabel, undefined);
+    assert.match(run10k.status.gateLog.find((gate) => gate.gate === "baseline")!.detail,
+      /deterministic presets.*모델 미호출/);
     assert.ok((run10k.computeMs ?? 9999) <= 2000, `10k took ${run10k.computeMs}ms`);
     assert.equal(run10k.saturationCurve?.length, 3);
   });

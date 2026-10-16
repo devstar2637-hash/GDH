@@ -4,3 +4,10 @@ data/seoul/raw
 runs
 *.log
 .env*
+.omc
+.agents
+.codex
+.gemini
+.aws
+dist
+tests

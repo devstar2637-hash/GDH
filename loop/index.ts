@@ -2,6 +2,9 @@
 // Connects Seoul public data + onsite inputs + Gemini / Replay Store Designer +
 // Bankruptcy Designer + Schema & Forbidden-Path Validator to the deterministic engine.
 
+// The HTTP workbench uses this bounded, explicitly invoked provider adapter.
+export * from "./boundedProposals.js";
+
 import {
   normalizeOnsiteInput,
   type NormalizedOnsiteBundle,

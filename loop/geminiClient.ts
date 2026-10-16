@@ -1,6 +1,6 @@
 // loop/geminiClient.ts — Lane A2. Server-side Gemini API wrapper (@google/genai)
 // with strict outbound host allowlist (AT-11), token usage logging (AT-14),
-// and deterministic offline fallback when GEMINI_API_KEY is unset or offline mode is active.
+// and explicitly labelled offline replay. Provider failures never fabricate output or usage.
 
 import { GoogleGenAI } from "@google/genai";
 import type { TokenUsage } from "../shared/types.js";
@@ -79,7 +79,7 @@ export interface GeminiJsonResponse<T> {
 
 /**
  * Call Gemini structured JSON generation when `GEMINI_API_KEY` is configured on the server,
- * or deterministically return `fallbackGenerator()` when offline / no key is present.
+ * or return labelled deterministic replay only when offline was explicitly selected.
  */
 export async function callGeminiStructured<T>(
   req: GeminiJsonRequest<T>
@@ -95,24 +95,20 @@ export async function callGeminiStructured<T>(
     throw new Error(endpointCheck.reason);
   }
 
-  if (req.offline || !apiKey) {
+  if (req.offline) {
     const fallbackData = req.fallbackGenerator();
-    const estInput = Math.max(120, Math.round(req.prompt.length / 3.5));
-    const estOutput = Math.max(
-      180,
-      Math.round(JSON.stringify(fallbackData).length / 4)
-    );
     return {
       data: fallbackData,
       usage: {
-        model: `${model}`,
-        call: req.callName,
-        inputTokens: estInput,
-        outputTokens: estOutput,
+        model: "replay:deterministic",
+        call: `${req.callName}:replay`,
+        inputTokens: 0,
+        outputTokens: 0,
       },
       liveApiUsed: false,
     };
   }
+  if (!apiKey) throw new Error("GEMINI_UNCONFIGURED: live generation requires a server API key.");
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -127,12 +123,12 @@ export async function callGeminiStructured<T>(
 
     const rawText = response.text ?? "";
     const parsed = JSON.parse(rawText) as T;
-    const inputTokens =
-      response.usageMetadata?.promptTokenCount ??
-      Math.max(120, Math.round(req.prompt.length / 3.5));
-    const outputTokens =
-      response.usageMetadata?.candidatesTokenCount ??
-      Math.max(180, Math.round(rawText.length / 4));
+    const inputTokens = response.usageMetadata?.promptTokenCount;
+    const outputTokens = response.usageMetadata?.candidatesTokenCount;
+    if (typeof inputTokens !== "number" || !Number.isSafeInteger(inputTokens) || inputTokens < 0 ||
+        typeof outputTokens !== "number" || !Number.isSafeInteger(outputTokens) || outputTokens < 0) {
+      throw new Error("usage_unavailable");
+    }
 
     return {
       data: parsed,
@@ -145,17 +141,7 @@ export async function callGeminiStructured<T>(
       liveApiUsed: true,
     };
   } catch {
-    // Graceful fallback if network/quota fails during live demo
-    const fallbackData = req.fallbackGenerator();
-    return {
-      data: fallbackData,
-      usage: {
-        model,
-        call: `${req.callName}:fallback`,
-        inputTokens: Math.max(120, Math.round(req.prompt.length / 3.5)),
-        outputTokens: 320,
-      },
-      liveApiUsed: false,
-    };
+    // Never expose provider error bodies, credentials, or synthetic token estimates.
+    throw new Error("GEMINI_REQUEST_FAILED: live generation or measured usage is unavailable; no replay substituted.");
   }
 }

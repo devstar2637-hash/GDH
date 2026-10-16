@@ -1,6 +1,8 @@
 // data/seoulLoader.ts — Lane A2. Loads Seoul Open Data Plaza (OA-15577, OA-15572, OA-15568)
-// 22-quarter Seongsu cafe series (2021Q1-2026Q2), verifies manifest SHA-256 hashes,
-// and tags every public metric with SourceTag { kind: "public", dataset, asOf }.
+// Returns the checked-in 22-quarter store-count summary (2021Q1-2026Q2).
+// Hashing files below fingerprints bytes only: it does NOT parse CSV rows,
+// verify manifest file digests, or establish summary-to-source consistency.
+// Unverified fixed estimated-sales figures are deliberately excluded.
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -49,13 +51,16 @@ export function loadSeoulMarketData(repoRoot = process.cwd()): SeoulDatasetBundl
     inputFiles.push("shared/constants.ts#SEONGSU_CAFE_QUARTERS");
   }
 
-  const quarters = SEONGSU_CAFE_QUARTERS;
+  const quarters = SEONGSU_CAFE_QUARTERS.map(({ estSalesKrw: _unverifiedSales, ...quarter }) => ({
+    ...quarter,
+    sourceFiles: [...quarter.sourceFiles],
+  }));
   const calibrationQuarters = quarters.filter((q) => q.quarter < "20251");
   const holdoutQuarters = quarters.filter((q) => q.quarter >= "20251");
 
   const sourceTag: SourceTag = {
     kind: "public",
-    dataset: "서울열린데이터광장 OA-15577(점포)·OA-15572(추정매출)·OA-15568(영역)",
+    dataset: "서울열린데이터광장 OA-15577(점포) 기반 보관 요약 — 원자료 재파싱 미실행",
     asOf: "2021Q1-2026Q2",
     field: "CS100010(커피-음료) 성수동 8개 상권",
     url: "https://data.seoul.go.kr",
@@ -77,7 +82,7 @@ export function loadSeoulMarketData(repoRoot = process.cwd()): SeoulDatasetBundl
     manifestHash: hasher.digest("hex").slice(0, 16),
     sourceTag,
     summaryMetrics: {
-      latestStoreCount: { value: latest?.totalStores ?? 245, source: sourceTag },
+      latestStoreCount: { value: latest.totalStores, source: sourceTag },
       meanQuarterlyOpenRatePct: {
         value: Number(avgOpen.toFixed(2)),
         source: sourceTag,

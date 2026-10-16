@@ -90,9 +90,8 @@ export async function proposeBankruptcyShocksForRound(options: {
     fallbackGenerator: () => DEFAULT_ROUND_SHOCKS[options.round],
   });
 
-  const proposed = Array.isArray(geminiRes.data)
-    ? geminiRes.data
-    : DEFAULT_ROUND_SHOCKS[options.round];
+  if (!Array.isArray(geminiRes.data)) throw new Error("INVALID_SHOCK_OUTPUT: no replay substituted.");
+  const proposed = geminiRes.data;
 
   const validated = validateAdversarialShocks(
     proposed,
@@ -101,10 +100,7 @@ export async function proposeBankruptcyShocksForRound(options: {
 
   return {
     round: options.round,
-    shocks:
-      validated.acceptedShocks.length > 0
-        ? validated.acceptedShocks
-        : DEFAULT_ROUND_SHOCKS[options.round],
+    shocks: validated.acceptedShocks,
     rejectedPatches: validated.rejectedPatches,
     usage: geminiRes.usage,
   };

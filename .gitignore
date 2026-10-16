@@ -1,5 +1,5 @@
 # Local dependencies and build output
-node_modules/
+node_modules
 .next/
 dist/
 build/
@@ -20,3 +20,4 @@ credentials*.json
 service-account*.json
 application_default_credentials.json
 logs/
+runs/

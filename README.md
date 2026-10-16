@@ -1,6 +1,30 @@
 # GDH · A Thousand Stores (천 개의 가게) — Google DeepMind AI Hackathon, 2026-10-16
 
-Before you sign the lease, live ten thousand futures of your store (500 AI design families x 20 deterministic expansions = 10,000 variants x 36 months). Most of them fail. Keep the designs that survive and the one measurement that flips the answer.
+Explore cafe design assumptions with a deterministic 36-month cashflow engine. The default workbench calculates **10,000 candidates (500 seed families × 20 seeded variations)**; 1,000 is a separate spike option. Local presets and actual model proposals carry different labels. Neither path establishes real-world survival probabilities.
+
+## Runnable fast-track build
+
+```bash
+npm ci --ignore-scripts
+npm run build
+npm start
+```
+
+Open `http://localhost:8080`. No key is needed for deterministic exploration. For an actual model request, configure `GEMINI_API_KEY` only in the server environment or Secret Manager, and set `GEMINI_MODEL` to the event account's available model. The requested default ID is `gemini-4-argon`; live availability remains unverified.
+
+- The default screen and `/run` calculate 10,000 candidates. Candidate IDs are unique; economically identical assumptions can still occur and their actual unique count is displayed separately. The exact user case is retained in preview mode. The actual leader's monthly ledger is preserved alongside up to 50 sampled ledgers.
+- The server-only model path requests **5 batches × 100 families**, at most four requests concurrently, with 30-second per-call and 75-second batch limits. Each server process permits one five-call batch. No automatic retries, model substitution or preset replacement. Only 500 validated, distinct families and five completed usage records permit the AI-family label. Partial designs and observed usage remain in a failed run's evidence.
+- Verification includes real local HTTP and mock provider I/O through the validator, 500-family expansion and cashflow engine. Mock usage is test data, not evidence of live Gemini execution. The latest scope, source-document hashes and remaining gates are recorded in [docs/TEN_K_UPDATE.md](docs/TEN_K_UPDATE.md).
+- A sensitivity interval is shown only after checking both sides against the whole valid candidate population. The displayed value is an interval midpoint; global minimum-boundary and real-world validation remain unverified. If no proposed interval passes that check, no cliff or associated measurement is fabricated.
+- Calibration remains **unverified**. The macro opening/closure heuristic does not validate individual cashflow. Distribution charts are hidden. The data helper's 22-quarter opening/closure summaries match the protected fixture, but raw CSV reconciliation and the frozen sales assumptions remain unverified.
+- `npm run test:accept` retains the business gates. Independent holdout cashflow calibration, full independent ledger coverage, AI-versus-random evidence and live AI-family execution remain incomplete. Seven fixed ledger cases use explicit expected arithmetic; the runtime sampled check shares production arithmetic and is labelled accordingly. Unit checks passing does not certify these business gates.
+- Upstream A3 six-screen source is preserved in `web/client/` but is not connected to this server. Its prior API contract and fixed AI/calibration labels require correction before activation; its charts are not part of the verified runtime.
+- A fresh human decision is required before CSV/JSON export. Failed AI runs can be archived with a hold/measure decision; they cannot be approved as a computed result. `/run`, `/runs/:id`, `/patches` and `/health` are connected.
+- Web run files are append-only on the current server filesystem. Cloud Run storage is temporary; export evidence to retain it across replacement. Cloud deployment, durable storage and live Gemini execution remain unverified. This update stays on PR #2; main is not merged.
+
+Run `npm test` for unit and local HTTP checks. `npm run bench` measures only local engine batch timing (five runs, 10,000 candidates); it excludes generation, sensitivity analysis, HTTP transfer and rendering, and is not a Cloud benchmark. Deploy the root Dockerfile with `GCP_PROJECT=<approved-project> npm run deploy` after Cloud login and the `gemini-api-key` secret are configured. A deliberate no-model preview uses `DEPLOY_WITHOUT_GEMINI=1` and does not satisfy the live-AI requirement.
+
+The planning material below describes the original event targets and role assignment; it is not an implementation-completion report.
 
 > 이 README의 맨 위는 오늘(10/16) 각 에이전트의 역할표다. 자기 행만 읽고 시작한다. 제품 설명용 README는 14:45에 Leo가 다시 쓴다.
 
