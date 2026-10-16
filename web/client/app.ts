@@ -2102,7 +2102,7 @@ function renderRecommendedCategories(): void {
       const badgeLabel = !feasible
         ? "자본금 여유 부족"
         : isTop
-          ? "👑 1순위 맞춤 추천"
+          ? "1순위 맞춤 추천"
           : `${idx + 1}순위 추천`;
       const badgeClass = !feasible ? "cat-badge warn" : "cat-badge";
       const estDailyRevManwon =
@@ -2113,7 +2113,7 @@ function renderRecommendedCategories(): void {
       return `
         <button type="button" class="cat-card ${isSelected ? "active" : ""}" data-cat-id="${cat.id}">
           <div class="cat-top">
-            <span class="cat-name">${cat.icon} ${cat.name}</span>
+            <span class="cat-name">${cat.name}</span>
             <span class="${badgeClass}">${badgeLabel}</span>
           </div>
           <div class="cat-desc">${cat.shortDesc}</div>
@@ -2150,7 +2150,7 @@ function updateFounderCapitalReportCard(): void {
   const fin = computeCategoryStartupManwon(cat, distProf);
 
   const catHeadline = $("selectedCategoryHeadline");
-  if (catHeadline) catHeadline.textContent = `${cat.icon} ${cat.name}`;
+  if (catHeadline) catHeadline.textContent = cat.name;
 
   const addrSum = $("selectedAddressSummary");
   if (addrSum) {
@@ -2292,7 +2292,7 @@ function updateReaEvidenceTerminal(): void {
   if (step === 1) {
     promptEl.textContent = `> inspect --category="${cat.id}" --district="${distProf.name}" --selected="${selObj.label}"`;
     replyEl.innerHTML =
-      `[${cat.name}] 전용 2.5D 인테리어 로드 완료 · <b>${cat.counterLabel}</b> + <b>${cat.displayLabel}</b> + <b>${cat.pickupLabel}</b> + 좌석 3조 배치됨.<br/>` +
+      `[${cat.name}] 전용 2.5D 인테리어 로드 완료 · <b>카운터</b> + <b>진열대</b> + <b>픽업대</b> + 좌석 3조 배치됨.<br/>` +
       `현재 선택 가구: <b>${selObj.label}</b> (좌표 X:${selObj.x.toFixed(1)}m, Y:${selObj.y.toFixed(1)}m, 크기 ${selObj.w.toFixed(1)}×${selObj.h.toFixed(1)}m) — 마우스 드래그로 이동하거나 <kbd>R</kbd> 키로 90° 회전 가능.`;
   } else if (step === 2) {
     const r = state.results?.plan;
@@ -2301,7 +2301,7 @@ function updateReaEvidenceTerminal(): void {
     const waitB = b ? Math.round(observedWait(b)) : 0;
     promptEl.textContent = `> rehearse --peak="10min" --arrival="${state.arrival.toFixed(1)}/min" --staff=${state.pickupStaff} --seed=${state.seed}`;
     replyEl.innerHTML = r?.routeBlocked
-      ? `⚠️ <b>동선 단절 감지</b>: ${r.blockedReason || "통로 폭 미달"} (최소 통과 폭 ${state.body.toFixed(2)}m 필요). 도면 위에서 가구를 옆으로 드래그하세요.`
+      ? `<b>동선 단절 감지</b>: ${r.blockedReason || "통로 폭 미달"} (최소 통과 폭 ${state.body.toFixed(2)}m 필요). 도면 위에서 가구를 옆으로 드래그하세요.`
       : `10분 피크 시뮬레이션 완료 · 입구→주문→픽업 이동거리 <b>${(r?.walkDistance ?? 0).toFixed(1)}m</b> · 평균 대기시간 기본 <b>${waitB}초</b> → 내 도면 <b>${waitP}초</b> (최대 픽업 줄 ${r?.maxPickupQueue ?? 0}명).`;
   } else {
     const cliffTxt = $("cliffHeadline")?.textContent || "월 임대료 경계 계산 중";
@@ -2473,12 +2473,11 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   const calib = run.calibration as unknown as { calibrated?: boolean; label?: string; koLabel?: string; errorPp?: number | null; maxErrorPp?: number; holdoutErrorPp?: number | null };
   const isCalibrated = calib.calibrated === true || calib.label === "calibrated";
   const calibErrPp = calib.errorPp ?? calib.maxErrorPp ?? null;
-  const calibSurvPct = isCalibrated
-    ? `${calib.koLabel ?? "보정됨"} (백테스트 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp)`
-    : `${calib.koLabel ?? "미보정"}`;
+  const calibSurvPct = isCalibrated ? (calib.koLabel ?? "보정됨") : (calib.koLabel ?? "미보정");
+  const calibSubText = `원시 통과 ${rawSurvPct} · 백테스트 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp`;
 
   setText("s1TotalCount", totalN.toLocaleString());
-  setText("s1PassRate", `원시 통과 ${rawSurvPct}`);
+  setText("s1PassRate", calibSubText);
   setText("s1CalibPassRate", calibSurvPct);
 
   // Median monthly net profit from P50 cashflow slope
@@ -3117,7 +3116,7 @@ function bindEvents(): void {
     state.players = [{ ...state.base.entrance }, { ...state.plan.entrance }];
     $("walkHint").textContent = state.walkMode
       ? "🚶 키보드 방향키(↑↓←→) 또는 WASD를 눌러 두 가게 도면을 동시에 걸어보세요."
-      : "💡 도면 위의 가구(카운터·쇼케이스·진열대·테이블)를 마우스로 드래그하거나 [R] 키로 회전해보세요.";
+      : "도면 위의 가구(카운터·쇼케이스·진열대·테이블)를 마우스로 드래그하거나 [R] 키로 회전해보세요.";
     syncSpatialControls();
     drawAllWorlds();
   });
@@ -3362,22 +3361,21 @@ function drawGradientAsciiBackground(nowMs: number): void {
       const cursorRadius = 155;
 
       let char = ASCII_RAMP[Math.min(ASCII_RAMP.length - 1, Math.floor(baseIntensity * ASCII_RAMP.length))];
-      let alpha = 0.08 + baseIntensity * 0.16;
+      let alpha = 0.05 + baseIntensity * 0.17;
 
-      // Multi-stop gradient color (emerald -> teal -> warm amber -> slate blue)
-      let cr = Math.round(52 + baseIntensity * 28);
-      let cg = Math.round(107 + (1 - baseIntensity) * 35);
-      let cb = Math.round(87 + Math.sin(nx * 3.1 + t) * 45);
+      // Monochrome ink field on paper (editorial); the accent appears only under the cursor
+      let cr = Math.round(58 - baseIntensity * 18);
+      let cg = Math.round(55 - baseIntensity * 18);
+      let cb = Math.round(48 - baseIntensity * 14);
 
       if (dist < cursorRadius) {
         const u = 1 - dist / cursorRadius;
         const scrambleIdx = Math.floor(((c * 17 + r * 31 + Math.floor(nowMs * 0.04)) % SCRAMBLE_CHARS.length));
         char = SCRAMBLE_CHARS[scrambleIdx];
-        alpha = Math.min(0.75, alpha + u * 0.52);
-        // Bright emerald-teal glow under cursor
-        cr = Math.round(36 + u * 32);
-        cg = Math.round(135 + u * 45);
-        cb = Math.round(104 + u * 50);
+        alpha = Math.min(0.8, alpha + u * 0.55);
+        cr = Math.round(120 + u * 61);
+        cg = Math.round(60 + u * 4);
+        cb = Math.round(40 - u * 13);
       }
 
       ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha.toFixed(3)})`;
