@@ -1,0 +1,29 @@
+{
+  "name": "a-thousand-stores",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A Thousand Stores (천 개의 가게) — Pre-lease 36-month store rehearsal & adversarial stress-test engine",
+  "scripts": {
+    "dev": "tsx web/server.ts",
+    "start": "node dist/web/server.js",
+    "build": "tsc -p tsconfig.json && node web/buildClient.mjs",
+    "test": "tsx --test engine/engine.test.ts loop/loop.test.ts",
+    "test:accept": "tsx engine/cli.ts accept",
+    "backtest": "tsx engine/cli.ts backtest",
+    "bench": "tsx engine/cli.ts bench",
+    "baseline": "tsx engine/cli.ts baseline",
+    "adversarial": "tsx engine/cli.ts adversarial",
+    "secrets:scan": "tsx engine/cli.ts secrets-scan",
+    "deploy": "bash infra/deploy.sh"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

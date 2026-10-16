@@ -1,0 +1,139 @@
+{
+  "package_version": "v1",
+  "prepared_at_utc": "2026-10-16T02:35:58.711897+00:00",
+  "coverage": "2021Q1-2026Q2",
+  "scope": "Two public Seoul commercial-area datasets only; no app code, credentials, private data or logs.",
+  "files": [
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(추정매출-상권)_2021년.zip",
+      "bytes": 14569835,
+      "sha256": "856e78aaacded902201d2476b274c5eb4f90b86eece4af4e4f2bba60c3d79eed",
+      "dataset_id": "OA-15572",
+      "year": 2021,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15572/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(추정매출-상권)_2022년.zip",
+      "bytes": 14550635,
+      "sha256": "748bf317428f5085ba64aeee9aed6c52b465b304d28c941d527e816d1909abe6",
+      "dataset_id": "OA-15572",
+      "year": 2022,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15572/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(추정매출-상권)_2023년.zip",
+      "bytes": 14481934,
+      "sha256": "34de330d0858a6af30014109f4f714762255daebafcb4d0e0f45c6223e0670fb",
+      "dataset_id": "OA-15572",
+      "year": 2023,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15572/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시 상권분석서비스(추정매출-상권)_2024년.zip",
+      "bytes": 14288976,
+      "sha256": "97e7cde3a3291a8fd623f7b5268ea4b01a666027ae20da2ddf804ddae22288c5",
+      "dataset_id": "OA-15572",
+      "year": 2024,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15572/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시 상권분석서비스(추정매출-상권)_2025년.zip",
+      "bytes": 14035292,
+      "sha256": "c907f3d386d62b89f45781e6e6172328ee91b1b8dd2c621e4171e437bee1c6b2",
+      "dataset_id": "OA-15572",
+      "year": 2025,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15572/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(점포-상권)_2021년.zip",
+      "bytes": 2131800,
+      "sha256": "c77313e0faab4fe4fe39a1657f2f530640c945ba41601e9eb960dd32bdc2434b",
+      "dataset_id": "OA-15577",
+      "year": 2021,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(점포-상권)_2022년.zip",
+      "bytes": 2140484,
+      "sha256": "03ffa708ed864d12b56e8c608eb9d83e5337ff3ed3bd28826db9593fab678930",
+      "dataset_id": "OA-15577",
+      "year": 2022,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시_상권분석서비스(점포-상권)_2023년.zip",
+      "bytes": 2175485,
+      "sha256": "b95b113233b1b4dddabaedcf85e12213dff966de40e924e7a97a93fb9bbe662e",
+      "dataset_id": "OA-15577",
+      "year": 2023,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시 상권분석서비스(점포-상권)_2024년.zip",
+      "bytes": 2155369,
+      "sha256": "969b7c38e5f3cc8630970e4ca8b85ef1c20d485982f64a90de990b13b38ca5ff",
+      "dataset_id": "OA-15577",
+      "year": 2024,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/raw/서울시 상권분석서비스(점포-상권)_2025년.zip",
+      "bytes": 2119809,
+      "sha256": "133bfc6ce79e13ee5b289490e4667dfba46a0af5d0d71df360a0d324e030a4e6",
+      "dataset_id": "OA-15577",
+      "year": 2025,
+      "kind": "original_zip",
+      "source_page": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do"
+    },
+    {
+      "path": "data/seoul/2026/OA-15577_2026Q1-Q2_utf8.csv",
+      "bytes": 13302483,
+      "sha256": "9cc1dca5359e90ba654c177c26c5df7dee5b53336aba31b621a65b60704c6966",
+      "dataset_id": "OA-15577",
+      "kind": "filtered_2026_csv",
+      "encoding": "utf-8-sig",
+      "quarter_counts_from_prior_validation": {
+        "20261": 75972,
+        "20262": 75912
+      },
+      "source_sha256": "511d4ebb81bfb3f163ef8040b869e30a76bbc78622afa7eb60096874fa678a1a",
+      "quarter_counts_verified": {
+        "20262": 75912,
+        "20261": 75972
+      },
+      "rows_verified": 151884,
+      "duplicate_keys_verified": 0
+    },
+    {
+      "path": "data/seoul/2026/OA-15572_2026Q1-Q2_utf8.csv",
+      "bytes": 15490613,
+      "sha256": "7c192e387c57b3d32cf6d59ea614e178e530faac817e2770b54af25606d4a960",
+      "dataset_id": "OA-15572",
+      "kind": "filtered_2026_csv",
+      "encoding": "utf-8-sig",
+      "quarter_counts_from_prior_validation": {
+        "20261": 21188,
+        "20262": 21133
+      },
+      "source_sha256": "74c0462ce5765b3a4acbbf1fc93a52bb6cd4125ce5f739bb2f5c2ac3347d0e0c",
+      "quarter_counts_verified": {
+        "20262": 21133,
+        "20261": 21188
+      },
+      "rows_verified": 42321,
+      "duplicate_keys_verified": 0
+    }
+  ],
+  "data_file_count": 12,
+  "data_total_bytes": 111442715,
+  "largest_data_file_bytes": 15490613
+}
