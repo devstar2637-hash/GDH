@@ -698,9 +698,272 @@
       font-size: 11px;
     }
 
+    /* =========================================================================
+       rea.tools (github.com/morluto/rea) Authentic Layout & Component System
+       ========================================================================= */
+    .site-header {
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .header-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 13px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .site-title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      font-size: 13.5px;
+    }
+    .site-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 550;
+    }
+    .site-nav a:hover {
+      color: var(--ink);
+    }
+    .home-page-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      align-items: center;
+      margin: 0 0 14px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-size: 13px;
+    }
+    :root[data-theme="dark"] .home-page-nav,
+    :root[data-theme="dark"] .site-header {
+      background: rgba(22, 27, 32, 0.94);
+    }
+    .home-page-nav span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .home-page-nav a {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .home-page-nav a:hover {
+      color: var(--accent);
+    }
+    .home-start-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.88fr);
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+    .home-setup {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .setup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .setup-header strong {
+      color: var(--ink);
+      font-size: 13.5px;
+    }
+    .agent-terminal {
+      border: 1px solid #303d4a;
+      border-radius: 8px;
+      background: #202933;
+      color: #f4f7fa;
+      overflow: hidden;
+    }
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 11px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: #b7c2cd;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+    .terminal-dots {
+      display: inline-flex;
+      gap: 5px;
+    }
+    .terminal-dots i {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.24);
+      display: inline-block;
+    }
+    .terminal-prompt {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      padding: 10px 12px 9px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      color: #f4f7fa;
+      overflow-x: auto;
+    }
+    .prompt-symbol {
+      color: #8fb4e8;
+      font-weight: 700;
+    }
+    .terminal-cursor {
+      width: 0.5rem;
+      height: 0.95rem;
+      background: #8fb4e8;
+      display: inline-block;
+      animation: terminal-blink 1.1s steps(1) infinite;
+      flex-shrink: 0;
+    }
+    @keyframes terminal-blink {
+      50% { opacity: 0; }
+    }
+    .agent-reply {
+      margin: 0 10px 10px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #20252b;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    :root[data-theme="dark"] .agent-reply {
+      background: #161b20;
+      color: #e6edf3;
+      border: 1px solid #2b3540;
+    }
+    .reply-label {
+      margin: 0 0 3px !important;
+      color: var(--accent) !important;
+      font-size: 11px !important;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-family: var(--font-mono);
+    }
+    /* rea.tools Workflow Figure & Flow Steps (01 -> 02 -> 03) */
+    .workflow-figure {
+      margin: 0 0 14px;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+    }
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .flow-steps li {
+      position: relative;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--soft);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .flow-steps li:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-weight: 700;
+      z-index: 2;
+    }
+    .flow-steps strong {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--ink);
+      font-size: 12.5px;
+    }
+    /* rea.tools Step Selector (aria-pressed="true") */
+    .step-selector {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+    .step-selector button {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+      color: var(--ink);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 650;
+      text-align: left;
+      cursor: pointer;
+    }
+    .step-selector button span {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .step-selector button[aria-pressed="true"],
+    .step-selector button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
     @media (max-width: 1080px) {
-      .founder-inputs, .cat-grid, .workspace, .worlds, .expert-grid-2 {
+      .home-start-grid, .flow-steps, .step-selector, .founder-inputs, .cat-grid, .workspace, .worlds, .expert-grid-2 {
         grid-template-columns: 1fr;
+      }
+      .flow-steps li:not(:last-child)::after {
+        display: none;
       }
       .cta-launch { padding: 14px; }
     }
@@ -708,27 +971,76 @@
 </head>
 <body>
   <canvas id="asciiBgCanvas" aria-hidden="true"></canvas>
-  <div class="app">
+
+  <!-- rea.tools style Top Site Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="site-title" href="#setup">
+        <span>천 개의 가게 · A Thousand Stores</span>
+        <span class="pill" id="statusBadge">실시간 시뮬레이션 준비 완료</span>
+      </a>
+      <nav class="site-nav" aria-label="주요 섹션 탐색">
+        <a href="#setup">창업 조건 입력</a>
+        <a href="#categories">업종 추천</a>
+        <a href="#rehearsal">2.5D 도면·동선</a>
+        <a href="#aboutDetails">10,000개 매장 검증</a>
+        <span class="pill" title="window.ThousandStoresSDK 연결됨">AI Studio UI SDK Ready</span>
+        <button id="exportBtn" type="button" style="padding:5px 10px;font-size:12px">리포트 (.txt)</button>
+        <button id="jsonBtn" type="button" style="padding:5px 10px;font-size:12px">시나리오 (.json)</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="app" id="aiStudioMountRoot">
+
+    <!-- rea.tools style Sticky "이 페이지에" Navigation -->
+    <nav class="home-page-nav" aria-label="이 페이지에">
+      <span>이 페이지에</span>
+      <a href="#setup">01 · 주소·자본금·점포 사진</a>
+      <a href="#categories">02 · 맞춤 창업 카테고리 4선</a>
+      <a href="#rehearsal">03 · 2.5D 인테리어 도면·손님 동선</a>
+      <a href="#aboutDetails">04 · 10,000개 매장 36개월 생존 데이터</a>
+    </nav>
 
     <!-- =====================================================================
-         STEP 1: 주소 / 사진 / 내 자본금 입력 (극도로 단순한 1단계 입력)
+         STEP 1: rea.tools Home-Start-Grid (Left: Founder Setup / Right: Agent Terminal)
          ===================================================================== -->
-    <section class="card hero-card">
-      <div class="hero-top">
+    <section class="card hero-card" id="setup">
+      <div class="home-start-grid">
         <div>
-          <div class="eyebrow">
-            <span>천 개의 가게 · A Thousand Stores</span>
-            <span class="pill" id="statusBadge">실시간 시뮬레이션 준비 완료</span>
+          <div class="eyebrow" style="margin-bottom:6px">
+            <span>서울시 상권(OA-15577) · 2.5D 공간 동선 · 36개월 자본금 검증</span>
           </div>
           <h1>주소나 사진, 내 자본금만 넣으면 가게를 미리 창업해봅니다.</h1>
-          <p class="lead">
-            상권 데이터(서울시 OA-15577)와 10,000개 매장(500 AI design families x 20 variations) 시뮬레이션이 <strong>맞춤 창업 카테고리 추천 → 2.5D 도면 자동 생성 → 손님 동선 및 36개월 생존 검증</strong>까지 한 번에 끝냅니다.
+          <p class="lead" style="margin-bottom:14px">
+            상권 데이터와 10,000개 매장(500 AI design families x 20 variations) 시뮬레이션이 <strong>맞춤 창업 카테고리 추천 → 업종별 2.5D 인테리어 도면 생성 → 손님 동선 및 36개월 생존 검증</strong>까지 한 번에 끝냅니다.
           </p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="exportBtn" type="button">창업 리포트 저장 (.txt)</button>
-          <button id="jsonBtn" type="button">시나리오 (.json)</button>
-        </div>
+
+        <!-- rea.tools Signature .home-setup + .agent-terminal + .agent-reply -->
+        <aside class="home-setup" aria-label="실시간 창업 에이전트 터미널">
+          <div class="setup-header">
+            <strong>실시간 창업 에이전트 브리프</strong>
+            <span>ThousandStoresSDK · v1.0</span>
+          </div>
+          <div class="agent-terminal" role="region" aria-label="창업 시뮬레이션 프롬프트 및 진단 응답">
+            <div class="terminal-header">
+              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span>store-rehearsal-cli · live</span>
+            </div>
+            <p class="terminal-prompt">
+              <span class="prompt-symbol">›</span>
+              <span id="heroTerminalPrompt">thousand-stores --addr="성수동" --capital="9,000만" --category="cafe"</span>
+              <span class="terminal-cursor" aria-hidden="true"></span>
+            </p>
+            <div class="agent-reply">
+              <p class="reply-label">창업 에이전트 즉시 진단</p>
+              <div id="heroTerminalReply">
+                <strong>☕ 스페셜티 카페 · 로스터리</strong> 도면 생성 완료 · 보증금·시공비 제외 후 예비비 <strong>+2,200만원</strong> 확보 · 오른쪽 도면에서 가구를 드래그해 병목을 실험하세요.
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
 
       <div class="founder-inputs">
@@ -799,10 +1111,28 @@
       </div>
     </section>
 
+    <!-- rea.tools Signature Workflow Figure (01 -> 02 -> 03) -->
+    <figure class="workflow-figure" aria-label="3단계 미리 창업 워크플로우">
+      <ol class="flow-steps">
+        <li>
+          <strong>01 · 주소·자본금·사진 입력</strong>
+          상권 임대료·유동인구와 내 자본금 여유분을 계산해 가장 유리한 업종을 추천합니다.
+        </li>
+        <li>
+          <strong>02 · 업종별 2.5D 인테리어·동선 리허설</strong>
+          카페·베이커리·팝업·다이닝 맞춤 가구를 마우스로 배치하고 10분 피크 대기열을 검증합니다.
+        </li>
+        <li>
+          <strong>03 · 10,000개 매장 36개월 생존·절벽 검증</strong>
+          계약 전 반드시 확인해야 할 단 하나의 결정 절벽(임계 임대료·매출)과 현장 행동 지침을 제시합니다.
+        </li>
+      </ol>
+    </figure>
+
     <!-- =====================================================================
          STEP 2: 내 주소 + 내 자본금 맞춤 창업 카테고리 추천 (클릭 시 도면 즉시 변경)
          ===================================================================== -->
-    <section class="cat-section">
+    <section class="cat-section" id="categories">
       <div class="section-head">
         <div class="section-title">
           <span>✨ 이 주소와 자본금에 가장 유리한 추천 창업 카테고리</span>
@@ -821,7 +1151,7 @@
     <!-- =====================================================================
          STEP 3: 2.5D 자동 생성 가게 도면 & 내 자본금 36개월 창업 성적표
          ===================================================================== -->
-    <section class="workspace">
+    <section class="workspace" id="rehearsal">
       <!-- Left: 2.5D Isometric Store Floorplan & Customer Flow -->
       <main class="card main">
         <div class="main-head">
@@ -888,19 +1218,32 @@
           <button id="walkBtn" type="button">내가 손님으로 걸어보기 (WASD)</button>
         </div>
 
-        <!-- rea.tools (morluto/rea) style 3-Step Interactive Evidence & Interior Spec Bar -->
-        <div class="rea-evidence" aria-label="단계별 공간·손익 분석 근거">
-          <div class="rea-step-tabs" role="group" aria-label="3단계 창업 검증 탭">
-            <button type="button" class="rea-step-btn active" data-rea-step="1"><span>01</span> 업종별 인테리어·조닝 설계</button>
-            <button type="button" class="rea-step-btn" data-rea-step="2"><span>02</span> 피크 동선·병목 시뮬레이션</button>
-            <button type="button" class="rea-step-btn" data-rea-step="3"><span>03</span> 36개월 자본금·임계 규칙</button>
-            <span class="small" id="walkHint" style="margin-left:auto;align-self:center">
+        <!-- rea.tools (morluto/rea) style .step-selector + .agent-terminal -->
+        <div class="rea-evidence" id="evidence" aria-label="단계별 공간·손익 분석 근거">
+          <div class="step-selector" role="group" aria-label="3단계 창업 검증 탭">
+            <button type="button" class="rea-step-btn active" data-rea-step="1" aria-pressed="true"><span>01</span> 업종별 인테리어·조닝 설계</button>
+            <button type="button" class="rea-step-btn" data-rea-step="2" aria-pressed="false"><span>02</span> 피크 동선·병목 시뮬레이션</button>
+            <button type="button" class="rea-step-btn" data-rea-step="3" aria-pressed="false"><span>03</span> 36개월 자본금·임계 규칙</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span class="small" id="walkHint">
               💡 가구 클릭 후 드래그 이동 · <kbd>R</kbd> 회전 · <kbd>WASD</kbd> 보행
             </span>
           </div>
-          <div class="rea-terminal">
-            <div class="prompt-line" id="reaPromptLine">› <strong>inspect-store</strong> --category="cafe" --zone="성수동" --capital="9,000만원"</div>
-            <div class="reply-line" id="reaReplyLine">헤링본 우드 홀 + 테라조 에스프레소 바 조닝 적용 · 2그룹 머신·쇼케이스·로스터기 및 원목 테이블 배치 완료.</div>
+          <div class="agent-terminal">
+            <div class="terminal-header">
+              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span>step-verifier · interactive</span>
+            </div>
+            <p class="terminal-prompt">
+              <span class="prompt-symbol">›</span>
+              <span id="reaPromptLine">inspect-store --category="cafe" --district="성수동" --selected="원두 로스터기 · MD 선반"</span>
+              <span class="terminal-cursor" aria-hidden="true"></span>
+            </p>
+            <div class="agent-reply">
+              <p class="reply-label">공간·재무 검증 결과</p>
+              <div id="reaReplyLine">헤링본 우드 홀 + 테라조 에스프레소 바 조닝 적용 · 2그룹 머신·쇼케이스·로스터기 및 원목 테이블 배치 완료.</div>
+            </div>
           </div>
         </div>
       </main>

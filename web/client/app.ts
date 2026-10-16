@@ -2033,9 +2033,17 @@ function formatClock(t: number): string {
   );
 }
 
+const sdkMountedCanvases: {
+  baseCanvas?: HTMLCanvasElement | null;
+  planCanvas?: HTMLCanvasElement | null;
+  cashflowCanvas?: HTMLCanvasElement | null;
+  landscapeCanvas?: HTMLCanvasElement | null;
+  saturationCanvas?: HTMLCanvasElement | null;
+} = {};
+
 function drawAllWorlds(): void {
-  const baseCanvas = $<HTMLCanvasElement>("baseCanvas");
-  const planCanvas = $<HTMLCanvasElement>("planCanvas");
+  const baseCanvas = sdkMountedCanvases.baseCanvas || $<HTMLCanvasElement>("baseCanvas");
+  const planCanvas = sdkMountedCanvases.planCanvas || $<HTMLCanvasElement>("planCanvas");
   if (!baseCanvas || !planCanvas) return;
   drawWorld(baseCanvas, state.base, state.results?.base, 0);
   drawWorld(planCanvas, state.plan, state.results?.plan, 1);
@@ -2279,36 +2287,51 @@ function observedWait(r: RehearsalSimResult): number {
 }
 
 function updateReaEvidenceTerminal(): void {
-  const promptEl = $("reaPromptLine");
-  const replyEl = $("reaReplyLine");
-  if (!promptEl || !replyEl) return;
-
   const cat = currentCategory();
   const distProf = detectDistrictFromAddress(state.address);
   const fin = computeCategoryStartupManwon(cat, distProf);
   const selObj = selectedMovable();
   const step = state.reaStep;
+  const r = state.results?.plan;
+  const b = state.results?.base;
+  const waitP = r ? Math.round(observedWait(r)) : 0;
+  const waitB = b ? Math.round(observedWait(b)) : 0;
+  const cliffTxt = $("cliffHeadline")?.textContent || "월 임대료 경계 계산 중";
+  const netTxt = $("founderMonthlyNet")?.textContent || "+380만원";
+
+  // 1. Update Hero .agent-terminal (rea.tools signature right-side card)
+  const heroPrompt = $("heroTerminalPrompt");
+  const heroReply = $("heroTerminalReply");
+  if (heroPrompt && heroReply) {
+    heroPrompt.textContent = `thousand-stores --addr="${distProf.name}" --capital="${state.capitalManwon.toLocaleString()}만" --category="${cat.id}"`;
+    const feasibleMsg =
+      fin.bufferManwon >= 0
+        ? `보증금·시공비 제외 후 예비비 <strong>+${fin.bufferManwon.toLocaleString()}만원</strong> 확보`
+        : `예상 개업비 대비 <strong>${Math.abs(fin.bufferManwon).toLocaleString()}만원 부족</strong> (소자본 업종 권장)`;
+    heroReply.innerHTML =
+      `<strong>${cat.icon} ${cat.name}</strong> (${cat.interiorConcept}) 도면 생성 완료 · ` +
+      `피크 대기 <strong>${waitB}초 → ${waitP}초</strong> · ${feasibleMsg} · 기대 월 순익 <strong>${netTxt}</strong>`;
+  }
+
+  // 2. Update Workspace 3-Step .agent-terminal
+  const promptEl = $("reaPromptLine");
+  const replyEl = $("reaReplyLine");
+  if (!promptEl || !replyEl) return;
 
   if (step === 1) {
-    promptEl.textContent = `> inspect --category="${cat.id}" --district="${distProf.name}" --selected="${selObj.label}"`;
+    promptEl.textContent = `inspect-store --category="${cat.id}" --district="${distProf.name}" --selected="${selObj.label}"`;
     replyEl.innerHTML =
       `[${cat.name}] 전용 2.5D 인테리어 로드 완료 · <b>${cat.counterLabel}</b> + <b>${cat.displayLabel}</b> + <b>${cat.pickupLabel}</b> + 좌석 3조 배치됨.<br/>` +
       `현재 선택 가구: <b>${selObj.label}</b> (좌표 X:${selObj.x.toFixed(1)}m, Y:${selObj.y.toFixed(1)}m, 크기 ${selObj.w.toFixed(1)}×${selObj.h.toFixed(1)}m) — 마우스 드래그로 이동하거나 <kbd>R</kbd> 키로 90° 회전 가능.`;
   } else if (step === 2) {
-    const r = state.results?.plan;
-    const b = state.results?.base;
-    const waitP = r ? Math.round(observedWait(r)) : 0;
-    const waitB = b ? Math.round(observedWait(b)) : 0;
-    promptEl.textContent = `> rehearse --peak="10min" --arrival="${state.arrival.toFixed(1)}/min" --staff=${state.pickupStaff} --seed=${state.seed}`;
+    promptEl.textContent = `rehearse-flow --peak="10min" --arrival="${state.arrival.toFixed(1)}/min" --staff=${state.pickupStaff} --seed=${state.seed}`;
     replyEl.innerHTML = r?.routeBlocked
       ? `⚠️ <b>동선 단절 감지</b>: ${r.blockedReason || "통로 폭 미달"} (최소 통과 폭 ${state.body.toFixed(2)}m 필요). 도면 위에서 가구를 옆으로 드래그하세요.`
       : `10분 피크 시뮬레이션 완료 · 입구→주문→픽업 이동거리 <b>${(r?.walkDistance ?? 0).toFixed(1)}m</b> · 평균 대기시간 기본 <b>${waitB}초</b> → 내 도면 <b>${waitP}초</b> (최대 픽업 줄 ${r?.maxPickupQueue ?? 0}명).`;
   } else {
-    const cliffTxt = $("cliffHeadline")?.textContent || "월 임대료 경계 계산 중";
-    const netTxt = $("founderMonthlyNet")?.textContent || "+380만원";
-    promptEl.textContent = `> verify --runs=10000 --horizon="36m" --capital="${state.capitalManwon}만원" --dataset="Seoul-OA-15577"`;
+    promptEl.textContent = `verify-10000 --horizon="36m" --capital="${state.capitalManwon.toLocaleString()}만원" --dataset="Seoul-OA-15577"`;
     replyEl.innerHTML =
-      `예상 초기 창업비 <b>${fin.startupTotalManwon.toLocaleString()}만원</b> (보증금 ${fin.depositManwon.toLocaleString()}만 + 인테리어 ${fin.fitoutManwon.toLocaleString()}만) · 내 자본금 대비 <b>${fin.feasible ? "창업 가능 (여유 " + fin.gapManwon.toLocaleString() + "만원)" : "자본금 " + Math.abs(fin.gapManwon).toLocaleString() + "만원 부족"}</b>.<br/>` +
+      `예상 초기 창업비 <b>${fin.totalStartupManwon.toLocaleString()}만원</b> (보증금 ${fin.depositManwon.toLocaleString()}만 + 인테리어 ${fin.fitoutManwon.toLocaleString()}만) · 내 자본금 대비 <b>${fin.bufferManwon >= 0 ? "창업 가능 (여유 +" + fin.bufferManwon.toLocaleString() + "만원)" : "자본금 " + Math.abs(fin.bufferManwon).toLocaleString() + "만원 부족"}</b>.<br/>` +
       `36개월 기대 월 순익 <b>${netTxt}</b> · 핵심 임계점: <b>${cliffTxt}</b>`;
   }
 }
@@ -2327,14 +2350,14 @@ function renderSpatialVerdict(): void {
       badge.className = "pill bad";
       badge.textContent = "동선 단절됨";
     }
-    $("verdictTitle").textContent = "선택한 가구 위치에서는 손님 통로가 막힙니다.";
-    $("verdictBody").textContent = (p.blockedReason || "경로 단절") + " · 도면에서 가구를 조금 옆으로 옮겨주세요.";
-    $("waitMetric").textContent = "계산 불가";
-    $("waitNote").textContent = "경로 복구 필요";
-    $("queueMetric").textContent = "-";
-    $("doneMetric").textContent = "0명";
-    $("pathMetric").textContent = "단절";
-    $("pathNote").textContent = "통과 폭 " + state.body.toFixed(2) + "m 기준";
+    if ($("verdictTitle")) $("verdictTitle").textContent = "선택한 가구 위치에서는 손님 통로가 막힙니다.";
+    if ($("verdictBody")) $("verdictBody").textContent = (p.blockedReason || "경로 단절") + " · 도면에서 가구를 조금 옆으로 옮겨주세요.";
+    if ($("waitMetric")) $("waitMetric").textContent = "계산 불가";
+    if ($("waitNote")) $("waitNote").textContent = "경로 복구 필요";
+    if ($("queueMetric")) $("queueMetric").textContent = "-";
+    if ($("doneMetric")) $("doneMetric").textContent = "0명";
+    if ($("pathMetric")) $("pathMetric").textContent = "단절";
+    if ($("pathNote")) $("pathNote").textContent = "통과 폭 " + state.body.toFixed(2) + "m 기준";
   } else {
     const better = diff < -1;
     const worse = diff > 1;
@@ -2342,28 +2365,37 @@ function renderSpatialVerdict(): void {
       badge.className = "pill" + (worse ? " warn" : "");
       badge.textContent = "동선 시뮬레이션 완료 · Seed #" + state.seed;
     }
-    $("verdictTitle").textContent = better
-      ? `가게 동선 개선으로 손님 대기시간이 ${Math.round(bw)}초 → ${Math.round(pw)}초로 줄었습니다.`
-      : worse
-        ? `주의: 진열대만 옮기면 동선이 짧아져 픽업 줄이 더 빨리 쌓입니다 (+${Math.round(diff)}초).`
-        : "두 도면의 평균 손님 대기시간이 비슷합니다.";
-    $("verdictBody").textContent = `10분 피크 동안 ${p.arrivalCount}명 입장 · 기본 도면 ${b.completed}명 완료 vs 내 가게 도면 ${p.completed}명 완료`;
-    $("waitMetric").textContent = (diff > 0 ? "+" : "") + Math.round(diff) + "초";
-    $("waitNote").textContent = `기본 ${Math.round(bw)}초 → 내 도면 ${Math.round(pw)}초`;
-    $("queueMetric").textContent = `${p.maxPickupQueue}명`;
-    $("doneMetric").textContent = `${p.completed}명 (${doneDiff >= 0 ? "+" : ""}${doneDiff})`;
-    $("doneNote").textContent = `피크 최대 대기 ${p.maxPickupQueue}명`;
-    $("pathMetric").textContent = `통과 가능 (${p.walkDistance.toFixed(1)}m)`;
-    $("pathNote").textContent = `기본 ${b.walkDistance.toFixed(1)}m · 폭 ${state.body.toFixed(2)}m 통과`;
+    if ($("verdictTitle")) {
+      $("verdictTitle").textContent = better
+        ? `가게 동선 개선으로 손님 대기시간이 ${Math.round(bw)}초 → ${Math.round(pw)}초로 줄었습니다.`
+        : worse
+          ? `주의: 진열대만 옮기면 동선이 짧아져 픽업 줄이 더 빨리 쌓입니다 (+${Math.round(diff)}초).`
+          : "두 도면의 평균 손님 대기시간이 비슷합니다.";
+    }
+    if ($("verdictBody")) {
+      $("verdictBody").textContent = `10분 피크 동안 ${p.arrivalCount}명 입장 · 기본 도면 ${b.completed}명 완료 vs 내 가게 도면 ${p.completed}명 완료`;
+    }
+    if ($("waitMetric")) $("waitMetric").textContent = (diff > 0 ? "+" : "") + Math.round(diff) + "초";
+    if ($("waitNote")) $("waitNote").textContent = `기본 ${Math.round(bw)}초 → 내 도면 ${Math.round(pw)}초`;
+    if ($("queueMetric")) $("queueMetric").textContent = `${p.maxPickupQueue}명`;
+    if ($("doneMetric")) $("doneMetric").textContent = `${p.completed}명 (${doneDiff >= 0 ? "+" : ""}${doneDiff})`;
+    if ($("doneNote")) $("doneNote").textContent = `피크 최대 대기 ${p.maxPickupQueue}명`;
+    if ($("pathMetric")) $("pathMetric").textContent = `통과 가능 (${p.walkDistance.toFixed(1)}m)`;
+    if ($("pathNote")) $("pathNote").textContent = `기본 ${b.walkDistance.toFixed(1)}m · 폭 ${state.body.toFixed(2)}m 통과`;
   }
 
-  $("baseFoot").innerHTML = `<span>관측 대기 ${Math.round(bw)}초</span><span>완료 ${b.completed}/${b.arrivalCount}명</span><span>이동거리 ${b.walkDistance.toFixed(1)}m</span>`;
-  $("planFoot").innerHTML = p.routeBlocked
-    ? `<span>경로 단절</span><span>통과 폭 ${state.body.toFixed(2)}m 미확보</span>`
-    : `<span>관측 대기 ${Math.round(pw)}초</span><span>완료 ${p.completed}/${p.arrivalCount}명</span><span>이동거리 ${p.walkDistance.toFixed(1)}m</span>`;
+  if ($("baseFoot")) {
+    $("baseFoot").innerHTML = `<span>관측 대기 ${Math.round(bw)}초</span><span>완료 ${b.completed}/${b.arrivalCount}명</span><span>이동거리 ${b.walkDistance.toFixed(1)}m</span>`;
+  }
+  if ($("planFoot")) {
+    $("planFoot").innerHTML = p.routeBlocked
+      ? `<span>경로 단절</span><span>통과 폭 ${state.body.toFixed(2)}m 미확보</span>`
+      : `<span>관측 대기 ${Math.round(pw)}초</span><span>완료 ${p.completed}/${p.arrivalCount}명</span><span>이동거리 ${p.walkDistance.toFixed(1)}m</span>`;
+  }
 
   syncSpatialControls();
   updateReaEvidenceTerminal();
+  notifySdkListeners();
 }
 
 // ============================================================================
@@ -2554,10 +2586,11 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   drawLandscapeChart(run);
   drawSaturationChart(run);
   updateReaEvidenceTerminal();
+  notifySdkListeners();
 }
 
 function drawCashflowChart(run: RunResult): void {
-  const canvas = $<HTMLCanvasElement>("cashflowCanvas");
+  const canvas = sdkMountedCanvases.cashflowCanvas || $<HTMLCanvasElement>("cashflowCanvas");
   if (!canvas) return;
   const b = canvas.getBoundingClientRect();
   if (b.width <= 10) return;
@@ -2623,7 +2656,7 @@ function drawCashflowChart(run: RunResult): void {
 }
 
 function drawLandscapeChart(run: RunResult): void {
-  const canvas = $<HTMLCanvasElement>("landscapeCanvas");
+  const canvas = sdkMountedCanvases.landscapeCanvas || $<HTMLCanvasElement>("landscapeCanvas");
   if (!canvas) return;
   const b = canvas.getBoundingClientRect();
   if (b.width <= 10) return;
@@ -2655,7 +2688,7 @@ function drawLandscapeChart(run: RunResult): void {
 }
 
 function drawSaturationChart(run: RunResult): void {
-  const canvas = $<HTMLCanvasElement>("saturationCanvas");
+  const canvas = sdkMountedCanvases.saturationCanvas || $<HTMLCanvasElement>("saturationCanvas");
   if (!canvas) return;
   const b = canvas.getBoundingClientRect();
   if (b.width <= 10) return;
@@ -2813,11 +2846,15 @@ function drawUploadedImagePreview(): void {
 }
 
 function bindEvents(): void {
-  // 0. rea.tools-style 3-Step Evidence Cards
+  // 0. rea.tools-style 3-Step Evidence Cards (supports aria-pressed="true")
   document.querySelectorAll<HTMLElement>("[data-rea-step]").forEach((card) => {
     card.addEventListener("click", () => {
-      document.querySelectorAll("[data-rea-step]").forEach((c) => c.classList.remove("active"));
+      document.querySelectorAll("[data-rea-step]").forEach((c) => {
+        c.classList.remove("active");
+        c.setAttribute("aria-pressed", "false");
+      });
       card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       const s = Number(card.getAttribute("data-rea-step") || "1") as 1 | 2 | 3;
       state.reaStep = s;
       updateReaEvidenceTerminal();
@@ -3379,6 +3416,226 @@ function animateLoop(now: number): void {
   if (frameCounter % 3 === 0) drawGradientAsciiBackground(now);
   frameCounter++;
   requestAnimationFrame(animateLoop);
+}
+
+// ============================================================================
+// 9. AI STUDIO UI INTEGRATION BRIDGE (window.ThousandStoresSDK / window.REAStoreBridge)
+//    Plug-and-play SDK so any UI developed in Google AI Studio (React/Tailwind/HTML)
+//    can read state, drive 2.5D floorplan + 10,000-store engine, and mount canvases.
+// ============================================================================
+
+export interface ThousandStoresSnapshot {
+  address: string;
+  district: DistrictProfile;
+  capitalManwon: number;
+  categoryId: CategoryId;
+  category: CategoryTemplate;
+  startupFinance: {
+    depositManwon: number;
+    fitoutManwon: number;
+    monthlyRentManwon: number;
+    totalStartupManwon: number;
+    bufferManwon: number;
+  };
+  recommendations: Array<{
+    id: CategoryId;
+    name: string;
+    icon: string;
+    shortDesc: string;
+    totalStartupManwon: number;
+    bufferManwon: number;
+    feasible: boolean;
+  }>;
+  spatial: {
+    preset: string;
+    pickupStaff: number;
+    arrivalRatePerMin: number;
+    serviceSec: number;
+    selectedFurnitureId: string | null;
+    baselineWaitSec: number;
+    proposedWaitSec: number;
+    baselineCompleted: number;
+    proposedCompleted: number;
+    routeBlocked: boolean;
+    walkDistanceM: number;
+    objects: SceneObject[];
+  };
+  macro: {
+    runId: string | null;
+    endState: string | null;
+    calibratedSurvivalText: string;
+    monthlyNetText: string;
+    cliffHeadline: string;
+    measureAction: string;
+    envelope: ApiRunEnvelope | null;
+  };
+}
+
+const sdkListeners = new Set<(snap: ThousandStoresSnapshot) => void>();
+
+function getSdkSnapshot(): ThousandStoresSnapshot {
+  const cat = currentCategory();
+  const dist = detectDistrictFromAddress(state.address);
+  const fin = computeCategoryStartupManwon(cat, dist);
+  const recs = Object.values(CATEGORY_TEMPLATES).map((c) => {
+    const f = computeCategoryStartupManwon(c, dist);
+    return {
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      shortDesc: c.shortDesc,
+      totalStartupManwon: f.totalStartupManwon,
+      bufferManwon: f.bufferManwon,
+      feasible: f.bufferManwon >= 500,
+    };
+  });
+  const b = state.results?.base;
+  const p = state.results?.plan;
+  return {
+    address: state.address,
+    district: dist,
+    capitalManwon: state.capitalManwon,
+    categoryId: state.categoryId,
+    category: cat,
+    startupFinance: fin,
+    recommendations: recs,
+    spatial: {
+      preset: state.preset,
+      pickupStaff: state.pickupStaff,
+      arrivalRatePerMin: state.arrival,
+      serviceSec: state.service,
+      selectedFurnitureId: state.selected,
+      baselineWaitSec: b ? Math.round(observedWait(b)) : 0,
+      proposedWaitSec: p ? Math.round(observedWait(p)) : 0,
+      baselineCompleted: b?.completed ?? 0,
+      proposedCompleted: p?.completed ?? 0,
+      routeBlocked: Boolean(p?.routeBlocked),
+      walkDistanceM: p?.walkDistance ?? 0,
+      objects: state.plan.objects.map((o) => ({ ...o })),
+    },
+    macro: {
+      runId: currentEnvelope?.run.runId ?? null,
+      endState: currentEnvelope?.run.status.endState ?? null,
+      calibratedSurvivalText: $("s1CalibPassRate")?.textContent || "-",
+      monthlyNetText: $("founderMonthlyNet")?.textContent || "-",
+      cliffHeadline: $("cliffHeadline")?.textContent || "-",
+      measureAction: $("measureAction")?.textContent || "-",
+      envelope: currentEnvelope,
+    },
+  };
+}
+
+function notifySdkListeners(): void {
+  const snap = getSdkSnapshot();
+  sdkListeners.forEach((fn) => {
+    try {
+      fn(snap);
+    } catch {
+      // Ignore subscriber errors
+    }
+  });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("thousandstores:update", { detail: snap }));
+  }
+}
+
+const ThousandStoresSDK = {
+  version: "1.0.0-rea-bridge",
+  getState: getSdkSnapshot,
+  setAddress(address: string) {
+    state.address = address;
+    const inp = $<HTMLInputElement>("addressInput");
+    if (inp) inp.value = address;
+    renderRecommendedCategories();
+    updateReaEvidenceTerminal();
+    scheduleMacroSimulation();
+    notifySdkListeners();
+  },
+  setCapitalManwon(manwon: number) {
+    state.capitalManwon = Math.max(1000, Math.round(manwon));
+    const inp = $<HTMLInputElement>("capitalInput");
+    if (inp) inp.value = String(state.capitalManwon);
+    const disp = $("capitalDisplay");
+    if (disp) disp.textContent = `${state.capitalManwon.toLocaleString()}만원`;
+    renderRecommendedCategories();
+    updateReaEvidenceTerminal();
+    scheduleMacroSimulation();
+    notifySdkListeners();
+  },
+  selectCategory(catId: CategoryId) {
+    if (CATEGORY_TEMPLATES[catId]) {
+      selectCategory(catId);
+    }
+  },
+  setPreset(preset: "layout" | "staff" | "both") {
+    setPreset(preset);
+  },
+  selectFurniture(id: string) {
+    const found = state.plan.objects.find((o) => o.id === id && o.movable);
+    if (found) {
+      state.selected = found.id;
+      updateReaEvidenceTerminal();
+      drawAllWorlds();
+      notifySdkListeners();
+    }
+  },
+  moveFurniture(id: string, x: number, y: number) {
+    const found = state.plan.objects.find((o) => o.id === id && o.movable);
+    if (found) {
+      state.selected = found.id;
+      setObjectPosition(x, y, true);
+    }
+  },
+  rotateFurniture(id?: string) {
+    if (id) state.selected = id;
+    rotateSelectedFurniture();
+  },
+  addFurniture() {
+    addExtraFurniture();
+  },
+  toggleHud(feature: "lights" | "dims" | "heat" | "isoAngle" | "darkTheme" | "walkMode") {
+    if (feature === "lights") $("hudLightsBtn")?.click();
+    else if (feature === "dims") $("hudDimsBtn")?.click();
+    else if (feature === "heat") $("hudHeatBtn")?.click();
+    else if (feature === "isoAngle") $("hudIsoAngleBtn")?.click();
+    else if (feature === "darkTheme") $("hudThemeBtn")?.click();
+    else if (feature === "walkMode") $("walkBtn")?.click();
+  },
+  mountCanvases(canvases: {
+    baseCanvas?: HTMLCanvasElement | null;
+    planCanvas?: HTMLCanvasElement | null;
+    cashflowCanvas?: HTMLCanvasElement | null;
+    landscapeCanvas?: HTMLCanvasElement | null;
+    saturationCanvas?: HTMLCanvasElement | null;
+  }) {
+    Object.assign(sdkMountedCanvases, canvases);
+    drawAllWorlds();
+    if (currentEnvelope) {
+      drawCashflowChart(currentEnvelope.run);
+      drawLandscapeChart(currentEnvelope.run);
+      drawSaturationChart(currentEnvelope.run);
+    }
+  },
+  runMacroSimulation() {
+    return triggerMacroRun();
+  },
+  onUpdate(listener: (snap: ThousandStoresSnapshot) => void): () => void {
+    sdkListeners.add(listener);
+    listener(getSdkSnapshot());
+    return () => sdkListeners.delete(listener);
+  },
+};
+
+declare global {
+  interface Window {
+    ThousandStoresSDK: typeof ThousandStoresSDK;
+    REAStoreBridge: typeof ThousandStoresSDK;
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.ThousandStoresSDK = ThousandStoresSDK;
+  window.REAStoreBridge = ThousandStoresSDK;
 }
 
 async function boot(): Promise<void> {
