@@ -6,20 +6,26 @@ import {
   type SceneObject,
   type SimConfig,
   type SimResult,
-} from "./engine/rehearsalCore.js";
+} from "./engine/rehearsalCore.ts";
 import {
   drawWorldCanvas,
   generateSampleBlueprintCanvas,
   unproject,
   type IsoView,
-} from "./engine/canvasRenderer.js";
+} from "./engine/canvasRenderer.ts";
 import {
   renderTenKMonteCarloChart,
   renderWorldStatsD3Charts,
   updateWorldStatsD3Playhead,
   type TenKClusterItem,
-} from "./engine/d3StatsCharts.js";
-import { ThreeFloorplanStage } from "./engine/threeFloorplanStage.js";
+} from "./engine/d3StatsCharts.ts";
+import { ThreeFloorplanStage } from "./engine/threeFloorplanStage.ts";
+import { summarizeBackendRun } from "./engine/backendSync.ts";
+import {
+  createTenKMatrixEngine,
+  type StoreRunCell,
+  type WaferViewMode,
+} from "./engine/tenKMatrixEngine.ts";
 
 declare global {
   interface Window {
@@ -569,10 +575,10 @@ function mountShell(): void {
           <span class="rea-tagline">3D Spatial Floorplan & 10,000-Store Reverse Engineering</span>
         </div>
         <nav class="rea-nav" aria-label="Primary Sections">
-          <a href="#sec-3d-stage" class="rea-nav-link active">1. 3D Orbit Workbench</a>
-          <a href="#sec-setup" class="rea-nav-link">2. District Link & 10K Matrix</a>
-          <a href="#sec-simulator" class="rea-nav-link">3. Pre/Post & D3 Lab</a>
-          <a href="#floorplan-studio" class="rea-nav-link">4. Blueprint Import</a>
+          <a href="#sec-3d-stage" class="rea-nav-link active">1. 3D Orbit & 10K Swarm</a>
+          <a href="#sec-10k-matrix" class="rea-nav-link">2. Live 10,000-Store Wafer</a>
+          <a href="#sec-setup" class="rea-nav-link">3. District Link & ROI</a>
+          <a href="#sec-simulator" class="rea-nav-link">4. Pre/Post & D3 Lab</a>
         </nav>
         <div class="rea-header-actions">
           <button type="button" class="rea-btn-outline" id="toggleViewModeBtn">📐 2D CAD Blueprint</button>
@@ -603,8 +609,9 @@ function mountShell(): void {
               </div>
             </div>
 
-            <!-- TOP-RIGHT HUD: Revolve + Iso View + Top 2D + Theme (exact pgrun.dev controls) -->
+            <!-- TOP-RIGHT HUD: 10K Swarm + Revolve + Iso View + Top 2D + Theme -->
             <div class="pgrun-hud-top-right">
+              <button type="button" class="pgrun-pill-btn active" id="threeSwarmBtn" aria-pressed="true" title="Toggle 10,000-Scenario Parallel Trajectory Swarm">⚡ <span>10K SWARM</span></button>
               <button type="button" class="pgrun-pill-btn" id="threeRevolveBtn" aria-pressed="false">⟳ <span>REVOLVE</span></button>
               <button type="button" class="pgrun-pill-btn" id="threeIsoBtn" title="Reset Isometric View (I)">ISO VIEW</button>
               <button type="button" class="pgrun-pill-btn" id="threeTopBtn" title="Top-Down 2D Orthographic View">TOP 2D</button>
@@ -666,10 +673,105 @@ function mountShell(): void {
             <!-- BOTTOM TELEMETRY & SHORTCUT BAR -->
             <div class="pgrun-bottom-bar">
               <div class="pgrun-hint">
-                Drag: 360° Orbit · Shift+Drag: Move Fixture · 1–6 Scenarios · P/B Compare · R Rotate 90° · I Iso View
+                Drag: 360° Orbit · Shift+Drag: Move · Keys 1–6 Scenarios · P/B Compare · R Rotate
               </div>
               <div class="pgrun-readout tabular" id="threeLiveReadout">
-                [PROPOSED] Wait 18s (▼87s) · 10m Done 47 · Walk 16.5m · Survived 8,420 / 10,000
+                [AFTER] Wait 18s (▼87s) · 10m Done 47 · Walk 16.5m · Survived 8,420/10K
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 0.5: LIVE 10,000-STORE PARALLEL EXECUTION WAFER MATRIX COMMAND CENTER -->
+        <section class="rea-section" id="sec-10k-matrix" style="padding-top:4px;padding-bottom:18px">
+          <div class="tenk-command-shell">
+            <div class="tenk-top-bar">
+              <div class="tenk-title-group">
+                <span class="tenk-live-pill">
+                  <i class="tenk-pulse-dot"></i>
+                  <span id="tenKExecCounter">10,000 / 10,000 PARALLEL RUNS</span>
+                </span>
+                <h2>10,000-Scenario Wafer Matrix (100×100 Stores)</h2>
+                <p class="tenk-engine-note">Spatial preview [assumed]: cell economics and trajectory packets are illustrative. Verified 36-month engine results are reported separately below.</p>
+                <div class="tenk-engine-status" role="status" id="backendEngineStatus">Connecting to the 36-month engine…</div>
+                <button type="button" class="tenk-mode-btn" id="refreshBackendEngineBtn">Run 36-month engine</button>
+              </div>
+              <div class="tenk-controls-group">
+                <div class="tenk-mode-tabs" role="tablist" aria-label="10,000 Wafer Matrix View Mode">
+                  <button type="button" class="tenk-mode-btn active" data-wafer-mode="proposed">Proposed (After)</button>
+                  <button type="button" class="tenk-mode-btn" data-wafer-mode="baseline">Baseline (Before)</button>
+                  <button type="button" class="tenk-mode-btn" data-wafer-mode="delta">Rescued Delta (+Saved)</button>
+                  <button type="button" class="tenk-mode-btn" data-wafer-mode="families">500 Families × 20</button>
+                </div>
+                <button type="button" class="tenk-resweep-btn" id="resweepTenKBtn">⚡ Re-Sweep 10,000 Scenarios</button>
+              </div>
+            </div>
+
+            <div class="tenk-kpi-strip">
+              <div class="tenk-kpi-card">
+                <span>Parallel Execution Engine</span>
+                <strong class="tabular orange" id="tenKKpiExec">10,000 / 10,000</strong>
+                <small id="tenKKpiExecSub">500 AI Design Families × 20 Stress Variants</small>
+              </div>
+              <div class="tenk-kpi-card">
+                <span>Proposed Layout Survival</span>
+                <strong class="tabular orange" id="tenKKpiProp">8,420 Stores (84.2%)</strong>
+                <small id="tenKKpiPropSub">Passed Wait &lt; 60s &amp; Corridor Clearance</small>
+              </div>
+              <div class="tenk-kpi-card">
+                <span>Baseline Choke Survival</span>
+                <strong class="tabular" id="tenKKpiBase">3,140 Stores (31.4%)</strong>
+                <small>6,860 Stores Collapsed by Entry Bottleneck</small>
+              </div>
+              <div class="tenk-kpi-card">
+                <span>Stores Rescued by Layout</span>
+                <strong class="tabular orange" id="tenKKpiRescued">+5,280 Stores Saved</strong>
+                <small>Reversed from Bankruptcy / Gridlock to Profit</small>
+              </div>
+            </div>
+
+            <div class="tenk-body">
+              <div class="tenk-canvas-wrap">
+                <canvas
+                  id="tenKWaferCanvas"
+                  role="img"
+                  aria-label="Interactive 100 by 100 Wafer Matrix showing 10,000 parallel simulated stores. Hover to inspect any store cell or click to load into 3D stage."
+                ></canvas>
+              </div>
+              <div class="tenk-inspector" id="tenKInspectorCard">
+                <div>
+                  <div class="tenk-insp-head">
+                    <div>
+                      <div class="tenk-insp-id tabular" id="inspRunTitle">STORE RUN #01,421 / 10,000</div>
+                      <div class="tenk-insp-sub tabular" id="inspFamilySub">AI Design Family #072 · Variant #01 · Row 15, Col 21</div>
+                    </div>
+                    <span class="tenk-insp-badge" id="inspStatusBadge">SURVIVED · RESCUED</span>
+                  </div>
+                  <div class="tenk-insp-grid" style="margin-top:10px">
+                    <div class="tenk-insp-metric">
+                      <span>Stress Regime</span>
+                      <strong class="tabular" id="inspRegime">SCN-01 · Standard Ops</strong>
+                    </div>
+                    <div class="tenk-insp-metric">
+                      <span>Peak Inflow / Cap</span>
+                      <strong class="tabular" id="inspArrival">4.6 / 5.1 pax/m</strong>
+                    </div>
+                    <div class="tenk-insp-metric">
+                      <span>Wait (Before → After)</span>
+                      <strong class="tabular" id="inspWaitDelta">98s → 19s (▼79s)</strong>
+                    </div>
+                    <div class="tenk-insp-metric">
+                      <span>Aisle / Monthly Net</span>
+                      <strong class="tabular" id="inspFinancial">1.18m · +$8.4k/mo</strong>
+                    </div>
+                  </div>
+                </div>
+                <div class="tenk-insp-reason" id="inspReasonBox">
+                  Diagnosis: Rescued by Proposed Layout &amp; 16-Slot Queue Buffer
+                </div>
+                <button type="button" class="tenk-load-btn" id="loadCellTo3DBtn">
+                  Load Store #01,421 into 3D Floorplan Stage ↑
+                </button>
               </div>
             </div>
           </div>
@@ -1095,10 +1197,11 @@ function mountShell(): void {
       <!-- RIGHT STICKY "On this page" RAIL (exact rea.tools navigation rail) -->
       <aside class="rea-toc" aria-label="On this page">
         <div class="rea-toc-title">On this page</div>
-        <a href="#sec-3d-stage" class="rea-toc-link active">1. 3D Orbit Workbench</a>
-        <a href="#sec-setup" class="rea-toc-link">2. District & 10K Matrix</a>
-        <a href="#sec-simulator" class="rea-toc-link">3. Pre/Post & D3 Lab</a>
-        <a href="#floorplan-studio" class="rea-toc-link">4. Blueprint & Calibrate</a>
+        <a href="#sec-3d-stage" class="rea-toc-link active">1. 3D Orbit & 10K Swarm</a>
+        <a href="#sec-10k-matrix" class="rea-toc-link">2. Live 10,000-Store Wafer</a>
+        <a href="#sec-setup" class="rea-toc-link">3. District & Capital ROI</a>
+        <a href="#sec-simulator" class="rea-toc-link">4. Pre/Post & D3 Lab</a>
+        <a href="#floorplan-studio" class="rea-toc-link">5. Blueprint & Calibrate</a>
       </aside>
     </div>
   `;
@@ -1275,6 +1378,63 @@ function initStudio(): void {
       }
     },
   });
+
+  let inspectedCell: StoreRunCell | null = null;
+
+  function applyStoreCellToStage(cell: StoreRunCell): void {
+    state.preset = cell.regimeId;
+    state.arrival = Math.max(1, Math.min(8, Math.round(cell.arrivalRatePerMin * 2) / 2));
+    state.body = cell.regimeId === "stroller" ? 1.2 : 0.65;
+    $<HTMLInputElement>("arrivals").value = String(state.arrival);
+    $<HTMLSelectElement>("bodyWidth").value = state.body.toFixed(2);
+    recompute();
+  }
+
+  const tenKMatrix = createTenKMatrixEngine(
+    $<HTMLCanvasElement>("tenKWaferCanvas"),
+    {
+      onHoverCell: (cell, stats) => {
+        inspectedCell = cell;
+        const padRun = String(cell.runIndex).padStart(5, "0");
+        const padFam = String(cell.familyId).padStart(3, "0");
+        const padVar = String(cell.variantId).padStart(2, "0");
+        $("tenKExecCounter").textContent =
+          stats.sweepProgress < 1
+            ? `SWEEPING ${stats.executedCount.toLocaleString("en-US")} / 10,000`
+            : `10,000 / 10,000 PARALLEL RUNS`;
+        $("tenKKpiExec").textContent = `${stats.executedCount.toLocaleString("en-US")} / 10,000`;
+        $("tenKKpiProp").textContent = `${stats.propSurvived.toLocaleString("en-US")} Stores (${(stats.propSurvived / 100).toFixed(1)}%)`;
+        $("tenKKpiBase").textContent = `${stats.baseSurvived.toLocaleString("en-US")} Stores (${(stats.baseSurvived / 100).toFixed(1)}%)`;
+        $("tenKKpiRescued").textContent = `+${stats.rescuedCount.toLocaleString("en-US")} Stores Saved`;
+
+        $("inspRunTitle").textContent = `STORE RUN #${padRun} / 10,000`;
+        $("inspFamilySub").textContent = `AI Design Family #${padFam} · Variant #${padVar} · R${cell.row + 1}:C${cell.col + 1}`;
+        const badge = $("inspStatusBadge");
+        if (cell.proposedSurvived) {
+          badge.textContent = cell.rescuedByDesign
+            ? "SURVIVED · RESCUED"
+            : cell.marginalRisk
+            ? "SURVIVED · MARGINAL"
+            : "SURVIVED · OPTIMAL";
+          badge.classList.remove("failed");
+        } else {
+          badge.textContent = "COLLAPSED · CHOKED";
+          badge.classList.add("failed");
+        }
+        $("inspRegime").textContent = `${cell.regimeCode} · ${cell.regimeLabel}`;
+        $("inspArrival").textContent = `${cell.arrivalRatePerMin} / ${cell.serviceCapacityPerMin} pax/m`;
+        const wDiff = cell.proposedWaitSec - cell.baselineWaitSec;
+        $("inspWaitDelta").textContent = `${cell.baselineWaitSec}s → ${cell.proposedWaitSec}s (${wDiff <= 0 ? `▼${Math.abs(wDiff)}s` : `+${wDiff}s`})`;
+        const usdNet = (cell.monthlyNetKrwM * 0.75).toFixed(1);
+        $("inspFinancial").textContent = `${cell.aisleClearanceM}m · ${Number(usdNet) >= 0 ? "+" : ""}$${usdNet}k/mo`;
+        $("inspReasonBox").textContent = `Diagnosis: ${cell.failureReason} (Payback: Mo ${cell.breakEvenMonth})`;
+        $("loadCellTo3DBtn").textContent = `Load Store #${padRun} into 3D Floorplan Stage ↑`;
+      },
+      onSelectCell: (cell) => {
+        applyStoreCellToStage(cell);
+      },
+    }
+  );
 
   function getActiveUnit(): ListingUnit {
     const dist = getActiveDistrict();
@@ -1782,7 +1942,7 @@ function initStudio(): void {
         baseResult: state.results.base,
         mode: state.threeMode,
         categoryId: state.categoryId,
-        categoryName: cat.shortTitle,
+        categoryName: cat.shortName,
         districtName: dist.name,
         pyeong: state.customAreaPyeong ?? unit.areaPyeong,
         scenarioCode: activeScn.code,
@@ -1802,6 +1962,8 @@ function initStudio(): void {
         currentTimeSec: state.t,
       });
 
+      tenKMatrix.setSimTime(state.t);
+
       const wBase = Math.round(state.results.base.meanWaitSec ?? 0);
       const wActive = Math.round(activeRes.meanWaitSec ?? 0);
       const diff = wActive - wBase;
@@ -1815,9 +1977,9 @@ function initStudio(): void {
         state.threeMode === "baseline" ? "[BEFORE]" : "[AFTER]"
       } Wait ${wActive}s (${diffStr}) · 10m Served ${
         activeRes.completed
-      } pax · Walk ${(activeRes.walkDistance ?? 0).toFixed(
+      } · Walk ${(activeRes.walkDistance ?? 0).toFixed(
         1
-      )}m · Survived ${cat.survivedCount.toLocaleString("en-US")} / 10,000`;
+      )}m · Survived ${cat.survivedCount.toLocaleString("en-US")}/10K`;
     }
   }
 
@@ -1959,6 +2121,32 @@ function initStudio(): void {
         (clusterId) => {
           setPreset(clusterId as PresetKind);
         }
+      );
+
+      // Update Live 10,000-Store Parallel Wafer Matrix Engine
+      const baseWaitVal = Math.max(25, Math.round(observed(a) ?? 96));
+      const propWaitVal = Math.max(12, Math.round(observed(b) ?? 19));
+      tenKMatrix.updateConfig(
+        {
+          categoryKey: state.categoryId,
+          designKey: state.designId,
+          activeScenario: state.preset,
+          baseWaitSec: baseWaitVal,
+          propWaitSec: propWaitVal,
+          baseSurvivedTotal: Math.round(cat.survivedCount * 0.37),
+          propSurvivedTotal: cat.survivedCount,
+          scenarios: tenKClusters.map((c) => ({
+            id: c.id as Exclude<PresetKind, "custom">,
+            code: c.code,
+            label: c.label,
+            runs: c.total,
+            baseSurvived: Math.round(c.survived * 0.37),
+            propSurvived: c.survived,
+            baseWaitSec: baseWaitVal,
+            propWaitSec: propWaitVal,
+          })),
+        },
+        true
       );
 
       const insightEl = $("insight");
@@ -2344,6 +2532,38 @@ function initStudio(): void {
     $("threeRevolveBtn").classList.toggle("active", isRevolving);
     $("threeRevolveBtn").setAttribute("aria-pressed", String(isRevolving));
     threeStage.setAutoRevolve(isRevolving);
+  });
+
+  $("threeSwarmBtn").addEventListener("click", () => {
+    const next = !threeStage.isSwarmEnabled();
+    threeStage.setSwarmEnabled(next);
+    $("threeSwarmBtn").classList.toggle("active", next);
+    $("threeSwarmBtn").setAttribute("aria-pressed", String(next));
+  });
+
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-wafer-mode]")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.getAttribute("data-wafer-mode") as WaferViewMode;
+        if (!mode) return;
+        document
+          .querySelectorAll("[data-wafer-mode]")
+          .forEach((el) => el.classList.remove("active"));
+        btn.classList.add("active");
+        tenKMatrix.setViewMode(mode);
+      });
+    });
+
+  $("resweepTenKBtn").addEventListener("click", () => {
+    tenKMatrix.triggerSweep();
+  });
+
+  $("loadCellTo3DBtn").addEventListener("click", () => {
+    if (inspectedCell) {
+      applyStoreCellToStage(inspectedCell);
+      $("sec-3d-stage").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 
   $("threeIsoBtn").addEventListener("click", () => {
@@ -2914,3 +3134,31 @@ function initStudio(): void {
 }
 
 initStudio();
+
+async function syncWithBackendEngine(rerun = false): Promise<void> {
+  const status = document.getElementById("backendEngineStatus");
+  const button = document.getElementById("refreshBackendEngineBtn") as HTMLButtonElement | null;
+  if (button) button.disabled = true;
+  if (status) status.textContent = rerun ? "Running the 36-month engine…" : "Loading engine results…";
+  try {
+    const res = await fetch(rerun ? "/api/rehearse" : "/api/summary", {
+      method: rerun ? "POST" : "GET",
+      headers: rerun ? { "Content-Type": "application/json" } : undefined,
+      body: rerun ? JSON.stringify({ mode: 10000 }) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error("Engine returned HTTP " + res.status);
+    const summary = summarizeBackendRun(await res.json());
+    if (status) status.textContent =
+      `36-month engine [computed · ${summary.replay ? "cached replay" : "fresh run"}]: ${summary.survived.toLocaleString("en-US")} / ${summary.total.toLocaleString("en-US")} completed scenarios · ${summary.runId}`;
+  } catch {
+    if (status) status.textContent = "36-month backend unavailable. Spatial preview remains illustrative; no live engine result is claimed.";
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+document.getElementById("refreshBackendEngineBtn")?.addEventListener("click", () => {
+  void syncWithBackendEngine(true);
+});
+void syncWithBackendEngine();

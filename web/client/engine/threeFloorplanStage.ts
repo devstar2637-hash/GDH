@@ -7,7 +7,7 @@ import {
   type Scene,
   type SceneObject,
   type SimResult,
-} from "./rehearsalCore.js";
+} from "./rehearsalCore.ts";
 
 export interface ThreeStageConfig {
   container: HTMLElement;
@@ -107,6 +107,7 @@ export class ThreeFloorplanStage {
   private accentColor = new THREE.Color("#ea580c");
   private autoRevolve = false;
   private editDragMode = false;
+  private swarmEnabled = true;
 
   private rootGroup = new THREE.Group();
   private boardGroup = new THREE.Group();
@@ -935,7 +936,7 @@ export class ThreeFloorplanStage {
       ? this.accentHex
       : t.textPrimary;
     ctx.font = "700 30px 'Plus Jakarta Sans', 'JetBrains Mono', sans-serif";
-    const label = obs.label || obs.koLabel;
+    const label = obs.label || obs.koLabel || obs.id;
     ctx.fillText(label, 22, 54);
 
     ctx.fillStyle = t.textMuted;
@@ -986,7 +987,7 @@ export class ThreeFloorplanStage {
     ctx.fillStyle =
       isPrimary && isBlocked ? "#ffffff" : t.textPrimary;
     ctx.font = "700 25px 'Plus Jakarta Sans', 'JetBrains Mono', sans-serif";
-    ctx.fillText(obs.label || obs.koLabel, 18, 46);
+    ctx.fillText(obs.label || obs.koLabel || obs.id, 18, 46);
 
     ctx.fillStyle =
       isPrimary && isBlocked ? "rgba(255,255,255,0.9)" : t.textMuted;
@@ -1195,6 +1196,72 @@ export class ThreeFloorplanStage {
         offset: (idx * 0.27) % 1,
       });
     });
+
+    // 10,000-Scenario Parallel Monte Carlo Trajectory Swarm (multi-lane floor streamlines + 48 parallel packets)
+    if (this.swarmEnabled) {
+      const swarmLanes = 12;
+      const pktGeoSwarm = new THREE.SphereGeometry(0.052, 8, 8);
+      for (let lane = 0; lane < swarmLanes; lane++) {
+        const laneNorm = (lane / (swarmLanes - 1)) - 0.5; // -0.5 .. +0.5
+        const jitterX = laneNorm * 1.45;
+        const jitterZ = ((lane % 3) - 1) * 0.45;
+        const isSurvivedLane = payload.mode === "proposed" ? lane < 10 : lane < 4;
+
+        const wEnt = pEnt.clone().add(new THREE.Vector3(jitterX * 0.5, -0.18, 0));
+        const wMid1 = pObs
+          .clone()
+          .add(new THREE.Vector3(jitterX * 0.85, -0.62 + (lane % 2) * 0.12, jitterZ));
+        const wOrd = pOrd
+          .clone()
+          .add(new THREE.Vector3(jitterX * 0.55, -0.72, 0.35 + jitterZ * 0.4));
+        const wPck = pPck
+          .clone()
+          .add(new THREE.Vector3(jitterX * 0.55, -0.82, 0.35 - jitterZ * 0.4));
+        const wExt = pExt.clone().add(new THREE.Vector3(jitterX * 0.45, -0.08, 0));
+
+        const segs: [THREE.Vector3, THREE.Vector3, number][] = [
+          [wEnt, wMid1, 0.24 + (lane % 3) * 0.08],
+          [wMid1, wOrd, 0.28 + (lane % 4) * 0.07],
+          [wOrd, wPck, 0.26 + (lane % 2) * 0.08],
+          [wPck, wExt, 0.22 + (lane % 3) * 0.07],
+        ];
+
+        const laneColor = isSurvivedLane
+          ? lane % 3 === 0
+            ? new THREE.Color("#f97316")
+            : this.accentColor
+          : new THREE.Color(this.theme === "dark" ? 0x52525b : 0x71717a);
+
+        segs.forEach(([sPt, ePt, hPeak], sIdx) => {
+          const midPt = new THREE.Vector3()
+            .addVectors(sPt, ePt)
+            .multiplyScalar(0.5);
+          midPt.y = hPeak;
+          const sCurve = new THREE.QuadraticBezierCurve3(sPt, midPt, ePt);
+          const sGeo = new THREE.BufferGeometry().setFromPoints(
+            sCurve.getPoints(20)
+          );
+          const sMat = new THREE.LineBasicMaterial({
+            color: laneColor,
+            transparent: true,
+            opacity: isSurvivedLane ? 0.32 : 0.18,
+          });
+          this.arcsGroup.add(new THREE.Line(sGeo, sMat));
+
+          const pMat = new THREE.MeshBasicMaterial({
+            color: laneColor,
+          });
+          const pMesh = new THREE.Mesh(pktGeoSwarm, pMat);
+          this.arcsGroup.add(pMesh);
+          this.arcPackets.push({
+            mesh: pMesh,
+            curve: sCurve,
+            speed: isSurvivedLane ? 0.58 + (lane % 4) * 0.09 : 0.22,
+            offset: ((lane * 0.19) + sIdx * 0.25) % 1,
+          });
+        });
+      }
+    }
   }
 
   public update(payload: ThreeStageUpdatePayload): void {
@@ -1545,6 +1612,18 @@ export class ThreeFloorplanStage {
 
   public setAutoRevolve(enabled: boolean): void {
     this.autoRevolve = enabled;
+  }
+
+  public setSwarmEnabled(enabled: boolean): void {
+    this.swarmEnabled = enabled;
+    this.lastSignature = "";
+    if (this.lastPayload) {
+      this.update(this.lastPayload);
+    }
+  }
+
+  public isSwarmEnabled(): boolean {
+    return this.swarmEnabled;
   }
 
   public snapToIsoView(): void {

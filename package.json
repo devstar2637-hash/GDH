@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "tsx web/server.ts",
     "start": "node dist/web/server.js",
-    "build": "tsc -p tsconfig.json && node web/buildClient.mjs",
-    "test": "tsx --test engine/engine.test.ts loop/loop.test.ts web/web.test.ts",
+    "build": "tsc -p tsconfig.json && tailwindcss -i web/client/styles.css -o dist/web/client/styles.css --minify && node web/buildClient.mjs",
+    "test": "tsx --test engine/engine.test.ts loop/loop.test.ts web/web.test.ts web/sync.test.ts",
+    "sync:studio-ui": "node web/syncStudioClient.mjs",
     "test:accept": "tsx engine/cli.ts accept",
     "backtest": "tsx engine/cli.ts backtest",
     "bench": "tsx engine/cli.ts bench",
@@ -25,6 +26,8 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3",
     "@types/node": "^20.11.0",
     "esbuild": "^0.25.0",
     "tsx": "^4.19.0",

@@ -268,7 +268,19 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.end(body);
 }
 
-function resolveClientAsset(fileName: "index.html" | "app.js"): string {
+function compactEnvelope(envelope: ApiRunEnvelope) {
+  return {
+    run: {
+      runId: envelope.run.runId,
+      mode: envelope.run.mode,
+      status: envelope.run.status,
+      results: envelope.run.results.map(({ constraintsOk, deathMonth, survivedMonths }) =>
+        ({ constraintsOk, deathMonth, survivedMonths })),
+    },
+  };
+}
+
+function resolveClientAsset(fileName: "index.html" | "app.js" | "styles.css" | "version.json"): string {
   const distPath = resolve(process.cwd(), "dist/web/client", fileName);
   if (existsSync(distPath)) {
     return readFileSync(distPath, "utf8");
@@ -322,22 +334,34 @@ export function createAppServer(): Server {
           status: "ok",
           defaultMode: 10000,
           modeLabel: "500 AI design families x 20 variations",
+          uiBuild: existsSync(resolve(process.cwd(), "dist/web/client/version.json"))
+            ? JSON.parse(resolveClientAsset("version.json")).uiBuild : "unbuilt",
+          revision: process.env.K_REVISION ?? "local",
         });
         return;
       }
 
-      if (method === "GET" && path === "/api/default") {
+      if ((method === "GET" || method === "HEAD") && path === "/styles.css") {
+        res.writeHead(200, {
+          "Content-Type": "text/css; charset=utf-8",
+          "Cache-Control": "no-cache",
+        });
+        res.end(method === "HEAD" ? undefined : resolveClientAsset("styles.css"));
+        return;
+      }
+
+      if (method === "GET" && (path === "/api/default" || path === "/api/summary")) {
         if (!cachedDefaultEnvelope) {
           cachedDefaultEnvelope = await buildRunEnvelope({
             mode: 10000,
             replay: true,
           });
         }
-        sendJson(res, 200, cachedDefaultEnvelope);
+        sendJson(res, 200, path === "/api/summary" ? compactEnvelope(cachedDefaultEnvelope) : cachedDefaultEnvelope);
         return;
       }
 
-      if (method === "POST" && (path === "/run" || path === "/api/run")) {
+      if (method === "POST" && (path === "/run" || path === "/api/run" || path === "/api/rehearse")) {
         const body = await readJsonBody(req);
         const envelope = await buildRunEnvelope({
           budgetKrw: body.budgetKrw !== undefined ? Number(body.budgetKrw) : undefined,
@@ -366,7 +390,7 @@ export function createAppServer(): Server {
           decisionChoice:
             (body.decisionChoice as "proceed" | "hold" | "measure") ?? "hold",
         });
-        sendJson(res, 200, envelope);
+        sendJson(res, 200, url.searchParams.get("summary") === "1" ? compactEnvelope(envelope) : envelope);
         return;
       }
 

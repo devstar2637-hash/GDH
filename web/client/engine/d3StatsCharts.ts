@@ -1,6 +1,6 @@
 // src/engine/d3StatsCharts.ts
 import * as d3 from "d3";
-import type { SimResult } from "./rehearsalCore.js";
+import type { SimResult } from "./rehearsalCore.ts";
 
 export interface D3StatsChartPair {
   base: SimResult;

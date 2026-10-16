@@ -19,7 +19,15 @@
 
 ---
 
-## 2. Key Features (`4f717f2` / Cloud Run `thousand-stores-00009-9fl`)
+## UI Sync Update
+
+The 10K Swarm and 100x100 Wafer UI are now imported from rehearsal-store into
+the production build. See [UI sync and deployment](docs/UI_SYNC.md) for the
+source-of-truth paths, AI Studio pull flow, API proxy, and deployment checks.
+Spatial preview assumptions are distinguished from measured 36-month engine
+results. The current build can be identified through /api/health.
+
+## 2. Key Features (original deployment snapshot)
 
 ### A. 4-Section Spatial & Financial Rehearsal Workbench (`REA · Rehearsal` Orange-Branded English/KR UI)
 1. **Section 1 — 360° Interactive Three.js WebGL 3D Orbit Workbench (`3D Orbit Workbench`):**
@@ -101,7 +109,7 @@ npm start
 
 ### Run Verification & Benchmark Suites
 ```bash
-npm test              # 19 unit & integration tests across engine/, loop/, and web/
+npm test              # engine, loop, web, and UI/API sync integration tests
 npm run test:accept   # AT-01..AT-16 acceptance test gate JSON output
 npm run backtest      # Historical (2021-2024) & unseen holdout (2025Q1-2026Q2) calibration check
 npm run bench         # 10,000 variants x 36 months benchmark (median of 5 runs)

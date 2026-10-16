@@ -5,7 +5,7 @@ import {
   type Scene,
   type SceneObject,
   type SimResult,
-} from "./rehearsalCore.js";
+} from "./rehearsalCore.ts";
 
 export interface IsoView {
   s: number;
@@ -496,7 +496,7 @@ function draw2DCadFloorplan(
     ctx.fillStyle = "#18181b";
     ctx.font = "700 9.5px 'Plus Jakarta Sans', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(o.label || o.koLabel, otl.x + ow / 2, otl.y + oh / 2 - 1);
+    ctx.fillText(o.label || o.koLabel || o.id, otl.x + ow / 2, otl.y + oh / 2 - 1);
     ctx.fillStyle = "#52525b";
     ctx.font = "600 8.5px 'JetBrains Mono', sans-serif";
     ctx.fillText(
@@ -1503,10 +1503,11 @@ export function drawWorldCanvas(opts: DrawWorldOptions): IsoView {
     | { sort: number; object: SceneObject; person?: undefined }
     | { sort: number; person: (typeof f.people)[number]; object?: undefined };
 
-  const items: RenderItem[] = scene.objects
-    .map((o) => ({ sort: o.x + o.y + o.w / 2 + o.h / 2, object: o }))
-    .concat(f.people.map((person) => ({ sort: person.x + person.y, person })))
-    .sort((a, b) => a.sort - b.sort);
+  const items: RenderItem[] = [
+    ...scene.objects.map((o) => ({ sort: o.x + o.y + o.w / 2 + o.h / 2, object: o })),
+    ...f.people.map((person) => ({ sort: person.x + person.y, person })),
+  ];
+  items.sort((a, b) => a.sort - b.sort);
 
   for (const item of items) {
     if (item.object) {
