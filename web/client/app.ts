@@ -2446,16 +2446,35 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   setText("sbEndState", run.status.endState);
   setText("sbReplayBadge", run.status.replay ? "REPLAY" : "LIVE ENGINE");
   setText("sbRunId", run.runId);
-  setText("sbInputHash", (run.provenance?.inputHash ?? "").slice(0, 12));
-  setText("sbEngineSha", (run.provenance?.engineSha ?? "").slice(0, 10));
-  setText("sbComputeMs", `${Math.round(run.provenance?.computeElapsedMs ?? 0)}ms`);
+  // Status bar reads runs/<id>/status only (AT-14): hash, engine SHA, input files, tokens, gate log. Never a placeholder.
+  const st = run.status as unknown as {
+    inputHash?: string; engineSha?: string; inputFiles?: string[];
+    tokenTotal?: { input: number; output: number }; tokens?: unknown[];
+    gateLog?: { gate: string; passed: boolean | null }[];
+  };
+  const prov = (run as unknown as { provenance?: { inputHash?: string; engineSha?: string; computeElapsedMs?: number } }).provenance;
+  setText("sbInputHash", (prov?.inputHash ?? st.inputHash ?? "-").slice(0, 12));
+  setText("sbEngineSha", (prov?.engineSha ?? st.engineSha ?? "-").slice(0, 10));
+  const computeMs = prov?.computeElapsedMs ?? (run as unknown as { computeMs?: number }).computeMs;
+  setText("sbComputeMs", computeMs !== undefined ? `${Math.round(computeMs)}ms` : "-");
+  setText("sbInputFiles", (st.inputFiles ?? []).map((f) => f.split("/").pop() ?? f).join(", ") || "-");
+  const tt = st.tokenTotal;
+  setText("sbTokensTotal", tt ? `${(tt.input + tt.output).toLocaleString()} (in ${tt.input.toLocaleString()} / out ${tt.output.toLocaleString()}, ${st.tokens?.length ?? 0} calls)` : "-");
+  const gl = st.gateLog ?? [];
+  const gatePass = gl.filter((g) => g.passed === true).length;
+  setText("sbGateLog", gl.length ? `${gatePass}/${gl.length} PASS · ${gl.map((g) => `${g.gate}:${g.passed === true ? "ok" : g.passed === false ? "FAIL" : "n/a"}`).join(" ")}` : "-");
+  setText("s5PassCount", gl.length ? `${gatePass}/${gl.length}` : "-");
 
   const totalN = run.results.length || 10000;
   const survivors = run.results.filter((r) => r.deathMonth === null).length;
   const rawSurvPct = ((survivors / totalN) * 100).toFixed(1) + "%";
-  const calibSurvPct = run.calibration.calibrated
-    ? Math.max(5, Math.min(96, (survivors / totalN) * 100 - (run.calibration.holdoutErrorPp ?? 1.2))).toFixed(1) + "%"
-    : "보정 대기";
+  // The client never computes money or rates: show the engine's calibration label and its measured error, nothing derived here.
+  const calib = run.calibration as unknown as { calibrated?: boolean; label?: string; koLabel?: string; errorPp?: number | null; maxErrorPp?: number; holdoutErrorPp?: number | null };
+  const isCalibrated = calib.calibrated === true || calib.label === "calibrated";
+  const calibErrPp = calib.errorPp ?? calib.maxErrorPp ?? null;
+  const calibSurvPct = isCalibrated
+    ? `${calib.koLabel ?? "보정됨"} (백테스트 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp)`
+    : `${calib.koLabel ?? "미보정"}`;
 
   setText("s1TotalCount", totalN.toLocaleString());
   setText("s1PassRate", `원시 통과 ${rawSurvPct}`);
@@ -2513,9 +2532,9 @@ function renderMacroEnvelope(env: ApiRunEnvelope): void {
   }
   const calEl = $("calibratedDistributionContainer");
   if (calEl) {
-    calEl.textContent = run.calibration.calibrated
-      ? `서울시 OA-15577 백테스트 최대 오차 ${run.calibration.maxErrorPp.toFixed(2)}pp · 은닉 홀드아웃 오차 ${(run.calibration.holdoutErrorPp ?? 0).toFixed(2)}pp (5pp 이내 통과)`
-      : `보정 오차 초과 (${run.calibration.maxErrorPp.toFixed(2)}pp) — 분포 표시 차단됨`;
+    calEl.textContent = isCalibrated
+      ? `서울시 OA-15577 백테스트 최대 오차 ${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp · 은닉 홀드아웃 오차 ${(calib.holdoutErrorPp ?? 0).toFixed(2)}pp (5pp 이내 통과)`
+      : `미보정 — 보정 오차 초과 (${calibErrPp !== null ? calibErrPp.toFixed(2) : "-"}pp) — 분포 표시 차단됨, 가정표만 표시`;
   }
 
   const roundsBody = $("roundsTableBody");

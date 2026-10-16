@@ -123,8 +123,14 @@ function applyNumericOp(current: number, op: Patch["op"], val: number): number {
   return val;
 }
 
+const PATCHABLE_KEYS = new Set([
+  "seats", "floorAreaM2", "deposit", "monthlyRent", "fitoutCost", "staffFte", "ownerHoursPerWeek",
+  "menuTier", "avgTicketKrw", "makeTimeSec", "openDaysPerWeek", "cupsPerDayBase", "cogsRatio", "openingMonth",
+]);
+
 /**
  * Apply a single validated StoreDesigner patch to a cloned StoreDesign.
+ * Throws on a non-numeric value or an unknown key: invalid patches are rejected and logged, never repaired silently (SPEC §7).
  */
 export function applyStorePatch(design: StoreDesign, patch: Patch): StoreDesign {
   const clone: StoreDesign = {
@@ -139,7 +145,12 @@ export function applyStorePatch(design: StoreDesign, patch: Patch): StoreDesign 
     .replace(/^\//, "")
     .replace(/\.value$/, "");
   const numVal = Number(patch.value);
-  if (!Number.isFinite(numVal)) return clone;
+  if (!Number.isFinite(numVal)) {
+    throw new Error(`INVALID_PATCH_VALUE: '${String(patch.value)}' at '${patch.path}' is not a finite number`);
+  }
+  if (!PATCHABLE_KEYS.has(cleanKey)) {
+    throw new Error(`UNKNOWN_PATCH_KEY: '${patch.path}' is not a StoreDesign field`);
+  }
 
   switch (cleanKey) {
     case "seats":
@@ -258,7 +269,14 @@ export function validateAndApplyPatchBundles(
         continue;
       }
       if (!bundleRejected) {
-        candidate = applyStorePatch(candidate, patch);
+        try {
+          candidate = applyStorePatch(candidate, patch);
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : "INVALID_PATCH";
+          rejectedPatches.push({ patchIndex: currentIdx, reason, path: patch.path });
+          rejectedBundles.push({ bundleId: bundle.id, reason, path: patch.path });
+          bundleRejected = true;
+        }
       }
     }
 
