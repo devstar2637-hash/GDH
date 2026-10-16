@@ -1,39 +1,49 @@
-# Ten Thousand Stores (만 개의 가게) — Pre-Lease 2.5D Spatial & 10,000-Scenario 36-Month Store Rehearsal
+# Ten Thousand Stores (만 개의 가게 · REA Rehearsal) — Pre-Lease 360° 3D Spatial & 10,000-Scenario 36-Month Store Rehearsal
 
-> **One-Liner:** Before you sign the lease, live ten thousand futures of your store (`500 AI design families x 20 variations = 10,000 variants x 36 months`) in an interactive 2.5D floorplan. Most of them fail. Keep the designs that survive, and the one field measurement that flips the answer.
+> **One-Liner:** Before you sign the lease, rehearse ten thousand futures of your store (`500 AI design families x 20 variations = 10,000 variants x 36 months`) in an interactive 360° Three.js WebGL 3D workbench and D3.js telemetry lab. Most of them fail. Keep the designs that survive, and the one field measurement that flips the answer.
 
 - **Hackathon:** Google DeepMind AI Hackathon (Seoul, 2026-10-16)
 - **Live Cloud Run Deployment:** `https://thousand-stores-299086406033.asia-northeast3.run.app/` (also accessible via `https://thousand-stores-wva46uzo7a-du.a.run.app/` and `/rehearsal/`)
 - **Repository:** `https://github.com/devstar2637-hash/GDH`
-- **Models & Runtime:** `gemini-4-argon` (Store Designer & Bankruptcy Designer JSON-patch loop), `gemini-3.8-flash` (fast leaf schema checks), Node.js 20 + TypeScript deterministic 36-month cash-flow & 2.5D/3D spatial queue engine
+- **Models & Runtime:** `gemini-4-argon` (Store Designer & Bankruptcy Designer JSON-patch loop), `gemini-3.8-flash` (fast leaf schema checks), Three.js WebGL 3D + D3.js 10K telemetry client, Node.js 20 + TypeScript deterministic 36-month cash-flow & spatial queue engine
 
 ---
 
 ## 1. Project Description (5-Sentence Hackathon Submission Summary)
 
-1. **Problem:** First-time independent store founders sign multi-year commercial leases after comparing only two or three optimistic spreadsheet cases—without testing how interior layout bottlenecks or macro shocks interact to drain their cash reserve.
-2. **User & Workflow:** **Ten Thousand Stores (만 개의 가게)** lets a prospective founder enter an address, available startup capital, and an optional store photo to receive ranked category recommendations (`cafe`, `bakery`, `popup`, `dining`), an interactive 2.5D isometric store floorplan (plus 2D CAD blueprint and Three.js WebGL 3D showroom) with draggable/rotatable furniture and live customer queue simulation, and a 36-month financial stress test across **10,000 store variants** (`500 AI design families x 20 deterministic expansions`).
-3. **Differentiation:** Rather than asking an LLM to guess financial outcomes, our architecture enforces strict **generator–verifier separation**: `gemini-4-argon` acts purely as a *Store Designer* (proposing structural design families) and a *Bankruptcy Designer* (proposing macro/micro shock schedules) via schema-validated JSON patches, while a deterministic TypeScript engine computes all 360,000 monthly P&L ledgers, 10-minute peak queue bottlenecks, and failure classifications with every forbidden oracle/constraint path blocked (`AT-10`).
+1. **Problem:** First-time independent store founders sign multi-year commercial leases after comparing only two or three optimistic spreadsheet cases and a static 2D sketch—without testing how entry-choke interior bottlenecks or macro shocks interact to drain their cash reserve.
+2. **User & Workflow:** **Ten Thousand Stores (만 개의 가게 · REA Rehearsal)** lets a prospective founder paste a map/property listing link (`Naver`, `Kakao`, `Nemo`, `Zigbang`) or pick a Seoul district and suite (`Seongsu`, `Yeonnam`, `Hannam`, `Sinsa`), explore a **360° Three.js WebGL 3D Orbit Workbench** across 4 categories (`Cafe`, `Bakery`, `Pop-Up`, `Wine Bar`), 3 spatial layouts (`Express Bar`, `360° Island`, `Lounge`), and 6 stress regimes (`10,000 runs`), compare Baseline vs. Proposed 2.5D/2D floorplans with live D3.js telemetry, inject custom CAD blueprint bounding boxes directly into 3D, and stress-test **10,000 store variants** over 36 months.
+3. **Differentiation:** Rather than asking an LLM to guess financial outcomes, our architecture enforces strict **generator–verifier separation**: `gemini-4-argon` acts purely as a *Store Designer* (proposing structural design families) and a *Bankruptcy Designer* (proposing macro/micro shock schedules) via schema-validated JSON patches, while a deterministic TypeScript engine computes all 360,000 monthly P&L ledgers, 10-minute peak queue bottlenecks (`Wait 105s -> 18s`, `10m Done 27 -> 47 pax`, `8,420 / 10,000 survived`), and failure classifications with every forbidden oracle/constraint path blocked (`AT-10`).
 4. **Measured Implementation & Verification:** Grounded in 22 quarters (`2021Q1–2026Q2`) of Seoul Open Data Plaza commercial district records (`OA-15577` / `OA-15572`), the engine completes `10,000 variants × 36 months` in **36.92 ms** locally (**228.3 ms** on Cloud Run, gate $\le 2.0\text{ s}$), reproduces `2021–2024` historical open/close rates within **1.12 percentage points** and `2025Q1–2026Q2` unseen holdout quarters within **1.98 percentage points** (gate $\le 5.0\text{ pp}$), matches an independent spreadsheet P&L audit within **0.0000 KRW** across 50 sampled variants, and outperforms an equal-budget random/grid baseline (`7 vs. 0` failure families discovered; `17 vs. 5` non-dominated surviving designs).
 5. **Boundaries & Safety:** All outputs are explicitly labeled as **scenario frequencies (not real-world forecasts or financial/legal advice)**, every metric carries a provenance tag (`[public]`, `[onsite]`, `[computed]`, `[assumption]`, `[synthetic]`), uncalibrated runs automatically suppress distribution charts in favor of Explorer mode (`AT-02`), and the final decision (`Proceed` / `Hold` / `Measure First`) remains strictly human-in-the-loop with zero external payment, contract, or messaging actions (`AT-11`).
 
 ---
 
-## 2. Key Features
+## 2. Key Features (`4f717f2` / Cloud Run `thousand-stores-00009-9fl`)
 
-### A. 3-Step Founder Experience (`rea.tools` Editorial UI + 2.5D Isometric / 2D CAD / Three.js WebGL 3D Studio)
-1. **Step 1 — Founder Setup (`01 · Address · Capital · Photo`):**
-   - Enter a target Seoul commercial district (`Seongsu`, `Yeonnam`, `Gangnam`, `Euljiro`) and total startup capital (`35M–250M KRW`), plus an optional floorplan/photo upload with bounding-box obstacle extraction.
-   - A live **Founder Agent Terminal** (`ten-thousand-stores --addr="성수동" --capital="9,000만" --category="cafe"`) immediately summarizes deposit, fit-out cost, net reserve buffer, and peak queue change.
-2. **Step 2 — Data-Grounded Category Recommendations (`02 · Top 4 Categories`):**
-   - Automatically ranks **Specialty Cafe (`cafe`)**, **Artisan Bakery (`bakery`)**, **Brand Popup Showroom (`popup`)**, and **Casual Dining & Wine Bar (`dining`)** against the founder's capital buffer and district rent profile.
-   - Clicking any category swaps the entire 2.5D/3D architectural floorplan, material zoning, equipment list, and customer arrival/service parameters in real time.
-3. **Step 3 — Interactive 2.5D Floorplan, 2D CAD Blueprint, Three.js WebGL 3D Showroom & 36-Month Survival Report (`03 · 2.5D Layout & Queue` / `04 · 10,000-Store Verification`):**
-   - **Side-by-Side 2.5D Worlds + 2D CAD Blueprint (`C`):** Compare the Baseline layout against your Proposed layout while dragging furniture with the mouse, rotating objects `90°` (`R`), adding tables (`+ 가구 추가`), Undo/Redo (`⌘Z` / `⌘⇧Z`), toggling lighting (`L`), CAD dimensions (`G`), architectural 2D blueprint mode (`C`), congestion heatmaps (`H`), camera angles (`I`), dark CAD theme (`T`), or walking the floor in first-person (`WASD`).
-   - **Three.js WebGL 3D Store Architecture Stage (`THREE.JS WEBGL 3D · BLOOM`):** Real-time 3D architectural showroom with UnrealBloom post-processing, automatic exterior wall cutaway on 360° orbit, 4 lighting moods (`2800K Cozy Warm`, `Day Peak`, `Rush Hour`, `Night Showroom`), and 64-stream 3D AC airflow particles.
-   - **3-Step Evidence Terminal (`rea-evidence`):** Inspect live spatial zoning, 10-minute peak queue bottlenecks, and 36-month capital rules.
-   - **Decision Cliff & Next Field Measurement:** Pinpoints the single assumption threshold that flips the `#1` ranked store design (e.g., `cupsPerDayBase = 224 cups/day`, `relativeDelta = 21%`) and prescribes one concrete 7-day field measurement before signing the lease.
-   - **AI Studio UI SDK Bridge (`window.TenThousandStoresSDK`):** Exposes a clean reactive JavaScript SDK so external UIs built in Google AI Studio can subscribe to simulation state and mount canvases directly.
+### A. 4-Section Spatial & Financial Rehearsal Workbench (`REA · Rehearsal` Orange-Branded English/KR UI)
+1. **Section 1 — 360° Interactive Three.js WebGL 3D Orbit Workbench (`3D Orbit Workbench`):**
+   - Real-time Three.js WebGL stage (`ACESFilmicToneMapping`, `RoomEnvironment` PMREM lighting, `OrbitControls`) with 360° orbit, `ISO VIEW` (`I`), `TOP 2D`, auto-revolve (`⟳ REVOLVE`), Light/Dark stage theme (`◐`), and **`Shift + Drag` live 3D fixture relocation + `90°` rotation (`R`)**.
+   - Switch live across **4 Business Categories** (`Cafe`, `Bakery`, `Pop-Up`, `Wine Bar`), **3 Interior Spatial Layouts** (`Design A · Express Bar`, `Design B · 360° Island`, `Design C · Lounge`), and **6 Stress-Test Scenario Regimes totaling 10,000 runs**:
+     - `SCN-01` Standard Peak (`3,200 runs`, 4.0 arrivals/min, 2 Pickup staff)
+     - `SCN-02` Rainy Weekend Surge (`2,400 runs`, 6.5 arrivals/min)
+     - `SCN-03` Solo Barista Shift (`1,400 runs`, 1 Pickup staff)
+     - `SCN-04` Viral Influencer Drop (`1,200 runs`, 7.5 arrivals/min, 3 Pickup staff)
+     - `SCN-05` Baseline + Extra Staff (`1,000 runs`, geometry vs. headcount test)
+     - `SCN-06` Stroller & Group Entry (`800 runs`, 1.20m corridor clearance check)
+   - Visualizes **16-slot LED queue buffers** on Order POS & Pickup Bar, **24-cell Shared Walkway Matrix** collision tiles, and animated quadratic Bezier order-to-pickup packet arcs (`arcPackets`).
+2. **Section 2 — Commercial District Link Parser & D3.js 10,000-Scenario Matrix (`District Link & 10K Matrix`):**
+   - Paste a property/map URL (`Naver`, `Kakao`, `Nemo`, `Zigbang`) or select across **4 Seoul Commercial Districts** (`Seongsu Yeonmujang-gil`, `Yeonnam Forest Park`, `Hannam Cafe Street`, `Sinsa Garosu-gil`) and specific building suites (`Suite 101`, `Suite 102`, `Suite 201`, `Suite B1`) to extract foot traffic, rent, floor area, and structural pillars.
+   - Ranks category fit per suite and renders a **D3.js 10,000 Parallel Store Scenarios Matrix** breaking down `Survived` (`#ea580c`), `Queue Overload` (`#fbbf24`), and `Route Blocked` (`#3f3f46`) scenario frequencies.
+3. **Section 3 — Pre/Post Side-by-Side 2.5D/2D Floorplan & D3 Telemetry Lab (`Pre/Post & D3 Lab`):**
+   - Side-by-side **Baseline Floorplan (BEFORE · Entry Choke)** vs. **Proposed Floorplan (AFTER · Perimeter Flow)** with 360° drag orbit, Heatmap (`🔥`), Lighting (`💡`), HVAC Airflow (`❄️`), 2D CAD Blueprint (`📐`), first-person Avatar Walk (`WASD` / D-Pad), and live D3.js sparklines (`Mean Wait · Queue Curve`, `10m Served · Throughput`, `Walk Distance · Segments`).
+   - Demonstrates concrete spatial gains: **mean wait time reduced by 87s (`105s -> 18s`)**, **+20 extra orders served per 10 mins (`27 -> 47 pax`)**, and **walk distance shortened to `16.5m`** (`8,420 / 10,000` scenarios surviving).
+4. **Section 4 — Custom CAD Blueprint Bounding-Box 3D Injection & Soft-Opening Calibration (`Blueprint Import`):**
+   - Upload a CAD blueprint or site photo, drag a bounding box over a counter or pillar, and click **`Inject into 3D Stage ↑`** to map it directly into the normalized `12.0m × 9.0m` 3D & 2.5D floorplan.
+   - Enter observed soft-opening field metrics (`Observed Arrivals pax/min` and `Observed Queue Wait sec`) to auto-calibrate the simulation engine, and export a contractor-ready **Spec Sheet (`.txt`)** or **Scenario JSON (`.json`)**.
+5. **Backend — 36-Month Deterministic Survival Engine, Decision Cliff & AI Studio SDK Bridge:**
+   - Pinpoints the single assumption threshold that flips the `#1` ranked store design (e.g., `cupsPerDayBase = 224 cups/day`, `relativeDelta = 21%`) and prescribes one concrete 7-day field measurement before signing the lease.
+   - Exposes `window.TenThousandStoresSDK` for reactive state inspection and headless simulation runs.
 
 ---
 
