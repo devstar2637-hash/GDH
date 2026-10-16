@@ -26,3 +26,9 @@ Local build, unit/HTTP tests and browser receipts are recorded for the pushed so
 Unmet or unverified: live 500-family Gemini execution and actual token cost, Cloud deployment, cashflow calibration and hidden holdout, AI-versus-random advantage, 1 MB expanded payload, two-second whole-path performance, durable cloud persistence, full planned landscape/distribution presentation and live three-round adversarial model execution. The uncalibrated path remains available and distribution charts stay hidden. Business acceptance gates are preserved rather than relaxed.
 
 PR #2 is the reviewable deliverable. Main remains unmerged by user decision. No messages, submissions, public publishing or new schedules are triggered by these attachments.
+
+## Upstream A3 prototype
+
+Upstream `f9e4b92` is integrated into the PR history. Its six-screen prototype is preserved in `web/client/`, with its old contract test in `web/client/a3-integration-contract.test.ts`. It is intentionally outside the active build and suite; no runtime/test pass is claimed for that prototype. The active workbench remains `web/public/` with the validated server API.
+
+Activation is blocked by incompatible request/envelope shapes and incorrect evidence claims in the prototype: fixed AI-family labels despite offline execution, null holdout errors coerced to zero, prefilled calibration values, default-result substitution for unknown run IDs, and a hardcoded unchanged-hash assertion. The upstream server and its narrower test command do not replace the verified server, input/timeout guards or regression glob. A source read is the evidence for these incompatibilities, not a browser execution of the inactive prototype.
