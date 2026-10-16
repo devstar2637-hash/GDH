@@ -1,0 +1,66 @@
+{
+  "note": "sha256 of canonical {constraints, base, scenario}; pinned by the verifier at the 12:15 freeze from shared/constants.ts. If this changes, shared/ changed.",
+  "sha256": "dbcc25c8a279456605ce5f6428657921c4e789fc3cdba99ccb0c7834434f6111",
+  "constraints": {
+    "budgetKrw": 120000000,
+    "reserveRatioMin": 0.1,
+    "horizonMonths": 36,
+    "district": "성수동",
+    "trade": "cafe",
+    "seed": 20261016
+  },
+  "base": {
+    "id": "base-seongsu-cafe",
+    "seats": 22,
+    "floorAreaM2": 49.5,
+    "deposit": {
+      "value": 35000000,
+      "source": {
+        "kind": "onsite",
+        "field": "deposit",
+        "note": "성수동 1층 15평형 보증금 현장 호가"
+      }
+    },
+    "monthlyRent": {
+      "value": 3200000,
+      "source": {
+        "kind": "onsite",
+        "field": "monthlyRent",
+        "note": "성수동 1층 15평형 월세 현장 호가"
+      }
+    },
+    "fitoutCost": {
+      "value": 62000000,
+      "source": {
+        "kind": "onsite",
+        "field": "fitoutCost",
+        "note": "인테리어 4,200만 + 에스프레소/제빙 장비 2,000만 현장 견적"
+      }
+    },
+    "staffFte": 1.5,
+    "ownerHoursPerWeek": 54,
+    "menuTier": 2,
+    "avgTicketKrw": 4800,
+    "makeTimeSec": 95,
+    "openDaysPerWeek": 6,
+    "equipmentKrw": 20000000,
+    "cupsPerDayBase": 185,
+    "cogsRatio": 0.32,
+    "openingMonth": 3,
+    "wagePerStaffKrw": 2400000,
+    "otherExpenseRatio": 0.06,
+    "familyId": "fam-000"
+  },
+  "scenario": {
+    "id": "verifier-fixed",
+    "shocks": [
+      {
+        "id": "fx-offseason",
+        "kind": "offseason",
+        "startMonth": 1,
+        "durationMonths": 2,
+        "magnitude": 0.08
+      }
+    ]
+  }
+}

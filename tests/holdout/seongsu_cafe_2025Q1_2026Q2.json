@@ -1,0 +1,53 @@
+{
+ "note": "Hidden holdout 2025Q1-2026Q2, Seongsu cafe (CS100010, 8 trade areas). Built from tests/fixtures/backtest_reference_seongsu_cafe.csv. Never read by calibration code; checked at every gate (AT-15).",
+ "quarters": [
+  {
+   "close_rate_pct": 3.252,
+   "closes": 8,
+   "open_rate_pct": 2.846,
+   "opens": 7,
+   "quarter": "20251",
+   "total_stores": 246
+  },
+  {
+   "close_rate_pct": 2.857,
+   "closes": 7,
+   "open_rate_pct": 2.449,
+   "opens": 6,
+   "quarter": "20252",
+   "total_stores": 245
+  },
+  {
+   "close_rate_pct": 3.187,
+   "closes": 8,
+   "open_rate_pct": 5.578,
+   "opens": 14,
+   "quarter": "20253",
+   "total_stores": 251
+  },
+  {
+   "close_rate_pct": 4.049,
+   "closes": 10,
+   "open_rate_pct": 2.834,
+   "opens": 7,
+   "quarter": "20254",
+   "total_stores": 247
+  },
+  {
+   "close_rate_pct": 1.606,
+   "closes": 4,
+   "open_rate_pct": 2.41,
+   "opens": 6,
+   "quarter": "20261",
+   "total_stores": 249
+  },
+  {
+   "close_rate_pct": 2.857,
+   "closes": 7,
+   "open_rate_pct": 1.224,
+   "opens": 3,
+   "quarter": "20262",
+   "total_stores": 245
+  }
+ ]
+}
