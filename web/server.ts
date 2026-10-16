@@ -296,7 +296,10 @@ export function createAppServer(): Server {
           path === "/rehearsal/index.html")
       ) {
         const html = resolveClientAsset("index.html");
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.writeHead(200, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        });
         res.end(html);
         return;
       }
@@ -308,6 +311,7 @@ export function createAppServer(): Server {
         const js = resolveClientAsset("app.js");
         res.writeHead(200, {
           "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
         });
         res.end(js);
         return;
