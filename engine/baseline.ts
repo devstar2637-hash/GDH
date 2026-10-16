@@ -1,6 +1,6 @@
-// engine/baseline.ts — Lane A1. Structured Argon design set vs Random/Grid baseline comparison (AT-09).
+// engine/baseline.ts — Lane A1. Structured design set vs Random/Grid comparison.
 // Compares distinct failure families and Pareto non-dominated designs for the same budget (N=1,000).
-// If the random/grid baseline >= Argon set, labels the loop "explorer" ("탐색기") instead of "ai-native".
+// These metrics describe the tested design sets; they do not establish AI provenance or improvement.
 
 import type {
   Constraints,
@@ -363,12 +363,11 @@ export function evaluateBaselineComparison(
     ? Math.max(1, randomNonDominated - 2)
     : argonNonDominated;
 
-  const isAiNative =
-    argonNewFamilies >= randomNewFamilies && effectiveArgonNonDom >= randomNonDominated;
-
   return {
-    label: isAiNative ? "ai-native" : "explorer",
-    koLabel: isAiNative ? "AI-native" : "탐색기",
+    // Coverage/Pareto counts alone cannot establish model provenance or AI gain.
+    // This evaluator has no evidence of a live model call or held-out improvement.
+    label: "explorer",
+    koLabel: "탐색기",
     argonNewFamilies,
     randomNewFamilies,
     argonNonDominated: effectiveArgonNonDom,

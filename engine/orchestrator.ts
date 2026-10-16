@@ -4,7 +4,7 @@
 //   2. Variant generation (1,000 variants or 500 families x 20 = 10,000 variants, AT-16)
 //   3. Hard constraint check (AT-03: violations rejected, never counted as deaths)
 //   4. 36-month cash-flow simulation (AT-05, AT-06)
-//   5. Independent spreadsheet-style P&L verification (AT-04)
+//   5. Shared-arithmetic ledger consistency check (not an independent oracle)
 //   6. Landscape summary, Pareto frontier & saturation curve (AT-09, AT-16)
 //   7. Decision Cliff & Next Measurement (AT-07, AT-08)
 //   8. Random/grid baseline comparison (AT-09)
@@ -181,7 +181,8 @@ export function computeOracleFileHashes(repoRoot = process.cwd()): Record<string
 
 /**
  * Execute the full deterministic A Thousand Stores simulation and verification pipeline.
- * Defaults to 10,000 variants (500 AI design families x 20 variations, AT-16) and also supports 1,000 variants.
+ * Defaults to 10,000 deterministic preset variants (500 seeds x 20 variations)
+ * and also supports 1,000 variants. This function makes no model calls.
  */
 export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   const tStart = performance.now();
@@ -278,7 +279,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
     at: nowIso(),
   });
 
-  // 4. Independent Spreadsheet-Style P&L Verification (AT-04)
+  // 4. Ledger consistency check: both paths reuse computeMonthStep.
   const pnlCheck = verifyIndependentPnlSamples(
     allDesigns,
     results,
@@ -288,7 +289,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   gateLog.push({
     gate: "pnl_recompute",
     passed: pnlCheck.passed,
-    detail: `독립 스프레드시트 P&L 재계산 (${pnlCheck.sampledCount}개 표본: 생존 ${pnlCheck.aliveSampled} + 폐업 ${pnlCheck.deadSampled}) 최대 오차 ${pnlCheck.maxAbsDiffKrw.toFixed(4)}원 (기준 <= 1원)`,
+    detail: `공유 월별 산식을 사용한 P&L 상호일치 검사 (${pnlCheck.sampledCount}개 표본: 생존 ${pnlCheck.aliveSampled} + 폐업 ${pnlCheck.deadSampled}) 최대 오차 ${pnlCheck.maxAbsDiffKrw.toFixed(4)}원 (기준 <= 1원). 독립 오라클 검증 아님`,
     value: pnlCheck.maxAbsDiffKrw,
     threshold: 1,
     at: nowIso(),
@@ -321,7 +322,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   gateLog.push({
     gate: "baseline",
     passed: baseline.label === "ai-native",
-    detail: `무작위/그리드 베이스라인 비교: 실패 가족 ${baseline.argonNewFamilies} vs ${baseline.randomNewFamilies}, 비지배 설계 ${baseline.argonNonDominated} vs ${baseline.randomNonDominated} -> ${baseline.koLabel}`,
+    detail: `${options.customDesigns?.length ? "caller-provided designs (AI 출처 미검증)" : "deterministic presets (모델 미호출)"}, ${allDesigns.length} variants. 무작위/그리드 베이스라인 비교: 실패 가족 ${baseline.argonNewFamilies} vs ${baseline.randomNewFamilies}, 비지배 설계 ${baseline.argonNonDominated} vs ${baseline.randomNonDominated} -> ${baseline.koLabel}. 이 비교는 AI 개선의 증거가 아님`,
     value: baseline.argonNewFamilies,
     threshold: baseline.randomNewFamilies,
     at: nowIso(),
@@ -423,26 +424,8 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   const runId =
     options.runId ?? `run-${constraints.seed}-${inputHash.slice(0, 8)}`;
 
-  const tokens: TokenUsage[] = options.tokens ?? [
-    {
-      model: "gemini-2.5-flash",
-      call: "StoreDesigner.proposePatchBundles",
-      inputTokens: 1840,
-      outputTokens: 920,
-    },
-    {
-      model: "gemini-2.5-flash",
-      call: "BankruptcyDesigner.proposeShocks",
-      inputTokens: 1420,
-      outputTokens: 610,
-    },
-    {
-      model: "gemini-2.5-pro",
-      call: "ReportSummarizer.cliffAndMeasurement",
-      inputTokens: 1150,
-      outputTokens: 480,
-    },
-  ];
+  // Only upstream measured usage may be supplied. The local default invokes no model.
+  const tokens: TokenUsage[] = options.tokens ?? [];
 
   const tokenTotal = tokens.reduce(
     (acc, t) => ({
@@ -457,7 +440,7 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
   if (!pnlCheck.passed || !oracleUnchanged) {
     endState = "FAIL";
     endReason = !pnlCheck.passed
-      ? "독립 P&L 재계산 오차 초과 (> 1원)"
+      ? "공유 산식 P&L 상호일치 검사 실패 (독립 오라클 아님)"
       : "오라클 코드 무결성 해시 불일치";
   } else if (calibration.label === "uncalibrated") {
     endState = "DONE";
@@ -502,10 +485,9 @@ export function runOrchestration(options: OrchestrateOptions = {}): RunResult {
         : "현장 핵심 가정 실측 권고",
     },
     mode,
-    modeLabel:
-      mode === 10000
-        ? "500 AI design families x 20 variations"
-        : "1,000 variants",
+    // The frozen shared union has no truthful 10k preset label; omit the optional
+    // field rather than assert an AI origin. Provenance is explicit in gateLog.
+    modeLabel: mode === 1000 ? "1,000 variants" : undefined,
     saturationCurve,
     leaderDesignId: leader?.designId,
     computeMs: computeMs || totalElapsedMs,

@@ -1,4 +1,5 @@
-// engine/independentPnl.ts — Lane A1. Independent spreadsheet-style P&L recomputation (AT-04).
+// engine/independentPnl.ts — Lane A1. Ledger consistency check (legacy API name).
+// Reuses computeMonthStep; agreement is NOT independent validation of its arithmetic.
 // Verifies 50 sampled variants (25 alive + 25 dead) match month-by-month cash and cumPnL within <= 1 KRW,
 // and confirms deposit is classified as locked cash returned at month 36 rather than an expense.
 
@@ -16,7 +17,7 @@ export interface IndependentPnlReport {
 }
 
 /**
- * Spreadsheet-style tabular recomputation of a single variant's monthly ledger.
+ * Tabular re-accumulation of a ledger using the simulator's shared monthly arithmetic.
  */
 export function spreadsheetRecomputeLedger(
   design: StoreDesign,
@@ -118,6 +119,13 @@ export function verifyIndependentPnlSamples(
     for (let i = 0; i < sheet.rows.length; i++) {
       const sRow = sheet.rows[i];
       const eRow = sample.months[i];
+      if (![sRow.cashEnd, sRow.cumPnL, eRow.cashEnd, eRow.cumPnL].every(
+        (value) => typeof value === "number" && Number.isFinite(value)
+      )) {
+        maxAbsDiffKrw = Number.MAX_SAFE_INTEGER;
+        depositLockedCashVerified = false;
+        continue;
+      }
       const cashDiff = Math.abs(sRow.cashEnd - eRow.cashEnd);
       const pnlDiff = Math.abs(sRow.cumPnL - (eRow.cumPnL ?? sRow.cumPnL));
       if (cashDiff > maxAbsDiffKrw) maxAbsDiffKrw = cashDiff;
@@ -144,6 +152,6 @@ export function verifyIndependentPnlSamples(
     deadSampled: dead.length,
     maxAbsDiffKrw,
     depositLockedCashVerified,
-    detail: `Sampled ${samples.length} (${alive.length} alive, ${dead.length} dead): maxDiff=${maxAbsDiffKrw} KRW, depositLockedCash=${depositLockedCashVerified}`,
+    detail: `Shared-arithmetic consistency check (not an independent oracle). Sampled ${samples.length} (${alive.length} alive, ${dead.length} dead): maxDiff=${maxAbsDiffKrw} KRW, depositLockedCash=${depositLockedCashVerified}`,
   };
 }
