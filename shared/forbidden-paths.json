@@ -1,0 +1,8 @@
+{
+  "description": "JSON Pointer prefixes that a Store Designer (P) or Bankruptcy Designer (S) patch must never touch. The oracle (O) is code-only.",
+  "forbidden_prefixes": [
+    "/checks", "/expected", "/results", "/result", "/gates", "/labels", "/reserveRatio", "/budgetCap", "/seed", "/backtest", "/oracle"
+  ],
+  "store_designer_allowed_prefixes": ["/design"],
+  "bankruptcy_designer_allowed_prefixes": ["/shocks", "/scenario"]
+}
